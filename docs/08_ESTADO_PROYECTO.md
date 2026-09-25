@@ -32,9 +32,9 @@ El short paper contempla hasta el Objetivo 2, incluyendo el diseño de la soluci
 | Área | Estado |
 |---|---|
 | Contexto del proyecto | COMPLETADO |
-| Requisitos | DOCUMENTADO |
+| Requisitos | DOCUMENTADO — depurado por AG-00 (96 HUs vigentes; D1–D6 pendientes) |
 | Arquitectura | EN DEFINICIÓN CONTROLADA |
-| Base de datos | MODELO CORE DOCUMENTADO |
+| Base de datos | MODELO CORE DOCUMENTADO — actualizado por AG-00 (`ENTIDADES_BANCARIAS`, relaciones financieras) |
 | Biometría de voz | DISEÑO CONCEPTUAL DOCUMENTADO |
 | Seguridad | PRINCIPIOS Y CONTROLES DOCUMENTADOS |
 | Decisiones técnicas | REGISTRADAS |
@@ -117,6 +117,10 @@ El modelo documentado contempla, entre otras, las siguientes entidades:
 - SOLICITUDES_ATENCION
 - AUDITORÍA
 
+Además, por AG-00 (D-026), el modelo incluye la tabla de referencia del entorno simulado:
+
+- ENTIDADES_BANCARIAS
+
 El detalle oficial del modelo se encuentra en:
 
 `03_BASE_DE_DATOS_NAYRA.md`
@@ -124,7 +128,7 @@ El detalle oficial del modelo se encuentra en:
 ### Estado
 
 **Modelo documentado:** SÍ.  
-**Implementación física:** POR VERIFICAR EN EL REPOSITORIO.
+**Implementación física:** POR VERIFICAR EN EL REPOSITORIO. Las decisiones de AG-00 (D-024 a D-033) son solo documentales: **no se han implementado** en el código.
 
 No deben agregarse tablas biométricas como `VOICE_BIOMETRICS`, `VOICE_EMBEDDINGS` o `ANTI_SPOOFING` sin una decisión explícita.
 
@@ -233,6 +237,14 @@ Este entorno permitirá representar:
 Las operaciones serán simuladas y **no involucrarán fondos reales ni cuentas bancarias reales**.
 
 La integración con APIs o sistemas core de bancos reales está fuera del alcance actual.
+
+Definiciones aprobadas en AG-00 (ver `07_DECISIONES_TECNICAS_NAYRA.md`, D-024 a D-033):
+
+- cada usuario tiene **una única cuenta financiera**, asociada a una **entidad bancaria simulada**;
+- la cuenta financiera se localiza por DNI durante el registro y se vincula al usuario mediante FK con restricción de unicidad;
+- las operaciones referencian la cuenta financiera de origen y la de destino;
+- las transferencias no requieren seleccionar cuenta;
+- no se incluyen apertura de cuentas, múltiples cuentas, transferencias entre cuentas propias ni gestión de entidades por el administrador.
 
 ---
 

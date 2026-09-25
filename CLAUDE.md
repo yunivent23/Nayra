@@ -154,6 +154,12 @@ No:
 
 Las cuentas y operaciones son simuladas.
 
+Decisiones AG-00 (`docs/07_DECISIONES_TECNICAS_NAYRA.md`, D-024 a D-033):
+
+- distinguir según contexto entre **cuenta de acceso** (acceso a Nayra) y **cuenta financiera** (tabla `CUENTAS`);
+- cada usuario tiene **una única cuenta financiera**, asociada a una **entidad bancaria simulada**;
+- no crear funcionalidades de apertura de cuentas, múltiples cuentas, transferencias entre cuentas propias ni gestión de entidades bancarias por el administrador.
+
 ---
 
 ## 5. Stack tecnológico de referencia
@@ -269,6 +275,10 @@ Tablas CORE documentadas:
 - SOLICITUDES_ATENCION
 - AUDITORÍA
 
+Tabla de referencia del entorno simulado (AG-00, D-026):
+
+- ENTIDADES_BANCARIAS (catálogo con `id` y `nombre`; sin gestión por el administrador)
+
 Reglas:
 
 - No agregar tablas arbitrariamente.
@@ -279,7 +289,7 @@ Reglas:
 - No asumir que el audio se almacenará en PostgreSQL.
 - No crear un CRUD simplemente porque exista una tabla.
 
-Las tablas `CUENTAS` y `OPERACIONES` pertenecen al entorno bancario simulado.
+Las tablas `CUENTAS`, `OPERACIONES` y `ENTIDADES_BANCARIAS` pertenecen al entorno bancario simulado. `CUENTAS` representa la cuenta financiera: relación 1:1 con `USUARIOS` mediante FK con restricción de unicidad, y N:1 con `ENTIDADES_BANCARIAS`. `OPERACIONES` referencia la cuenta financiera de origen y la de destino (D-025 a D-029).
 
 ---
 

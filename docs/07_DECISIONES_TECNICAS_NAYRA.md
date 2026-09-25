@@ -384,6 +384,21 @@ Se recomienda registrar:
 |---|---|---|---|---|---|
 | D-XXX | Pendiente | PENDIENTE | APROBADA | Por definir | YYYY-MM-DD |
 
+Registro:
+
+| ID | Decisión | Estado anterior | Nuevo estado | Motivo | Fecha |
+|---|---|---|---|---|---|
+| D-024 | Terminología: cuenta de acceso / cuenta financiera | — (nueva) | APROBADA | AG-00: eliminar la ambigüedad del término "cuenta" | 2026-09-25 |
+| D-025 | Una única cuenta financiera por usuario | — (nueva) | APROBADA | AG-00: simplificación del modelo; se descartó el modelo de varias cuentas por usuario | 2026-09-25 |
+| D-026 | `ENTIDADES_BANCARIAS` como catálogo de referencia (T1: `id`, `nombre`) | — (nueva) | APROBADA | AG-00: representar las entidades bancarias del entorno simulado (D-021) | 2026-09-25 |
+| D-027 | Mantener el nombre de la tabla `CUENTAS` | — (nueva) | APROBADA | AG-00 | 2026-09-25 |
+| D-028 | Asociación de la cuenta financiera por DNI (A1) | — (nueva) | APROBADA | AG-00 | 2026-09-25 |
+| D-029 | `OPERACIONES` referencia cuenta financiera de origen y de destino | — (nueva) | APROBADA | AG-00 | 2026-09-25 |
+| D-030 | Transferencias sin selección de cuenta | — (nueva) | APROBADA | AG-00: consecuencia de D-025 | 2026-09-25 |
+| D-031 | Depuración de HUs (eliminación, consolidación, sin renumeración) | — (nueva) | APROBADA | AG-00 | 2026-09-25 |
+| D-032 | El registro de Nayra incluye el registro de voz | — (nueva) | APROBADA | AG-00 | 2026-09-25 |
+| D-033 | Exclusiones de alcance del modelo financiero | — (nueva) | APROBADA | AG-00 | 2026-09-25 |
+
 Esto permitirá mantener trazabilidad de las decisiones de diseño.
 
 ---
@@ -478,3 +493,81 @@ Las transacciones serán simuladas y no involucrarán fondos reales.
 **Estado:** DESCARTADA PARA EL ALCANCE ACTUAL
 
 La integración con APIs o sistemas bancarios reales queda fuera del alcance del proyecto actual. No debe implementarse ni asumirse como requisito salvo que el alcance sea modificado y la decisión sea aprobada explícitamente.
+
+## Decisiones aprobadas de AG-00 — Terminología, modelo financiero y depuración de requisitos (2026-09-25)
+
+Estas decisiones son **funcionales y de modelo de datos**. No aprueban ninguna tecnología, mecanismo de autenticación, contrato de API ni componente de infraestructura. Documentos actualizados: `01_REQUISITOS_NAYRA.md` (§3.1, §4, §5, §6, §7, §11) y `03_BASE_DE_DATOS_NAYRA.md` (§3.3, §3.5, §3.10, §4.1, §15).
+
+### D-024 — Terminología: cuenta de acceso y cuenta financiera
+**Estado:** APROBADA
+
+El término "cuenta" se interpreta según el contexto de cada HU:
+
+- **cuenta de acceso** (perfil Nayra): identidad y acceso del usuario a Nayra;
+- **cuenta financiera**: cuenta simulada del entorno bancario controlado (tabla `CUENTAS`).
+
+Cuando el contexto permita aclararlo, no debe mantenerse la ambigüedad. La interpretación aplicada a cada HU consta en `01_REQUISITOS_NAYRA.md` §3.1.
+
+### D-025 — Una única cuenta financiera por usuario
+**Estado:** APROBADA
+
+Cada usuario tendrá **una sola cuenta financiera** dentro de Nayra. Durante AG-00 se evaluó un modelo con varias cuentas financieras por usuario en distintas entidades, con selección de la cuenta destino en las transferencias; ese modelo quedó **descartado** para simplificar el proyecto.
+
+### D-026 — Entidad bancaria simulada y tabla `ENTIDADES_BANCARIAS`
+**Estado:** APROBADA
+
+- Cada cuenta financiera está asociada a **una entidad bancaria simulada**.
+- Se incorpora la tabla `ENTIDADES_BANCARIAS` como **catálogo de referencia** del entorno simulado (alternativa T1), con los campos mínimos `id` y `nombre`.
+- La tabla no representa bancos reales (D-022) y no es gestionada por el administrador (D-033).
+
+### D-027 — Nombre de la tabla `CUENTAS`
+**Estado:** APROBADA
+
+Se mantiene el nombre `CUENTAS`. No se renombra a `CUENTAS_FINANCIERAS`.
+
+### D-028 — Asociación de la cuenta financiera mediante DNI (alternativa A1)
+**Estado:** APROBADA
+
+El DNI se utiliza **durante el registro** para localizar la cuenta financiera simulada del usuario. La relación persistente entre `CUENTAS` y `USUARIOS` se realiza mediante **FK con restricción de unicidad**, no mediante el valor del DNI.
+
+**Pendiente asociado:** dónde reside, dentro del entorno simulado, el dato que permite localizar la cuenta por DNI; obligatoriedad de la FK antes de la vinculación (ver `03_BASE_DE_DATOS_NAYRA.md` §15).
+
+### D-029 — Referencias de `OPERACIONES`
+**Estado:** APROBADA
+
+Las operaciones referencian directamente la **cuenta financiera de origen** y la **cuenta financiera de destino** (cuando corresponda). La cuenta destino deja de ser un campo de texto.
+
+### D-030 — Transferencias sin selección de cuenta
+**Estado:** APROBADA
+
+Como cada usuario tiene una única cuenta financiera, no existe selección entre varias cuentas. El emisor utiliza su única cuenta financiera y el sistema identifica la única cuenta financiera del destinatario.
+
+**Pendiente asociado:** con qué dato identifica el emisor al destinatario (AG-01/AG-04) y la regla de moneda en transferencias.
+
+### D-031 — Depuración de historias de usuario
+**Estado:** APROBADA
+
+1. **Eliminación** de 8 IDs no aplicables que solo existían en `CLASIFICACION`: HU-05, HU-06, HU-07, HU-08, HU-11, HU-38, HU-39 y HU-63.
+2. **Consolidación** de 11 grupos de HUs duplicadas (C1–C11), que absorbe 12 IDs: HU-82, HU-84, HU-85, HU-86, HU-91, HU-92, HU-103, HU-105, HU-106, HU-107, HU-108 y HU-112. Se conserva la HU de primera aparición en su épica, con la prioridad más alta y el texto unificado.
+3. Los posibles duplicados **D1–D6** se mantienen **separados y pendientes**.
+4. **No se renumeran** las HUs; los huecos resultantes son intencionales.
+5. Cada HU se mantiene en su épica actual.
+
+Resultado: 96 HUs vigentes. Trazabilidad completa en `01_REQUISITOS_NAYRA.md` §11.
+
+### D-032 — El registro incluye el registro de voz
+**Estado:** APROBADA
+
+El registro de Nayra incluye el **registro de la voz del usuario** (EP-02), que será utilizada posteriormente para la autenticación biométrica.
+
+**No aprobado por esta decisión:** el mecanismo exacto de identificación durante el registro (DNI, voz o ambos) queda **pendiente para AG-01 / D-008**. Esta decisión tampoco define el modelo biométrico (D-011), el anti-spoofing (D-012) ni el almacenamiento biométrico (D-013).
+
+### D-033 — Exclusiones de alcance del modelo financiero
+**Estado:** APROBADA
+
+No se incorporan funcionalidades de:
+
+- apertura de cuentas bancarias;
+- múltiples cuentas financieras por usuario;
+- transferencias entre cuentas propias;
+- gestión de entidades bancarias por parte del administrador.

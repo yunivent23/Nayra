@@ -3,6 +3,8 @@
 > **Fuente principal:** hoja `TABLAS CORE` del archivo `REQUERIMIENTOS(6).xlsx`.
 >
 > Este documento registra las estructuras de datos que el equipo había planteado para el proyecto. Se diferencian las estructuras propuestas de las decisiones definitivas de implementación. No se agregan tablas ajenas a la fuente sin una decisión posterior.
+>
+> **Actualización AG-00 (2026-09-25):** por decisión aprobada se incorporó la tabla de referencia `ENTIDADES_BANCARIAS` (D-026). También se definieron la relación 1:1 entre `USUARIOS` y `CUENTAS` (D-025, D-028), la relación entre `CUENTAS` y `ENTIDADES_BANCARIAS` (D-026) y las referencias de `OPERACIONES` a las cuentas de origen y destino (D-029). Ver sección 15.
 
 ## 1. Propósito
 
@@ -14,7 +16,7 @@ La tecnología considerada para la base de datos relacional del proyecto es **Po
 
 ## 3. Tablas CORE
 
-Las siguientes tablas corresponden a la propuesta registrada en la hoja `TABLAS CORE` del Excel de requerimientos.
+Las siguientes tablas corresponden a la propuesta registrada en la hoja `TABLAS CORE` del Excel de requerimientos. La tabla `ENTIDADES_BANCARIAS` (§3.10) y las filas marcadas con _(AG-00)_ no proceden del Excel: se incorporaron por decisiones aprobadas de AG-00.
 
 ### 3.1 ROLES
 
@@ -34,11 +36,14 @@ Las siguientes tablas corresponden a la propuesta registrada en la hoja `TABLAS 
 
 ### 3.3 CUENTAS
 
+Representa la **cuenta financiera** simulada del usuario (D-024). Se mantiene el nombre `CUENTAS` (D-027). Cada usuario tiene una única cuenta financiera (D-025).
+
 | Campo | Tipo | Descripción |
 |---|---|---|
 | Tipo | Descripción |  |
 | UUID / BIGINT | PK |  |
-| FK | Propietario |  |
+| FK → USUARIOS, UNIQUE | Propietario. Relación 1:1 con `USUARIOS`; se establece al vincular la cuenta durante el registro (D-028) _(AG-00)_ |  |
+| FK → ENTIDADES_BANCARIAS | Entidad bancaria simulada de la cuenta (D-026) _(AG-00)_ |  |
 | VARCHAR(30) | Identificador de la cuenta |  |
 | DECIMAL(15,2) | Saldo disponible |  |
 | VARCHAR(3) | PEN, USD, etc. |  |
@@ -57,7 +62,8 @@ Las siguientes tablas corresponden a la propuesta registrada en la hoja `TABLAS 
 |---|---|---|
 | Tipo | Descripción |  |
 | UUID / BIGINT | PK |  |
-| FK | Cuenta que realiza la operación |  |
+| FK → CUENTAS | Cuenta financiera de origen (cuenta que realiza la operación) (D-029) |  |
+| FK → CUENTAS | Cuenta financiera de destino, cuando corresponda (D-029) _(AG-00)_ |  |
 | VARCHAR(30) | TRANSFERENCIA, PAGO, RECARGA, etc. |  |
 | DECIMAL(15,2) | Monto de la operación |  |
 | VARCHAR(3) | Moneda |  |
@@ -106,6 +112,15 @@ Las siguientes tablas corresponden a la propuesta registrada en la hoja `TABLAS 
 | FK | Dispositivo utilizado |  |
 | TIMESTAMP | Fecha y hora |  |
 
+### 3.10 ENTIDADES_BANCARIAS _(AG-00)_
+
+Catálogo de referencia de entidades bancarias simuladas del entorno controlado (D-021, D-026). Tiene únicamente los campos mínimos aprobados. **No** representa bancos reales (D-022) y **no** es gestionado por el administrador (D-033): no existe HU para su gestión, por lo que no le corresponde CRUD ni endpoint de administración.
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `id` | PK (tipo según la estrategia de identificadores, pendiente) | Identificador de la entidad |
+| `nombre` | Texto (longitud pendiente) | Nombre de la entidad bancaria simulada |
+
 ## 4. Relaciones entre tablas
 
 Las relaciones definitivas entre las tablas deberán establecerse antes de generar las migraciones o el esquema físico de PostgreSQL.
@@ -122,6 +137,17 @@ Como regla general, se deberá identificar para cada relación:
 - comportamiento ante actualización.
 
 **No se deben inventar relaciones únicamente por intuición.** Si una relación no está explícitamente definida en la documentación de requisitos o en el diseño de base de datos aprobado, deberá marcarse como pendiente de decisión.
+
+### 4.1 Relaciones aprobadas (AG-00)
+
+| Origen | Destino | Cardinalidad | Clave | Decisión |
+|---|---|---|---|---|
+| `CUENTAS` | `USUARIOS` | 1:1 (un usuario tiene una única cuenta financiera; una cuenta pertenece a un único usuario) | FK de `CUENTAS` al propietario, con restricción `UNIQUE` | D-025, D-028 |
+| `CUENTAS` | `ENTIDADES_BANCARIAS` | N:1 (cada cuenta pertenece a una entidad; una entidad puede tener muchas cuentas) | FK de `CUENTAS` a la entidad | D-026 |
+| `OPERACIONES` | `CUENTAS` (origen) | N:1 | FK a la cuenta financiera de origen | D-029 |
+| `OPERACIONES` | `CUENTAS` (destino) | N:0..1 (solo cuando la operación tiene destino) | FK a la cuenta financiera de destino | D-029 |
+
+Siguen **pendientes** para estas relaciones: obligatoriedad (`NULL/NOT NULL`) de cada FK, comportamiento ante eliminación y actualización, y tipos de dato de las claves (estrategia de identificadores). Las demás relaciones del modelo CORE siguen pendientes.
 
 ## 5. Claves primarias y foráneas
 
@@ -289,3 +315,25 @@ Las tablas `CUENTAS` y `OPERACIONES` forman parte del modelo de datos del protot
 Su finalidad es permitir que el prototipo pueda representar de manera controlada las cuentas y operaciones necesarias para probar el flujo de autenticación y las funcionalidades de la billetera digital.
 
 Las transacciones almacenadas durante las pruebas serán **simuladas**, sin movimiento de fondos reales.
+
+La tabla de referencia `ENTIDADES_BANCARIAS` forma parte del mismo entorno simulado: sus registros son entidades bancarias simuladas, no bancos reales.
+
+## 15. Decisiones AG-00 sobre el modelo financiero (2026-09-25)
+
+Decisiones registradas en `07_DECISIONES_TECNICAS_NAYRA.md`:
+
+1. **Terminología (D-024):** `CUENTAS` representa la **cuenta financiera**. La **cuenta de acceso** del usuario a Nayra no es una fila de `CUENTAS`; sus datos y estado corresponden a `USUARIOS` (el estado de la cuenta de acceso queda pendiente para AG-05).
+2. **Cuenta financiera única (D-025):** cada usuario tiene una sola cuenta financiera → restricción `UNIQUE` sobre la FK del propietario en `CUENTAS`.
+3. **Entidad bancaria (D-026):** cada cuenta financiera pertenece a una entidad bancaria simulada → FK de `CUENTAS` a `ENTIDADES_BANCARIAS` (campos mínimos `id`, `nombre`).
+4. **Nombre de tabla (D-027):** se mantiene `CUENTAS`; no se renombra.
+5. **Asociación por DNI (D-028, alternativa A1):** el DNI se usa **durante el registro** para localizar la cuenta financiera simulada; la relación persistente es la FK con `UNIQUE`, no el valor del DNI.
+6. **Operaciones (D-029):** `OPERACIONES` referencia directamente la cuenta financiera de origen y la de destino.
+7. **Exclusiones (D-033):** no se modelan apertura de cuentas, múltiples cuentas por usuario, transferencias entre cuentas propias ni gestión de entidades por el administrador.
+
+### Pendientes que afectan al modelo
+
+- **Dato con el que se localiza la cuenta por DNI.** D-028 establece que el DNI se usa para localizar la cuenta simulada, pero `CUENTAS` no contiene ningún atributo con el DNI del titular y, según A1, la FK al propietario se establece recién al vincular la cuenta. Falta decidir dónde reside, dentro del entorno simulado, el dato que permite esa localización. No se agrega ningún campo hasta que exista una decisión.
+- **Obligatoriedad de la FK al propietario.** Si las cuentas simuladas existen antes del registro del usuario, la FK no puede ser obligatoria desde su creación. Queda pendiente junto con el punto anterior.
+- **Destino de las operaciones de tipo PAGO** (HU-73): no está definido si un pago tiene cuenta financiera de destino.
+- **Cuenta financiera del personal de atención y del administrador:** no está definido si tienen cuenta financiera.
+- **Estados:** estado CANCELADA en `OPERACIONES` (HU-87) y estados de la cuenta de acceso frente a los de la cuenta financiera (AG-05).
