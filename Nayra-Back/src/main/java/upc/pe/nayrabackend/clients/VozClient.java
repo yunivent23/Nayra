@@ -27,7 +27,10 @@ public class VozClient {
     private final RestClient cliente;
 
     public VozClient(NayraVozProperties propiedades) {
-        HttpClient http = HttpClient.newBuilder().connectTimeout(propiedades.timeoutConexion()).build();
+        HttpClient http = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1) // sin intento de upgrade h2c, que uvicorn rechaza
+                .connectTimeout(propiedades.timeoutConexion())
+                .build();
         JdkClientHttpRequestFactory fabrica = new JdkClientHttpRequestFactory(http);
         fabrica.setReadTimeout(propiedades.timeoutLectura());
         this.cliente = RestClient.builder()
@@ -48,6 +51,10 @@ public class VozClient {
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(partes)
                     .retrieve()
+                    // 422: el audio no cumple el formato aprobado (D-045); el usuario puede corregir la captura
+                    .onStatus(st -> st.value() == 422, (req, res) -> {
+                        throw new NayraException(CodigoError.CALIDAD_INSUFICIENTE);
+                    })
                     .body(ResultadoVozDTO.class);
             if (r == null) {
                 throw new NayraException(CodigoError.SERVICIO_VOZ_NO_DISPONIBLE);

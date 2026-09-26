@@ -349,3 +349,74 @@ Para conocer decisiones técnicas:
 
 **`07_DECISIONES_TECNICAS_NAYRA.md` > documentación arquitectónica > suposiciones de Claude**
 
+
+---
+
+## 15. Estado de implementación verificado — 2026-09-26
+
+Rama de trabajo: `claude/project-thread-irkos4` (desde `yuniv`). Decisiones implementadas: D-034 a D-052 (`07_DECISIONES_TECNICAS_NAYRA.md`).
+
+### 15.1 Documentación
+
+| Documento | Cambio |
+|---|---|
+| `07_DECISIONES_TECNICAS_NAYRA.md` | D-034 a D-052 registradas; estados de D-005, D-007, D-008, D-010 a D-013, D-017 y D-018 actualizados; pendientes P-A01 y P-A02 |
+| `02_ARQUITECTURA_NAYRA.md` | Arquitectura lógica de autenticación y voz |
+| `03_BASE_DE_DATOS_NAYRA.md` | §16: `usuarios` (PIN, intentos, bloqueo), `dispositivos`, `sesiones`, `desafios_autenticacion`, `biometria.perfiles_voz` |
+| `04_API.md` | **Nuevo**: API pública (borrador sujeto a AG-01) y API interna Java → Python (aprobada) |
+| `05_BIOMETRIA_NAYRA.md` | §26: decisiones biométricas y limitaciones a declarar |
+| `06_SEGURIDAD_NAYRA.md` | Controles aprobados, secretos e incidente de claves publicadas |
+
+### 15.2 Backend Java (`Nayra-Back/`)
+
+| Funcionalidad | Estado | Evidencia |
+|---|---|---|
+| Esquema con Flyway (V1, V2), `ddl-auto=validate` | IMPLEMENTADO Y PROBADO | Migraciones aplicadas sobre PostgreSQL 16 vacío; Hibernate valida el esquema al arrancar |
+| Configuración por variables de entorno; arranque bloqueado si faltan parámetros obligatorios | IMPLEMENTADO Y PROBADO | Sin `NAYRA_INTENTOS_MAXIMO` la app no arranca ("Failed to bind properties under 'nayra.seguridad.intentos.maximo'") |
+| JWT eliminado; sesión con token opaco, hash SHA-256, 5 min de inactividad, revocación | IMPLEMENTADO Y PROBADO | `AutenticacionIntegracionTest`: inicio, cierre, inactividad, revocación por nuevo dispositivo |
+| PIN Argon2id + pepper | IMPLEMENTADO Y PROBADO | `PinServiceImplementTest` (parámetros m=19456, t=2, p=1 verificados en el hash) |
+| Firma ECDSA P-256 del dispositivo; un dispositivo activo | IMPLEMENTADO Y PROBADO | `FirmaDispositivoServiceImplementTest`, `AutenticacionIntegracionTest` |
+| Desafío palabra + 3 dígitos + palabra, un solo uso, expiración | IMPLEMENTADO Y PROBADO | `DesafioServiceImplementTest` (200 repeticiones), pruebas de reutilización y expiración |
+| Límite de intentos y bloqueo | IMPLEMENTADO Y PROBADO | Bloqueo al tercer PIN incorrecto con valor de prueba 3 |
+| Umbrales configurables y modo calibración | IMPLEMENTADO Y PROBADO | `CalibracionIntegracionTest` |
+| Inicio de sesión `POST /api/v1/auth/desafios` y `/api/v1/auth/sesiones` | IMPLEMENTADO, **identificador provisional** | El dispositivo identifica al usuario (opción recomendada en P-A02, pendiente de confirmación) |
+| `/api/v1/sesiones` (HU-13, HU-14) | IMPLEMENTADO Y PROBADO | |
+| `/usuarios` | ASEGURADO | Solo `ADMINISTRADOR`; respuestas sin contraseña ni PIN. Inutilizable hasta resolver P-A01 |
+| Registro de usuario, creación de PIN, vinculación de cuenta por DNI, enrolamiento público | PENDIENTE | Depende de AG-01 (D-051) |
+| Registro de dispositivo (servicio) | IMPLEMENTADO Y PROBADO; sin endpoint público | El endpoint depende del flujo de registro de AG-01 |
+
+**Pruebas:** 225 pruebas, 0 fallos (3 ejecuciones consecutivas), con `NAYRA_IT_DB_URL` (PostgreSQL) y `NAYRA_IT_VOZ_URL` (servicio de voz en ejecución). Sin esas variables se ejecutan solo las unitarias (208).
+
+### 15.3 Servicio de voz Python (`nayra-voz/`)
+
+| Funcionalidad | Estado | Evidencia |
+|---|---|---|
+| API interna FastAPI con token de servicio (04_API §3) | IMPLEMENTADO Y PROBADO | `tests/test_app.py` |
+| Validación de audio WAV 16 kHz mono 16 bits | IMPLEMENTADO Y PROBADO | `tests/test_audio_calidad.py` |
+| Calidad (duración, voz neta, SNR, saturación) | IMPLEMENTADO Y PROBADO con señales sintéticas | |
+| AASIST con pesos oficiales | IMPLEMENTADO Y PROBADO (carga e inferencia) | `tests/test_aasist_real.py` con pesos verificados por SHA-256 |
+| ECAPA-TDNN (SpeechBrain 1.1.1) | IMPLEMENTADO, **NO PROBADO CON EL MODELO REAL** | `huggingface.co` bloqueado por la red del entorno de desarrollo |
+| Vosk con gramática | IMPLEMENTADO, **NO PROBADO CON EL MODELO REAL** | `alphacephei.com` bloqueado por la red del entorno de desarrollo |
+| Centroide, similitud coseno, cifrado AES-256-GCM | IMPLEMENTADO Y PROBADO | `tests/test_biometria_cifrado.py` |
+| Esquema `biometria` con usuario propio; el backend no puede leerlo | IMPLEMENTADO Y PROBADO | `permission denied for schema biometria` para `nayra_app`; `tests/test_repositorio_postgres.py` |
+| Contrato Java ↔ Python | PROBADO | `VozContratoIntegracionTest` contra el servicio en ejecución (AASIST real; dobles para ECAPA y Vosk) |
+| Herramienta de calibración (FAR, FRR, EER) | IMPLEMENTADO Y PROBADO | `tests/test_metricas.py` |
+
+**Pruebas:** 24 pruebas, 0 fallos.
+
+### 15.4 Problemas y bloqueos
+
+| ID | Problema | Impacto | Estado |
+|---|---|---|---|
+| P-001 | Documentación AG-01 (v4–v6) sin subir a `yuniv` | Bloquea registro, PIN, enrolamiento y conciliación de `usuarios` | ABIERTO — acción del equipo (D-051) |
+| P-002 | Red del entorno de desarrollo bloquea `huggingface.co`, `alphacephei.com` y `download.pytorch.org` | ECAPA y Vosk no se probaron con modelos reales | ABIERTO — configuración del entorno |
+| P-003 | Clave de Gemini y secreto JWT publicados en el historial de `main` | Riesgo de uso indebido | ABIERTO — revocar/rotar en los proveedores |
+| P-004 | Autenticación del personal y del administrador sin decidir (P-A01) | Paneles y `/usuarios` sin acceso | ABIERTO — decisión del equipo |
+| P-005 | Base de datos local creada con `ddl-auto=update` en versiones anteriores | Flyway no migra sobre tablas existentes | Usar una base de datos nueva (`nayra`) para esta versión |
+
+### 15.5 Próximos pasos
+
+1. Subir AG-01 y conciliarlo con estas decisiones.
+2. Confirmar P-A02 (identificador de inicio de sesión) y decidir P-A01.
+3. Habilitar los dominios bloqueados y probar ECAPA y Vosk reales.
+4. Registro, PIN y enrolamiento según AG-01; después, funcionalidad financiera simulada, Flutter y accesibilidad.

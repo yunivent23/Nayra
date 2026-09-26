@@ -175,7 +175,7 @@ class AutenticacionIntegracionTest {
                 new ResultadoVozDTO.Calidad(4.0, 3.5, 20.0, 0.0),
                 new ResultadoVozDTO.Contenido("x", true, 0.9),
                 new ResultadoVozDTO.Spoofing(1.0),
-                new ResultadoVozDTO.Biometria(0.2, true)));
+                new ResultadoVozDTO.Biometria(0.2, true, false)));
         enviarLogin(pedirDesafio(), PIN, clave).andExpect(jsonPath("$.codigo").value("AUTENTICACION_FALLIDA"));
         assertEquals(1, usuarios.findById(usuario.getId()).orElseThrow().getIntentosFallidos());
     }
@@ -292,6 +292,6 @@ class AutenticacionIntegracionTest {
                 new ResultadoVozDTO.Calidad(4.0, 3.5, 20.0, 0.0),
                 new ResultadoVozDTO.Contenido("x", true, 0.9),
                 new ResultadoVozDTO.Spoofing(1.0),
-                new ResultadoVozDTO.Biometria(0.9, true));
+                new ResultadoVozDTO.Biometria(0.9, true, false));
     }
 }

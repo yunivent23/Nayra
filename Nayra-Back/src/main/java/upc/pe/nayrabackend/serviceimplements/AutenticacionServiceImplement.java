@@ -114,6 +114,10 @@ public class AutenticacionServiceImplement implements IAutenticacionService {
             fallo(usuario);
         }
         ResultadoVozDTO.Biometria b = r.biometria();
+        if (b != null && Boolean.TRUE.equals(b.requiereReenrolamiento())) {
+            // El modelo cambió de versión (D-039): no es un intento del usuario, debe volver a registrar su voz
+            throw new NayraException(CodigoError.AUTENTICACION_FALLIDA);
+        }
         if (b == null || !Boolean.TRUE.equals(b.perfilEncontrado()) || menor(b.similitud(), umbrales.similitudMinima())) {
             fallo(usuario);
         }

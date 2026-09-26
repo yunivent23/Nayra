@@ -1,0 +1,14 @@
+# Servicio de voz de Nayra (D-034, D-035, D-036, D-040). Python 3.11.
+# PyTorch CPU (D-050): pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+torch>=2.4
+torchaudio>=2.4
+speechbrain==1.1.1
+vosk==0.3.45
+webrtcvad-wheels==2.0.14
+numpy>=1.26
+fastapi==0.118.0
+uvicorn[standard]==0.37.0
+python-multipart==0.0.20
+cryptography>=44
+psycopg[binary]==3.2.10
+psycopg-pool==3.2.6

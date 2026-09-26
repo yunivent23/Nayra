@@ -28,6 +28,7 @@ public record ResultadoVozDTO(
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Biometria(Double similitud, @JsonProperty("perfil_encontrado") Boolean perfilEncontrado) {
+    public record Biometria(Double similitud, @JsonProperty("perfil_encontrado") Boolean perfilEncontrado,
+                            @JsonProperty("requiere_reenrolamiento") Boolean requiereReenrolamiento) {
     }
 }
