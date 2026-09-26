@@ -572,3 +572,46 @@ El entorno simulado permitirá representar:
 Las operaciones realizadas durante el desarrollo y la validación serán **simuladas** y no involucrarán dinero real ni cuentas bancarias reales.
 
 Por tanto, la arquitectura debe contemplar la interacción de Nayra con el entorno simulado, pero **no debe asumir integraciones con APIs, sistemas core bancarios o servicios externos de entidades financieras reales**.
+
+## Arquitectura lógica aprobada para autenticación y voz (2026-09-26)
+
+Decisiones: D-034 a D-051 (`07_DECISIONES_TECNICAS_NAYRA.md`). Contratos: `04_API.md`. Esta sección **no** aprueba infraestructura física (D-015, D-016 siguen pendientes).
+
+### Componentes y responsabilidades
+
+| Componente | Tecnología | Responsabilidades |
+|---|---|---|
+| Aplicación móvil | Flutter (Android) + canal de plataforma Kotlin (D-007, D-041, D-044) | Interfaz accesible (TalkBack + voz propia), captura WAV 16 kHz mono, par de claves ECDSA P-256 en Android Keystore, firma de nonces, almacenamiento del token de sesión |
+| Backend principal | Java + Spring Boot (D-001) | Reglas de negocio; emisión de desafíos y nonces; verificación de firmas; PIN (Argon2id + pepper); sesiones opacas con 5 min de inactividad; límites de intentos; **aplicación de umbrales y decisión final**; auditoría |
+| Servicio de voz | Python + FastAPI (D-002, D-040) | Calidad de audio; contenido hablado con Vosk y gramática restringida (D-036); anti-spoofing AASIST (D-035); embedding ECAPA-TDNN y similitud coseno (D-034); custodia cifrada de los embeddings (D-039). **No decide** autenticaciones |
+| PostgreSQL | (D-003) | Esquema principal (Spring Boot) y esquema `biometria` (solo servicio Python, usuario de BD propio) |
+
+### Relaciones
+
+```text
+App móvil ──HTTPS (API pública /api/v1)──► Spring Boot ──REST interno + token de servicio──► Servicio de voz
+                                                │                                              │
+                                                ▼                                              ▼
+                                        PostgreSQL (esquema principal)          PostgreSQL (esquema biometria)
+```
+
+- La app **nunca** se comunica con el servicio de voz.
+- El servicio de voz **no** es accesible desde internet.
+- Ambos servicios son **sin estado en memoria**: el estado vive en PostgreSQL, lo que los hace compatibles con las 2 instancias de D-023.
+
+### Flujo de autenticación (D-046)
+
+```text
+1. App solicita desafío ─► Spring Boot genera desafío (D-037) + nonce (D-041), un solo uso, TTL configurable (D-048)
+2. App lee el desafío (TTS/TalkBack), usuario ingresa PIN y graba el desafío
+3. App firma el nonce con la clave de Keystore y envía firma + PIN + audio
+4. Spring Boot: desafío vigente → firma del dispositivo activo → PIN
+5. Spring Boot ─► Servicio de voz: calidad, contenido, spoofing, similitud
+6. Spring Boot aplica umbrales configurables (D-038) y límites de intentos (D-047)
+7. Spring Boot crea sesión con token opaco (D-042) y audita
+```
+
+### Estado de los pendientes de §22 tras la aprobación del 2026-09-26
+
+- **Resueltos:** tecnología del frontend (Flutter, D-007); división Java/Python y protocolo (D-040); sesiones (D-042); almacenamiento biométrico (D-039); anti-spoofing (D-035); mecanismo de autenticación del usuario de la app (D-041, D-043, D-046).
+- **Siguen pendientes:** arquitectura física, servicios GCP, red, disponibilidad más allá de D-023, despliegue, observabilidad, auditoría (D-019), autorización detallada (D-009) y autenticación del personal de atención y del administrador (P-A01).
