@@ -1,8 +1,14 @@
-# 01_REQUISITOS.md — Requisitos del sistema Nayra
+# 01_REQUISITOS_NAYRA.md — Requisitos del sistema Nayra
 
 > **Fuente:** `REQUERIMIENTOS(7).xlsx`. Este documento consolida las historias de usuario, su clasificación técnica y el modelo de tablas CORE proporcionados en el archivo. No se agregan requisitos funcionales nuevos.
 >
 > **Actualización AG-00 (2026-09-25):** se aplicaron las decisiones aprobadas de AG-00 registradas en `07_DECISIONES_TECNICAS_NAYRA.md` (D-024 a D-033): glosario de términos, eliminación de IDs no aplicables, consolidación de HUs duplicadas y ajustes del modelo de cuenta financiera y entidad bancaria. El detalle de trazabilidad está en la sección 11. **Las HUs no se renumeraron.**
+>
+> **Actualización AG-01 (2026-09-26):** se aplicaron las decisiones D-034 a D-044 (`07_DECISIONES_TECNICAS_NAYRA.md`): alcance del primer entregable, identidad simulada, registro, autenticación, dispositivo único, recuperación, roles USER/ADMIN, transferencias y QR. Se agregaron las HU-117 a HU-125, se reasignaron o marcaron las HUs del antiguo actor "Personal de atención" y se clasificó el alcance del primer entregable. Detalle en la sección 12.
+>
+> **Actualización AG-01 v5 (2026-09-26):** el registro pasa a ser **asistido** por un representante autorizado que valida el DNI y la identidad (D-052, regla de negocio, sin nuevo rol); el QR (HU-123, HU-124) queda como funcionalidad secundaria para un siguiente entregable. Ver sección 12.
+>
+> **Actualización AG-01 v6 (2026-09-26):** flujo de registro asistido definitivo en 13 pasos (D-052) y separación explícita entre registro inicial, inicio de sesión y cambio/recuperación de dispositivo; el DNI **no** forma parte del inicio de sesión habitual (D-053).
 
 ## 1. Propósito
 
@@ -10,16 +16,18 @@ Este documento constituye la referencia de requisitos para el desarrollo de Nayr
 
 ## 2. Actores identificados
 
-- **Usuario:** persona que utiliza Nayra y sus funcionalidades de billetera y autenticación.
-- **Administrador:** responsable de gestión, supervisión, seguridad y métricas de la plataforma.
-- **Personal de atención:** usuario autorizado para asistir a usuarios mediante el panel correspondiente.
+- **Usuario** (rol `USER`): persona que utiliza Nayra desde la aplicación móvil y sus funcionalidades de billetera y autenticación.
+- **Administrador** (rol `ADMIN`): responsable de gestión, supervisión, seguridad, atención de solicitudes y métricas de la plataforma, desde el panel web. No puede modificar saldos ni operaciones financieras (D-041).
+
+> **AG-01 (D-041):** solo existen los roles `USER` y `ADMIN`. El actor **Personal de atención** fue retirado; sus HUs se reasignaron al administrador, se declararon sin objeto o quedaron fuera del primer entregable (sección 12.3). Los nombres de rol en las HUs ("usuario", "administrador") corresponden a `USER` y `ADMIN`.
 
 ## 3. Convenciones
 
 - **F:** requisito funcional.
 - **NF:** requisito no funcional.
 - **Alta / Media:** prioridad registrada en el archivo fuente.
-- Las historias de usuario se mantienen con su redacción original, excepto las HUs consolidadas por AG-00 (D-031), cuya redacción unificada se indica en la propia historia y se traza en la sección 11.
+- Las historias de usuario se mantienen con su redacción original, excepto las HUs consolidadas por AG-00 (D-031) y las reasignadas por AG-01 (D-041), cuya redacción se indica en la propia historia y se traza en las secciones 11 y 12.
+- Marcadores AG-01 en las HUs: **[SIN OBJETO]** (la HU se conserva por trazabilidad pero no aplica con las decisiones vigentes), **[FUERA DEL PRIMER ENTREGABLE]** (la HU sigue vigente, pero no se implementa en el prototipo actual), **[INCLUIDA — D-052]** (HU reincorporada al primer entregable por el registro asistido) y _(Nueva — AG-01)_.
 - La tecnología indicada en la clasificación es una referencia de implementación del archivo fuente; no reemplaza una decisión arquitectónica aprobada.
 - Los IDs de HU **no se renumeran**. Los huecos de numeración resultantes de AG-00 son intencionales (ver sección 11).
 
@@ -30,14 +38,20 @@ Este documento constituye la referencia de requisitos para el desarrollo de Nayr
 | **Cuenta de acceso** (perfil Nayra) | Identidad y acceso del usuario a Nayra. Sobre ella actúan el registro, el inicio de sesión, la desactivación/reactivación y el bloqueo/desbloqueo. |
 | **Cuenta financiera** | Única cuenta simulada del usuario dentro del entorno bancario simulado, asociada a una entidad bancaria simulada. Corresponde a la tabla `CUENTAS` (D-025, D-027). |
 | **Entidad bancaria** | Banco simulado del entorno controlado (D-021). Corresponde a la tabla de referencia `ENTIDADES_BANCARIAS` (D-026). |
-| **Billetera** | Término usado en las HUs sin definición formal. Su relación exacta con la cuenta financiera queda **pendiente de confirmación** (ver sección 11.4). |
+| **Billetera** | Término usado en las HUs sin definición formal. Su relación exacta con la cuenta financiera queda **pendiente de confirmación** (ver sección 11.5). |
+| **Registro de identidad simulado** | Fuente de identidad del entorno controlado que relaciona DNI, nombres y apellidos; se consulta durante el registro (D-035). No es una API real. Consultarlo **no** prueba la titularidad ni la identidad (D-052). |
+| **Representante autorizado** | Administrador u otra persona autorizada de la organización que, en el registro asistido, asiste a la persona y valida su identidad (D-052). Es parte de una **regla de negocio**, no un rol de la aplicación. |
+| **Dispositivo vinculado** | Único dispositivo activo asociado a una cuenta de acceso; determina qué cuenta intenta iniciar sesión (D-039). |
+| **Contacto** (para transferencias) | Otro usuario registrado en Nayra. No incluye la agenda del teléfono (D-042). |
+| **QR de la cuenta** | Código asociado a una cuenta financiera simulada que solo identifica al destinatario dentro del entorno simulado; no es un mecanismo de autenticación (D-042). |
+| **Frase de desafío** | Frase variable que Nayra propone en cada autenticación; la respuesta del usuario es la muestra biométrica (D-037). |
 
 Regla: el término "cuenta" en una HU debe interpretarse según su contexto como **cuenta de acceso** o **cuenta financiera**. Interpretación aplicada a las HUs vigentes que usan el término:
 
 | HU | Interpretación |
 |---|---|
 | HU-01, HU-04, HU-09, HU-12, HU-13, HU-14, HU-15, HU-16, HU-17, HU-18, HU-19, HU-20, HU-21, HU-24, HU-51, HU-78, HU-81, HU-83, HU-99, HU-101 | Cuenta de acceso |
-| HU-03 | Cuenta de acceso ("la cuenta corresponde a mi persona") |
+| HU-03 | La verificación de identidad la realiza un **representante autorizado** (D-052), apoyado en los datos del registro de identidad simulado. La consulta del DNI por sí sola **no** prueba la titularidad ni la identidad, y la biometría **no** se usa para validar la identidad en el registro. | D-035, D-052 |
 | HU-67, HU-77 | Cuenta financiera |
 | HU-93 | Cuenta de acceso para bloqueos/desbloqueos; si "modificaciones relevantes" incluye la cuenta financiera queda **pendiente** |
 | HU-104 | **Pendiente** (duplicado dudoso D1) |
@@ -51,14 +65,14 @@ Regla: el término "cuenta" en una HU debe interpretarse según su contexto como
 | ID | Actor | Historia de usuario | Prioridad | Tipo |
 |---|---|---|---|---|
 | HU-01 | Usuario | Como usuario, quiero registrarme en Nayra para crear una cuenta y utilizar los servicios de la billetera digital. | Alta | F |
-| HU-02 | Usuario | Como usuario, quiero proporcionar mis datos personales durante el registro para crear mi perfil dentro de Nayra. | Alta | F |
+| HU-02 | Los datos de identidad (nombres, apellidos) se obtienen del registro de identidad simulado a partir del DNI y la **persona confirma sus datos** tras la validación del representante; el celular y la contraseña se cubren en HU-117 y HU-118. | D-035, D-052 |
 | HU-03 | Usuario | Como usuario, quiero verificar mi identidad durante el registro para asegurar que la cuenta corresponde a mi persona. | Alta | F |
-| HU-04 | Usuario | Como usuario, quiero recibir una confirmación cuando mi cuenta haya sido creada correctamente para saber que puedo comenzar a utilizar Nayra. | Media | F |
+| HU-04 | La confirmación de la cuenta de acceso se entrega al **finalizar el registro**, después de la vinculación del dispositivo, el enrolamiento de voz y el tutorial. | D-052 |
 | HU-09 | Usuario | Como usuario, quiero consultar mis datos personales para verificar la información asociada a mi cuenta. | Media | F |
 | HU-10 | Usuario | Como usuario, quiero actualizar determinados datos personales para mantener mi información vigente. | Alta | F |
 | HU-12 | Usuario | Como usuario registrado, quiero acceder a mi cuenta desde la aplicación para utilizar las funcionalidades de Nayra. | Alta | F |
 | HU-13 | Usuario | Como usuario, quiero cerrar mi sesión para proteger mi cuenta cuando termine de utilizar la aplicación. | Alta | F |
-| HU-14 | Usuario | Como usuario, quiero gestionar mis sesiones activas para controlar los dispositivos desde los cuales se accede a mi cuenta. | Media | F |
+| HU-14 | Usuario | Como usuario, quiero gestionar mis sesiones activas para controlar los dispositivos desde los cuales se accede a mi cuenta. _(Interpretación AG-01: una cuenta de acceso tiene un único dispositivo activo, D-039; ver §12.1)_ | Media | F |
 | HU-15 | Usuario | Como usuario, quiero conocer el estado de mi cuenta para saber si se encuentra disponible para su utilización. | Media | F |
 | HU-16 | Usuario | Como usuario, quiero solicitar la desactivación de mi cuenta para dejar de utilizar temporalmente la billetera digital. | Alta | F |
 | HU-17 | Usuario | Como usuario, quiero solicitar la reactivación de mi cuenta desactivada para volver a utilizar la billetera digital. | Alta | F |
@@ -68,8 +82,13 @@ Regla: el término "cuenta" en una HU debe interpretarse según su contexto como
 | HU-21 | Administrador | Como administrador, quiero buscar usuarios mediante sus datos identificativos para localizar rápidamente una cuenta. _(Junto con HU-20, absorbe HU-103 — AG-00)_ | Alta | F |
 | HU-22 | Administrador | Como administrador, quiero consultar información básica de un usuario para atender necesidades administrativas o de seguridad. | Alta | F |
 | HU-23 | Administrador | Como administrador, quiero modificar determinados datos personales de un usuario cuando sea necesario corregir información registrada incorrectamente. | Alta | F |
-| HU-24 | Administrador | Como administrador, quiero gestionar las cuentas de acceso del personal de atención para controlar quién puede acceder al panel de atención y realizar funciones autorizadas dentro de la plataforma. _(Consolida HU-106 — AG-00)_ | Alta | F |
-| HU-25 | Administrador | Como administrador, quiero asignar roles y permisos al personal autorizado para controlar y limitar las funcionalidades disponibles según sus responsabilidades. _(Consolida HU-107 — AG-00)_ | Alta | F |
+| HU-24 | Administrador | **[SIN OBJETO — D-041: no existe rol de personal de atención]** Como administrador, quiero gestionar las cuentas de acceso del personal de atención para controlar quién puede acceder al panel de atención y realizar funciones autorizadas dentro de la plataforma. _(Consolida HU-106 — AG-00)_ | Alta | F |
+| HU-25 | Administrador | **[FUERA DEL PRIMER ENTREGABLE — D-041: roles fijos USER/ADMIN; reformulación pendiente]** Como administrador, quiero asignar roles y permisos al personal autorizado para controlar y limitar las funcionalidades disponibles según sus responsabilidades. _(Consolida HU-107 — AG-00)_ | Alta | F |
+| HU-117 | Usuario | Como usuario, quiero registrar mi número de celular durante el registro para que Nayra cuente con un medio de contacto en procesos de atención y recuperación. _(Nueva — AG-01)_ | Alta | F |
+| HU-118 | Usuario | Como usuario, quiero crear una contraseña de acceso durante el registro, pudiendo dictarla mediante voz, para utilizarla junto con mi voz al iniciar sesión. _(Nueva — AG-01)_ | Alta | F |
+| HU-119 | Usuario | Como usuario, quiero que mi dispositivo quede vinculado a mi cuenta de acceso al finalizar el registro para que Nayra reconozca mi cuenta al iniciar sesión sin pedirme el DNI. _(Nueva — AG-01)_ | Alta | F |
+| HU-120 | Usuario | Como usuario, quiero cambiar de celular validando mi identidad con mi contraseña y mi voz para seguir utilizando Nayra en el nuevo dispositivo. _(Nueva — AG-01)_ | Alta | F |
+| HU-121 | Usuario | Como usuario, quiero solicitar el bloqueo de mi cuenta de acceso y de mi dispositivo cuando pierda mi celular para evitar que otra persona lo utilice. _(Nueva — AG-01)_ | Alta | F |
 
 ### EP-02 Registro y gestión de biometría de voz
 
@@ -86,7 +105,7 @@ Regla: el término "cuenta" en una HU debe interpretarse según su contexto como
 | HU-34 | Usuario | Como usuario, quiero actualizar mi perfil biométrico de voz cuando sea necesario para mantener la precisión de mi autenticación. | Media | F |
 | HU-35 | Usuario | Como usuario, quiero volver a registrar mi voz cuando mi perfil biométrico requiera una actualización para mantenerlo vigente. | Media | F |
 | HU-36 | Usuario | Como usuario, quiero solicitar la eliminación de mi información biométrica para controlar el uso de mis datos biométricos. | Alta | F |
-| HU-37 | Usuario | Como usuario, quiero recibir asistencia de personal autorizado durante mi registro biométrico cuando necesite ayuda para completar el proceso. | Alta | F |
+| HU-37 | Usuario | **[FUERA DEL PRIMER ENTREGABLE — D-034]** Como usuario, quiero recibir asistencia de un administrador durante mi registro biométrico cuando necesite ayuda para completar el proceso. _(Reasignada de "personal autorizado" — D-041)_ | Alta | F |
 
 ### EP-03 Autenticación biométrica por voz
 
@@ -127,6 +146,7 @@ Regla: el término "cuenta" en una HU debe interpretarse según su contexto como
 | HU-62 | Usuario | Como usuario, quiero controlar manualmente determinadas capturas de audio para realizar la interacción de acuerdo con mis necesidades. | Alta | F |
 | HU-64 | Usuario | Como usuario, quiero recibir información accesible sobre los errores y las acciones que puedo realizar para corregirlos y continuar con el proceso. | Alta | F |
 | HU-65 | Usuario | Como usuario, quiero utilizar las funciones principales de Nayra sin depender permanentemente de la asistencia de otra persona. | Alta | NF |
+| HU-122 | Usuario | Como usuario, quiero recibir un tutorial inicial guiado por voz al completar mi registro para aprender las principales acciones y la forma de interactuar con Nayra. _(Nueva — AG-01)_ | Alta | F |
 
 ### EP-06 Gestión de operaciones de la billetera
 
@@ -143,6 +163,8 @@ Regla: el término "cuenta" en una HU debe interpretarse según su contexto como
 | HU-74 | Usuario | Como usuario, quiero revisar y confirmar los datos de un pago antes de ejecutarlo para asegurar que la operación sea correcta. | Alta | F |
 | HU-75 | Usuario | Como usuario, quiero recibir una confirmación del resultado de un pago para conocer si la operación fue realizada correctamente. | Alta | F |
 | HU-76 | Usuario | Como usuario, quiero consultar y filtrar mis operaciones por tipo o periodo para localizar rápidamente un movimiento específico. _(Consolida HU-86 — AG-00)_ | Media | F |
+| HU-123 | Usuario | Como usuario, quiero generar y mostrar el código QR de mi cuenta financiera para que otro usuario de Nayra pueda identificarme como destinatario de una transferencia. _(Nueva — AG-01)_ | Alta | F |
+| HU-124 | Usuario | Como usuario, quiero escanear un código QR para identificar al destinatario de una transferencia y confirmar por voz los datos de la operación antes de ejecutarla. _(Nueva — AG-01)_ | Alta | F |
 
 ### EP-07 Seguridad y protección de operaciones
 
@@ -164,21 +186,22 @@ Regla: el término "cuenta" en una HU debe interpretarse según su contexto como
 | HU-89 | Administrador | Como administrador, quiero consultar los registros de auditoría para analizar las actividades realizadas en la plataforma. | Alta | F |
 | HU-90 | Administrador | Como administrador, quiero buscar y filtrar eventos de auditoría mediante diferentes criterios para localizar rápidamente información relevante. | Alta | F |
 | HU-93 | Administrador | Como administrador, quiero consultar los bloqueos, desbloqueos y modificaciones relevantes de las cuentas para supervisar las acciones realizadas sobre ellas. | Alta | F |
-| HU-94 | Administrador | Como administrador, quiero consultar las acciones realizadas por el personal autorizado, incluido el personal de atención, para supervisar y verificar el uso adecuado de sus permisos. _(Consolida HU-108 — AG-00)_ | Alta | F |
+| HU-94 | Administrador | Como administrador, quiero consultar las acciones realizadas por los administradores para supervisar y verificar el uso adecuado de sus permisos. _(Consolida HU-108 — AG-00; reformulada por D-041)_ | Alta | F |
 | HU-95 | Administrador | Como administrador, quiero consultar estadísticas de los eventos registrados para apoyar el análisis de seguridad de la plataforma. | Media | F |
 
 ### EP-09 Gestión administrativa y atención al usuario
 
 | ID | Actor | Historia de usuario | Prioridad | Tipo |
 |---|---|---|---|---|
-| HU-96 | Personal de atención | Como personal de atención, quiero iniciar sesión en el panel de atención para acceder a las funcionalidades que corresponden a mi rol. | Alta | F |
+| HU-96 | Personal de atención | **[SIN OBJETO — D-041: cubierta por HU-97]** Como personal de atención, quiero iniciar sesión en el panel de atención para acceder a las funcionalidades que corresponden a mi rol. | Alta | F |
 | HU-97 | Administrador | Como administrador, quiero iniciar sesión en el panel administrativo para gestionar y supervisar la plataforma. | Alta | F |
-| HU-98 | Personal de atención | Como personal de atención, quiero buscar y consultar los datos básicos de un usuario para brindarle asistencia. | Alta | F |
-| HU-99 | Personal de atención | Como personal de atención, quiero iniciar y gestionar un registro asistido para ayudar a un usuario a crear su cuenta. | Alta | F |
-| HU-100 | Personal de atención | Como personal de atención, quiero corregir determinados datos personales de un usuario cuando este solicite asistencia para mantener su información actualizada. | Alta | F |
-| HU-101 | Personal de atención | Como personal de atención, quiero consultar el estado de una cuenta para conocer si se encuentra activa, bloqueada, suspendida o desactivada. | Alta | F |
-| HU-102 | Personal de atención | Como personal de atención, quiero registrar y consultar las solicitudes o incidencias reportadas por los usuarios para darles seguimiento. | Media | F |
+| HU-98 | Personal de atención | **[SIN OBJETO — D-041: cubierta por HU-21 y HU-22]** Como personal de atención, quiero buscar y consultar los datos básicos de un usuario para brindarle asistencia. | Alta | F |
+| HU-99 | Administrador | **[INCLUIDA — D-052: registro asistido por un representante autorizado (administrador u otra persona autorizada); sin nuevo rol]** Como administrador, quiero iniciar y gestionar un registro asistido para ayudar a un usuario a crear su cuenta de acceso. _(Reasignada de Personal de atención — D-041)_ | Alta | F |
+| HU-100 | Personal de atención | **[SIN OBJETO — D-041: cubierta por HU-23]** Como personal de atención, quiero corregir determinados datos personales de un usuario cuando este solicite asistencia para mantener su información actualizada. | Alta | F |
+| HU-101 | Administrador | Como administrador, quiero consultar el estado de una cuenta de acceso para conocer si se encuentra activa, bloqueada, suspendida o desactivada. _(Reasignada de Personal de atención — D-041; los estados definitivos quedan pendientes)_ | Alta | F |
+| HU-102 | Administrador | Como administrador, quiero registrar, consultar y gestionar las solicitudes de atención o incidencias reportadas por los usuarios, incluidas las solicitudes de recuperación, para darles seguimiento. _(Reasignada de Personal de atención — D-041; ampliada por D-040)_ | Media | F |
 | HU-104 | Administrador | Como administrador, quiero consultar y modificar determinados datos de una cuenta para corregir información registrada incorrectamente. | Alta | F |
+| HU-125 | Administrador | Como administrador, quiero consultar el dispositivo vinculado a una cuenta de acceso y revocarlo cuando corresponda para atender pérdidas o cambios de dispositivo. _(Nueva — AG-01)_ | Alta | F |
 
 ### Monitoreo y métricas
 
@@ -197,6 +220,8 @@ Regla: el término "cuenta" en una HU debe interpretarse según su contexto como
 La hoja `CLASIFICACION` relaciona las historias de usuario con un componente, tecnología y base de datos/procesamiento. Esta clasificación se conserva como **referencia del requerimiento**, pero no debe interpretarse como la arquitectura definitiva del sistema.
 
 > **AG-00:** se retiraron de esta tabla las filas de los IDs eliminados (HU-05, 06, 07, 08, 11, 38, 39, 63) y de los IDs absorbidos por consolidación (HU-82, 84, 85, 86, 91, 92, 103, 105, 106, 107, 108, 112). Sus filas originales se conservan en la sección 11 para trazabilidad. En el componente de HU-15, HU-16 y HU-17 se aplicó el glosario (cuenta de acceso). La columna **Tecnología** no se modificó: sigue siendo una referencia del archivo fuente y no una decisión aprobada.
+>
+> **AG-01:** las filas HU-117 a HU-125 no proceden del Excel; corresponden a las HUs nuevas de AG-01 y su tecnología figura como "Por definir" hasta cerrar las decisiones pendientes (D-007, D-045, D-048). Las filas de HUs reasignadas o marcadas no se modificaron.
 
 | HU | Componente | Tecnología | BD / procesamiento |
 |---|---|---|---|
@@ -296,10 +321,19 @@ La hoja `CLASIFICACION` relaciona las historias de usuario con un componente, te
 | HU-114 | Métricas de rendimiento | Panel administrativo + Java/Spring Boot | Sistema de monitoreo / almacenamiento de métricas |
 | HU-115 | Dashboard general | Panel administrativo + Java/Spring Boot | PostgreSQL + consultas agregadas |
 | HU-116 | Métricas de validación | Panel administrativo + Python | BD biométrica / conjunto de datos de validación |
+| HU-117 | Registro de usuario / contacto | Por definir (D-007) + Java/Spring Boot | PostgreSQL |
+| HU-118 | Registro de usuario / credenciales | Por definir (D-007) + Java/Spring Boot | PostgreSQL (solo hash; D-047) |
+| HU-119 | Vinculación de dispositivo | Por definir (D-007, D-048) + Java/Spring Boot | PostgreSQL |
+| HU-120 | Cambio de dispositivo | Por definir (D-007) + Java/Spring Boot + Python | PostgreSQL + verificación biométrica 1:1 |
+| HU-121 | Pérdida de dispositivo | Por definir (D-007) + Java/Spring Boot | PostgreSQL |
+| HU-122 | Tutorial inicial | Por definir (D-007) | — |
+| HU-123 | QR de cuenta financiera | Por definir (D-007) + Java/Spring Boot | PostgreSQL |
+| HU-124 | Transferencia mediante QR | Por definir (D-007) + Java/Spring Boot | PostgreSQL |
+| HU-125 | Administración de dispositivos | Por definir (D-045) + Java/Spring Boot | PostgreSQL |
 
 ## 6. Modelo CORE registrado
 
-La hoja `TABLAS CORE` contiene una propuesta inicial de estructuras de datos. Estas estructuras deben validarse posteriormente en `03_BASE_DE_DATOS.md` antes de generar migraciones o código definitivo.
+La hoja `TABLAS CORE` contiene una propuesta inicial de estructuras de datos. Estas estructuras deben validarse posteriormente en `03_BASE_DE_DATOS_NAYRA.md` antes de generar migraciones o código definitivo.
 
 > **AG-00:** las filas marcadas con _(AG-00)_ en `CUENTAS` y `OPERACIONES`, y la tabla `ENTIDADES_BANCARIAS`, no proceden del Excel original: incorporan las decisiones D-025 a D-029. Los tipos de dato de las nuevas referencias siguen la estrategia de identificadores, que continúa pendiente (`03_BASE_DE_DATOS_NAYRA.md` §13).
 
@@ -341,6 +375,19 @@ Catálogo de referencia de entidades bancarias simuladas (D-026). No es gestiona
 |---|---|---|
 | PK | Identificador (`id`) |  |
 | Texto (longitud pendiente) | Nombre de la entidad bancaria simulada (`nombre`) |  |
+
+### REGISTRO_IDENTIDAD_SIMULADO _(AG-01)_
+
+Fuente de identidad simulada del entorno controlado (D-035). Relaciona DNI, nombres y apellidos; se consulta durante el registro. No es una API real.
+
+| Atributo | Tipo | Descripción |
+|---|---|---|
+| PK | Identificador |  |
+| Texto, UNIQUE | DNI |  |
+| Texto | Nombres |  |
+| Texto | Apellidos |  |
+
+> **AG-01:** el modelo actualizado de `USUARIOS`, `ROLES`, `CUENTAS`, `DISPOSITIVOS`, `SESIONES`, `OPERACIONES`, `SOLICITUDES_ATENCION` y `AUDITORÍA` según D-035 a D-043 se documenta en `03_BASE_DE_DATOS_NAYRA.md` §16, que es la referencia vigente del modelo de datos. Las tablas de esta sección conservan la propuesta del Excel.
 
 ### SESIONES
 
@@ -449,19 +496,19 @@ Solicitar/esperar definición aprobada
 
 | Elemento | Documento donde se define |
 |---|---|
-| Qué debe hacer el sistema | `01_REQUISITOS.md` |
-| Arquitectura | `02_ARQUITECTURA.md` |
-| Modelo de datos definitivo | `03_BASE_DE_DATOS.md` |
+| Qué debe hacer el sistema | `01_REQUISITOS_NAYRA.md` |
+| Arquitectura | `02_ARQUITECTURA_NAYRA.md` |
+| Modelo de datos definitivo | `03_BASE_DE_DATOS_NAYRA.md` |
 | Contratos de API | `04_API.md` |
-| Biometría y spoofing | `05_BIOMETRIA.md` |
-| Seguridad | `06_SEGURIDAD.md` |
-| Decisiones tecnológicas | `07_DECISIONES_TECNICAS.md` |
+| Biometría y spoofing | `05_BIOMETRIA_NAYRA.md` |
+| Seguridad | `06_SEGURIDAD_NAYRA.md` |
+| Decisiones tecnológicas | `07_DECISIONES_TECNICAS_NAYRA.md` |
 | Estado real de implementación | `08_ESTADO_PROYECTO.md` |
-| Reglas de código | `09_REGLAS_DESARROLLO.md` |
+| Reglas de código | `09_REGLAS_DESARROLLO_NAYRA.md` |
 
 ## 10. Nota sobre decisiones arquitectónicas anteriores
 
-Las propuestas arquitectónicas realizadas en etapas anteriores y posteriormente descartadas por el equipo/profesorado **no forman parte de los requisitos vigentes**. Este documento no debe utilizarse para reconstruir esas arquitecturas. La arquitectura vigente se definirá exclusivamente en `02_ARQUITECTURA.md`.
+Las propuestas arquitectónicas realizadas en etapas anteriores y posteriormente descartadas por el equipo/profesorado **no forman parte de los requisitos vigentes**. Este documento no debe utilizarse para reconstruir esas arquitecturas. La arquitectura vigente se definirá exclusivamente en `02_ARQUITECTURA_NAYRA.md`.
 
 ## 11. Depuración de requisitos — AG-00 (2026-09-25)
 
@@ -552,16 +599,103 @@ Se mantienen **separados y sin modificar** hasta una decisión explícita:
 - **Cuenta financiera única (D-025):** cada usuario tiene una sola cuenta financiera, asociada a una entidad bancaria simulada (D-026).
 - **Asociación por DNI (D-028):** durante el registro, el DNI se utiliza para localizar la cuenta financiera simulada; la relación persistente entre `CUENTAS` y `USUARIOS` es una FK con restricción de unicidad.
 - **Transferencias (D-030):** el emisor opera con su única cuenta financiera y el sistema identifica la única cuenta financiera del destinatario; no existe selección entre cuentas. Las operaciones referencian la cuenta financiera de origen y la de destino (D-029).
-- **Registro con voz (D-032):** el registro de Nayra incluye el registro de la voz del usuario (HU-26 a HU-33) para su uso posterior en la autenticación biométrica. HU-01 y HU-26 se mantienen como HUs independientes en sus épicas. El mecanismo exacto de identificación durante el registro queda **pendiente para AG-01**.
+- **Registro con voz (D-032):** el registro de Nayra incluye el registro de la voz del usuario (HU-26 a HU-33) para su uso posterior en la autenticación biométrica. HU-01 y HU-26 se mantienen como HUs independientes en sus épicas. El mecanismo exacto de identificación durante el registro quedó pendiente para AG-01 y fue **resuelto por D-035, D-036 y D-052** (registro asistido: un representante autorizado valida el DNI y la identidad con apoyo del registro de identidad simulado; ver sección 12).
 - **Exclusiones (D-033):** no se incorporan funcionalidades de apertura de cuentas bancarias, múltiples cuentas por usuario, transferencias entre cuentas propias ni gestión de entidades bancarias por parte del administrador.
 
 ### 11.5 Pendientes derivados de AG-00
 
 - Relación exacta del término "billetera" con la cuenta financiera.
 - Interpretación de "cuenta" en HU-93 (modificaciones relevantes), HU-104 (D1) y HU-110.
-- Casos del registro por DNI: DNI sin cuenta simulada, cuenta ya vinculada a otro usuario, cuentas duplicadas en los datos simulados, documentos distintos del DNI (p. ej. CE), corrección posterior del DNI, y si el personal de atención y el administrador tienen cuenta financiera.
-- Dato del entorno simulado con el que se localiza la cuenta por DNI (ver `03_BASE_DE_DATOS_NAYRA.md` §15).
-- Destino de las operaciones de tipo PAGO (HU-73) y regla de moneda en transferencias.
+- Casos del registro por DNI: DNI inexistente en el registro de identidad simulado, DNI sin cuenta financiera simulada, documentos distintos del DNI (p. ej. CE), corrección posterior del DNI, y si el administrador tiene cuenta financiera. _(AG-01: el DNI ya registrado deriva a recuperación/cambio de dispositivo, D-036; el personal de atención dejó de existir, D-041.)_
+- ~~Dato del entorno simulado con el que se localiza la cuenta por DNI~~ — **resuelto por D-035** (registro de identidad simulado).
+- Destino de las operaciones de tipo PAGO (HU-73) — _los pagos no forman parte del primer entregable_ (sección 12.4) — y regla de moneda en transferencias.
 - Estado CANCELADA de operaciones (HU-87) y estados de la cuenta de acceso frente a los de la cuenta financiera (AG-05).
 - Nombre de EP-01 y código de épica para "Monitoreo y métricas".
 - Renumeración de HUs (aplazada).
+
+## 12. Registro, autenticación, dispositivo y alcance del primer entregable — AG-01 (2026-09-26)
+
+Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-044. Las HUs **no se renumeraron**. Resultado: 105 HUs en las tablas (96 de AG-00 + 9 nuevas), de las cuales 4 quedan marcadas **[SIN OBJETO]** y 2 **[FUERA DEL PRIMER ENTREGABLE]** por D-041/D-034. _(AG-01 v5: HU-99 pasa a incluida por D-052.)_
+
+### 12.1 Aclaraciones de HUs existentes
+
+Estas aclaraciones precisan cómo se interpretan las HUs bajo las decisiones de AG-01, sin cambiar su redacción:
+
+| HU | Aclaración | Decisión |
+|---|---|---|
+| HU-01 | El registro es **asistido** (D-052): la persona solicita registrarse → un representante autorizado (administrador u otra persona autorizada) la asiste → se proporciona el DNI → el sistema consulta el registro de identidad simulado y muestra los datos → el representante valida la identidad → la persona confirma sus datos → celular (HU-117) → contraseña (HU-118) → vinculación del dispositivo (HU-119) → enrolamiento de voz con anti-spoofing → tutorial (HU-122) → fin del registro. Si el DNI ya tiene cuenta de acceso, no se crea otra y se deriva a recuperación/cambio de dispositivo. | D-052, D-053 |
+| HU-02 | Los datos de identidad (nombres, apellidos) se obtienen del registro de identidad simulado a partir del DNI; el celular y la contraseña se cubren en HU-117 y HU-118. | D-035, D-043 |
+| HU-03 | La verificación de identidad la realiza un **representante autorizado** (D-052), apoyado en los datos del registro de identidad simulado. La consulta del DNI por sí sola **no** prueba la titularidad ni la identidad. | D-035, D-052 |
+| HU-04 | La confirmación de la cuenta de acceso se entrega después de la vinculación del dispositivo y del enrolamiento de voz. | D-052 |
+| HU-12 | El acceso requiere: comando "Iniciar sesión Nayra" → dispositivo vinculado → contraseña → desafío de voz variable → comprobación del contenido → anti-spoofing → verificación 1:1. El DNI **no** forma parte del inicio de sesión habitual (D-053). | D-037, D-039, D-053 |
+| HU-14 | Con un único dispositivo activo por cuenta, la HU se refiere a la sesión y al dispositivo vinculado de la cuenta; su reformulación queda pendiente. | D-039 |
+| HU-18 | La recuperación cubre pérdida del celular, cambio de celular, cuenta bloqueada y problemas de autenticación. El procedimiento asistido queda pendiente (D-049). | D-040 |
+| HU-19 | Además del bloqueo manual por el administrador, la cuenta de acceso se bloquea automáticamente tras 3 intentos fallidos y puede bloquearse por pérdida del celular. | D-040, D-044 |
+| HU-26, HU-29 | El enrolamiento se realiza durante el registro, después de confirmar la identidad, con anti-spoofing durante el enrolamiento. | D-036, D-038 |
+| HU-35 | Un nuevo enrolamiento solo se permite después de validar al titular (nunca DNI → cuenta → nueva voz). | D-040 |
+| HU-40 | "Iniciar sesión Nayra" es solo un comando de activación; la verificación biométrica es 1:1 contra la referencia de la cuenta determinada por el dispositivo y se realiza después de validar la contraseña. | D-037 |
+| HU-43 | La frase de desafío es **variable** en cada autenticación y su contenido se comprueba; su respuesta es la muestra biométrica. | D-037 |
+| HU-44, HU-47 | Aplica la política de 3 intentos; los detalles (qué cuenta como intento) quedan pendientes. | D-044 |
+| HU-48 | El anti-spoofing se aplica en el enrolamiento y en la autenticación. | D-036, D-037 |
+| HU-69 | El destinatario es otro usuario registrado en Nayra (seleccionado/buscado o identificado por QR, HU-124). El dato concreto de búsqueda queda pendiente. | D-042 |
+
+### 12.2 HUs nuevas
+
+| HU | Épica | Resumen | Decisión |
+|---|---|---|---|
+| HU-117 | EP-01 | Registrar el número de celular | D-043 |
+| HU-118 | EP-01 | Crear contraseña de acceso (dictable) | D-037 |
+| HU-119 | EP-01 | Vincular el dispositivo a la cuenta de acceso | D-039 |
+| HU-120 | EP-01 | Cambiar de celular validando contraseña + voz | D-040 |
+| HU-121 | EP-01 | Solicitar bloqueo por pérdida del celular | D-040 |
+| HU-122 | EP-05 | Tutorial inicial guiado por voz | D-036 |
+| HU-123 | EP-06 | Generar/mostrar el QR de la propia cuenta financiera | D-042 |
+| HU-124 | EP-06 | Transferir escaneando un QR, con confirmación por voz | D-042 |
+| HU-125 | EP-09 | Consultar/revocar el dispositivo vinculado (administrador) | D-039, D-040, D-041 |
+
+La prioridad **Alta** de las HUs nuevas se asignó por su inclusión en el primer entregable y queda sujeta a confirmación del equipo. No se creó HU para el contacto de confianza, el chatbot, el OTP, el retiro asistido ni la eliminación de cuenta (fuera del primer entregable, D-034).
+
+### 12.3 HUs del antiguo actor "Personal de atención" (D-041)
+
+| HU | Texto original | Resultado | Motivo |
+|---|---|---|---|
+| HU-24 | Como administrador, quiero gestionar las cuentas de acceso del personal de atención para controlar quién puede acceder al panel de atención y realizar funciones autorizadas dentro de la plataforma. | **SIN OBJETO** | No existe rol de personal de atención |
+| HU-25 | Como administrador, quiero asignar roles y permisos al personal autorizado para controlar y limitar las funcionalidades disponibles según sus responsabilidades. | **FUERA DEL PRIMER ENTREGABLE** | Roles fijos USER/ADMIN; su reformulación queda pendiente |
+| HU-37 | Como usuario, quiero recibir asistencia de personal autorizado durante mi registro biométrico cuando necesite ayuda para completar el proceso. | Reasignada al administrador; **FUERA DEL PRIMER ENTREGABLE** | El registro del prototipo es autónomo por voz |
+| HU-94 | Como administrador, quiero consultar las acciones realizadas por el personal autorizado, incluido el personal de atención, para supervisar y verificar el uso adecuado de sus permisos. | Reformulada: acciones de los administradores | Auditoría de acciones administrativas (D-041) |
+| HU-96 | Como personal de atención, quiero iniciar sesión en el panel de atención para acceder a las funcionalidades que corresponden a mi rol. | **SIN OBJETO** | Cubierta por HU-97 |
+| HU-98 | Como personal de atención, quiero buscar y consultar los datos básicos de un usuario para brindarle asistencia. | **SIN OBJETO** | Cubierta por HU-21 y HU-22 |
+| HU-99 | Como personal de atención, quiero iniciar y gestionar un registro asistido para ayudar a un usuario a crear su cuenta. | Reasignada; **INCLUIDA** por D-052 (AG-01 v5) | El registro es asistido por un representante autorizado; que puede ser un administrador u otra persona autorizada; sin crear un nuevo rol. Registro técnico y auditoría de quién validó: pendiente |
+| HU-100 | Como personal de atención, quiero corregir determinados datos personales de un usuario cuando este solicite asistencia para mantener su información actualizada. | **SIN OBJETO** | Cubierta por HU-23 |
+| HU-101 | Como personal de atención, quiero consultar el estado de una cuenta para conocer si se encuentra activa, bloqueada, suspendida o desactivada. | Reasignada al administrador | Consulta de estado en el panel (D-041) |
+| HU-102 | Como personal de atención, quiero registrar y consultar las solicitudes o incidencias reportadas por los usuarios para darles seguimiento. | Reasignada al administrador y ampliada a solicitudes de recuperación | Gestión de solicitudes en el panel (D-040, D-041) |
+
+### 12.4 Alcance del primer entregable (D-034)
+
+Clasificación según D-034 y el diagnóstico AG-01 aprobado. Las HUs **secundarias** siguen vigentes pero no bloquean la entrega; las **no incluidas** siguen vigentes para etapas posteriores salvo que se indique lo contrario.
+
+| Grupo | HUs |
+|---|---|
+| **Incluidas — registro y acceso** | HU-01, HU-02, HU-03, HU-04, HU-99 (registro asistido, D-052), HU-12, HU-13, HU-18, HU-19, HU-117, HU-118, HU-119, HU-120, HU-121 |
+| **Incluidas — biometría y anti-spoofing** | HU-26, HU-27, HU-28, HU-29, HU-30, HU-31, HU-32, HU-33, HU-40, HU-41, HU-42, HU-43, HU-44, HU-45, HU-47, HU-48, HU-49, HU-50 |
+| **Incluidas — accesibilidad** | HU-53, HU-54, HU-55, HU-56, HU-57, HU-58, HU-59, HU-60, HU-61, HU-62, HU-64, HU-65, HU-122 |
+| **Incluidas — operaciones simuladas** | HU-66, HU-67, HU-69, HU-70, HU-71, HU-72 |
+| **Incluidas — panel del administrador** | HU-97, HU-20, HU-21, HU-22, HU-101, HU-102, HU-125, HU-80, HU-89, HU-93, HU-94; métricas básicas: HU-109, HU-110 |
+| **Secundarias** | HU-09, HU-10, HU-14, HU-15, HU-34, HU-35, HU-36, HU-46, HU-51, HU-52, HU-68, HU-76, HU-77, HU-78, HU-79, HU-81, HU-83, HU-87, HU-88, HU-90, HU-111, HU-113 |
+| **Secundarias — siguiente entregable** (documentadas, fuera de la implementación actual; AG-01 v5) | HU-123, HU-124 (QR) |
+| **No incluidas en el primer entregable** | HU-16, HU-17 (desactivación/reactivación, por confirmar), HU-23, HU-73, HU-74, HU-75 (pagos), HU-95, HU-104 (D1 pendiente), HU-114, HU-115, HU-116 (métricas de validación, Objetivo 3) |
+| **Fuera del primer entregable (marcadas)** | HU-25, HU-37 |
+| **Sin objeto (marcadas)** | HU-24, HU-96, HU-98, HU-100 |
+
+Funcionalidades **fuera del primer entregable sin HU**: retiro asistido por administrador, eliminación de cuenta, chatbot, OTP/SMS/WhatsApp, contacto de confianza (posible evolución futura), agenda del teléfono, múltiples dispositivos activos.
+
+### 12.5 Pendientes funcionales derivados de AG-01
+
+- Dato con el que el emisor busca/selecciona al destinatario de una transferencia (HU-69).
+- Identificador que codifica el QR (ver `03_BASE_DE_DATOS_NAYRA.md` §16) — no bloquea el primer entregable (QR en siguiente entregable).
+- Estados de la cuenta de acceso (al menos ACTIVA y BLOQUEADA por D-044/D-040; "registro incompleto", "suspendida", "desactivada" pendientes).
+- Detalle de la política de 3 intentos (D-044) y procedimiento de recuperación asistida (D-049).
+- Reformulación de HU-14 y HU-25.
+- Confirmación de la prioridad de las HUs nuevas y de la clasificación de alcance de la sección 12.4.
+- Canal por el que un usuario que perdió su celular solicita asistencia (HU-121), sin chatbot.
+- Registro asistido (D-052): cómo se registra técnicamente quién realizó la validación asistida (sobre todo si el representante no es `ADMIN`) y cómo se refleja en la auditoría. _(Resueltos en AG-01 v6: momento del celular y posición del DNI.)_

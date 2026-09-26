@@ -54,7 +54,7 @@ Personas con discapacidad visual que utilizan o requieren utilizar servicios de 
 
 El sistema contempla funcionalidades administrativas para la gestión de información y consulta de métricas.
 
-Las funciones y permisos concretos de cada tipo de usuario deben definirse en `01_REQUISITOS.md`.
+Las funciones y permisos concretos de cada tipo de usuario deben definirse en `01_REQUISITOS_NAYRA.md`.
 
 ---
 
@@ -147,7 +147,7 @@ Se prioriza el uso de:
 
 Para procesamiento y biometría de voz se ha considerado el uso de tecnologías como SpeechBrain.
 
-La tecnología definitiva debe quedar registrada en `07_DECISIONES_TECNICAS.md`.
+La tecnología definitiva debe quedar registrada en `07_DECISIONES_TECNICAS_NAYRA.md`.
 
 ## 8.2 Separación de responsabilidades
 
@@ -158,7 +158,7 @@ El sistema contempla una separación entre:
 - persistencia de información;
 - aplicación móvil.
 
-La implementación concreta de esta separación deberá definirse en `02_ARQUITECTURA.md`.
+La implementación concreta de esta separación deberá definirse en `02_ARQUITECTURA_NAYRA.md`.
 
 ## 8.3 Seguridad transversal
 
@@ -174,7 +174,7 @@ La seguridad debe considerarse durante todo el ciclo de desarrollo:
 - protección frente a spoofing;
 - registro de eventos relevantes.
 
-Los detalles se especificarán en `06_SEGURIDAD.md`.
+Los detalles se especificarán en `06_SEGURIDAD_NAYRA.md`.
 
 ---
 
@@ -212,7 +212,7 @@ Las siguientes tecnologías forman parte del contexto técnico de trabajo, pero 
 
 ### Frontend
 
-La tecnología definitiva del frontend debe documentarse en `07_DECISIONES_TECNICAS.md`.
+La tecnología definitiva del frontend debe documentarse en `07_DECISIONES_TECNICAS_NAYRA.md`.
 
 ---
 
@@ -248,7 +248,7 @@ Detección de spoofing
       └── Sí → Continuar con verificación
 ```
 
-Los modelos, algoritmos, métricas, umbrales y procedimientos concretos deberán documentarse en `05_BIOMETRIA.md`.
+Los modelos, algoritmos, métricas, umbrales y procedimientos concretos deberán documentarse en `05_BIOMETRIA_NAYRA.md`.
 
 ---
 
@@ -308,7 +308,7 @@ No deben crearse tablas, columnas o relaciones sin una justificación basada en:
 2. una necesidad técnica documentada; o
 3. una decisión aprobada.
 
-El modelo definitivo se documentará en `03_BASE_DE_DATOS.md`.
+El modelo definitivo se documentará en `03_BASE_DE_DATOS_NAYRA.md`.
 
 ---
 
@@ -326,7 +326,7 @@ Por esta razón:
 
 La arquitectura vigente será aquella que posteriormente quede documentada y aprobada en:
 
-`02_ARQUITECTURA.md`
+`02_ARQUITECTURA_NAYRA.md`
 
 ## 13.2 Regla para Claude
 
@@ -418,15 +418,15 @@ Para cada tarea se debe consultar el documento correspondiente:
 
 ```text
 Contexto              → 00_CONTEXT.md
-Requisitos            → 01_REQUISITOS.md
-Arquitectura          → 02_ARQUITECTURA.md
-Base de datos         → 03_BASE_DE_DATOS.md
+Requisitos            → 01_REQUISITOS_NAYRA.md
+Arquitectura          → 02_ARQUITECTURA_NAYRA.md
+Base de datos         → 03_BASE_DE_DATOS_NAYRA.md
 API                   → 04_API.md
-Biometría             → 05_BIOMETRIA.md
-Seguridad             → 06_SEGURIDAD.md
-Decisiones técnicas   → 07_DECISIONES_TECNICAS.md
+Biometría             → 05_BIOMETRIA_NAYRA.md
+Seguridad             → 06_SEGURIDAD_NAYRA.md
+Decisiones técnicas   → 07_DECISIONES_TECNICAS_NAYRA.md
 Estado del proyecto   → 08_ESTADO_PROYECTO.md
-Reglas de desarrollo  → 09_REGLAS_DESARROLLO.md
+Reglas de desarrollo  → 09_REGLAS_DESARROLLO_NAYRA.md
 ```
 
 ## Regla 5 — No cambiar arquitectura automáticamente
@@ -484,9 +484,11 @@ Las siguientes decisiones deben definirse y registrarse antes de utilizarlas com
 - estrategia de despliegue;
 - mecanismos concretos de seguridad.
 
+> **Estado actualizado (AG-00 y AG-01):** varias de estas decisiones ya están aprobadas total o parcialmente (por ejemplo, el mecanismo funcional de autenticación del usuario en D-037 y los roles en D-041). El estado vigente de cada decisión se consulta siempre en `07_DECISIONES_TECNICAS_NAYRA.md`; esta lista se conserva como contexto original.
+
 Estas decisiones deben registrarse en:
 
-`07_DECISIONES_TECNICAS.md`
+`07_DECISIONES_TECNICAS_NAYRA.md`
 
 ---
 
@@ -496,19 +498,19 @@ Para evitar inconsistencias, se utilizará la siguiente jerarquía conceptual:
 
 ### 1. Requisitos aprobados
 
-`01_REQUISITOS.md`
+`01_REQUISITOS_NAYRA.md`
 
 Define **qué debe hacer el sistema**.
 
 ### 2. Arquitectura aprobada
 
-`02_ARQUITECTURA.md`
+`02_ARQUITECTURA_NAYRA.md`
 
 Define **cómo se estructura el sistema**.
 
 ### 3. Decisiones técnicas aprobadas
 
-`07_DECISIONES_TECNICAS.md`
+`07_DECISIONES_TECNICAS_NAYRA.md`
 
 Define **qué tecnologías y decisiones específicas han sido seleccionadas**.
 
@@ -541,15 +543,15 @@ En caso de que una decisión necesaria para programar todavía no esté definida
 Este archivo constituye el contexto general del proyecto y debe utilizarse junto con:
 
 ```text
-01_REQUISITOS.md
-02_ARQUITECTURA.md
-03_BASE_DE_DATOS.md
+01_REQUISITOS_NAYRA.md
+02_ARQUITECTURA_NAYRA.md
+03_BASE_DE_DATOS_NAYRA.md
 04_API.md
-05_BIOMETRIA.md
-06_SEGURIDAD.md
-07_DECISIONES_TECNICAS.md
+05_BIOMETRIA_NAYRA.md
+06_SEGURIDAD_NAYRA.md
+07_DECISIONES_TECNICAS_NAYRA.md
 08_ESTADO_PROYECTO.md
-09_REGLAS_DESARROLLO.md
+09_REGLAS_DESARROLLO_NAYRA.md
 ```
 
 Los detalles técnicos no deben duplicarse innecesariamente en este documento. Cada aspecto debe mantenerse en su documento específico para evitar versiones contradictorias.

@@ -21,7 +21,7 @@ El objetivo es evitar:
 
 Antes de implementar una funcionalidad, debe revisar como mínimo:
 
-1. `00_CONTEXT_NAYRA_v2.md`
+1. `00_CONTEXT.md`
 2. `01_REQUISITOS_NAYRA.md`
 3. `02_ARQUITECTURA_NAYRA.md`
 4. `03_BASE_DE_DATOS_NAYRA.md`
@@ -58,13 +58,20 @@ Las decisiones pendientes deben permanecer pendientes.
 
 Ejemplos:
 
-- framework de frontend;
-- mecanismo definitivo de autenticación;
-- autorización;
+- framework de frontend móvil (D-007) y del panel web (D-045);
+- mecanismo técnico de autenticación (el flujo funcional del usuario está aprobado en D-037);
+- mecanismo técnico de autorización (los roles USER/ADMIN están aprobados en D-041);
 - comunicación Java ↔ Python;
+- reconocimiento del habla (D-046);
 - modelo biométrico;
 - modelo anti-spoofing;
+- umbral biométrico;
 - almacenamiento biométrico;
+- algoritmo de hash, política y normalización de la contraseña (D-047);
+- vinculación técnica del dispositivo (D-048);
+- procedimiento de recuperación asistida (D-049);
+- autenticación del administrador (D-050);
+- estrategia de migraciones (D-051);
 - diseño final de API;
 - configuración física de infraestructura;
 - estrategia de sesiones;
@@ -434,3 +441,22 @@ Checklist mínimo:
 Su responsabilidad es implementar las decisiones tomadas por el equipo, detectar inconsistencias, señalar decisiones pendientes y mantener la trazabilidad.
 
 Cuando exista incertidumbre, debe **preguntar o marcar la decisión como pendiente**, en lugar de inventar una solución y tratarla como parte oficial de Nayra.
+
+---
+
+## 26. Reglas del primer entregable (AG-01, 2026-09-26)
+
+Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-053.
+
+1. **Alcance acotado (D-034).** Construir el prototipo funcional, no un sistema productivo. Antes de agregar algo complejo, preguntarse si es indispensable para demostrar el objetivo del primer entregable; si no lo es, clasificarlo como futuro. Alcance por HU: `01_REQUISITOS_NAYRA.md` §12.4.
+2. **No agregar por iniciativa propia:** bancos, pagos o APIs reales; SMS, OTP, WhatsApp o llamadas; chatbot; contacto de confianza; múltiples dispositivos activos; agenda del teléfono; retiro asistido; eliminación de cuenta; infraestructura cloud compleja; nuevos roles; nuevas APIs externas; modelos entrenados desde cero; funcionalidades sin HU. Si una de ellas parece técnicamente necesaria, reportarla como dependencia antes de implementarla.
+3. **Seguridad primero (`06_SEGURIDAD_NAYRA.md` §36.7).** Antes de nuevas funcionalidades se deben corregir los problemas del código actual: contraseñas en texto plano, rol elegido por el cliente, endpoints expuestos, JWT no aprobado y código heredado. **Excepción (AG-01 v5):** los secretos y credenciales existentes son **deuda técnica** (D-017): no eliminarlos, no rotarlos ni limpiar el historial de Git en esta etapa, y no detener el desarrollo por ello; tampoco agregar secretos nuevos. Se corrigen antes de producción (`06_SEGURIDAD_NAYRA.md` §36.8).
+4. **Identidad simulada y registro asistido (D-035, D-052).** La consulta de identidad usa el registro de identidad simulado; no integrar APIs de identidad reales. La consulta del DNI **no** prueba la identidad: un representante autorizado la valida (regla de negocio). **No** crear un rol nuevo para el representante (puede ser un administrador u otra persona autorizada); los roles siguen siendo `USER` y `ADMIN`. **Registro inicial ≠ inicio de sesión ≠ cambio/recuperación de dispositivo (D-053):** el DNI **no** se pide en el inicio de sesión habitual.
+5. **Contraseña (D-037).** Solo hash seguro; nunca texto plano, audio ni logs. No usarla como identificador de cuenta. No asumir un algoritmo por existir en el código.
+6. **Biometría (D-037, D-038).** Solo verificación 1:1; nunca 1:N. La muestra es la respuesta a un desafío variable cuyo contenido se comprueba; ni el comando de activación ni la contraseña son muestras. Anti-spoofing en enrolamiento y autenticación. No reducir el umbral para aceptar voces alteradas.
+7. **Dispositivo (D-039).** Un único dispositivo activo por cuenta de acceso; la reinstalación no se asume reconocible.
+8. **Prohibición expresa (D-040).** Nunca implementar `DNI → cuenta encontrada → registrar nueva voz → acceso`. Un nuevo enrolamiento solo tras validar al titular.
+9. **Administrador (D-041).** No puede modificar saldos ni operaciones financieras. Toda acción administrativa se audita (actor, afectado, acción, fecha).
+10. **Intentos (D-044).** 3 intentos; no implementar el detalle de qué cuenta como intento hasta que se decida. Los errores técnicos no cuentan como intentos del usuario.
+11. **QR (D-042).** HU-123 y HU-124 quedan documentadas pero **fuera de la implementación del primer entregable** (siguiente entregable).
+12. **Clasificación de pendientes (`07_DECISIONES_TECNICAS_NAYRA.md`, AG-01 v5).** Distinguir A (bloqueantes funcionales), B (decisiones técnicas que se resuelven durante el desarrollo) y C (deudas técnicas). Una deuda técnica no bloquea el desarrollo; solo una decisión A bloquea, y únicamente las funcionalidades que dependen de ella.

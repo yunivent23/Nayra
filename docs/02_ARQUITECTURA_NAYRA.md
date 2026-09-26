@@ -1,4 +1,4 @@
-# 02_ARQUITECTURA.md — Arquitectura del sistema Nayra
+# 02_ARQUITECTURA_NAYRA.md — Arquitectura del sistema Nayra
 
 ## 1. Propósito
 
@@ -10,8 +10,8 @@ Por tanto, este archivo establece las reglas arquitectónicas que deberán respe
 
 La arquitectura final deberá construirse a partir de:
 
-1. los requisitos aprobados en `01_REQUISITOS.md`;
-2. las decisiones técnicas aprobadas en `07_DECISIONES_TECNICAS.md`;
+1. los requisitos aprobados en `01_REQUISITOS_NAYRA.md`;
+2. las decisiones técnicas aprobadas en `07_DECISIONES_TECNICAS_NAYRA.md`;
 3. las restricciones de seguridad, biometría y accesibilidad;
 4. las indicaciones académicas del proyecto.
 
@@ -203,7 +203,7 @@ La base de datos deberá almacenar únicamente la información que corresponda s
 - modelo de datos;
 - decisiones de seguridad.
 
-La arquitectura de datos debe mantener coherencia con `03_BASE_DE_DATOS.md`.
+La arquitectura de datos debe mantener coherencia con `03_BASE_DE_DATOS_NAYRA.md`.
 
 No se debe crear una tabla únicamente porque un componente del sistema necesite temporalmente almacenar información.
 
@@ -224,11 +224,11 @@ La arquitectura deberá contemplar:
 
 La estrategia concreta de almacenamiento de audio y/o representaciones biométricas se definirá en:
 
-`05_BIOMETRIA.md`
+`05_BIOMETRIA_NAYRA.md`
 
 y
 
-`06_SEGURIDAD.md`.
+`06_SEGURIDAD_NAYRA.md`.
 
 No asumir que las grabaciones de voz deben almacenarse permanentemente.
 
@@ -240,7 +240,7 @@ Nayra contempla una aplicación móvil como interfaz principal para el usuario.
 
 La tecnología definitiva del frontend todavía debe ser registrada en:
 
-`07_DECISIONES_TECNICAS.md`.
+`07_DECISIONES_TECNICAS_NAYRA.md`.
 
 La aplicación deberá considerar:
 
@@ -303,7 +303,7 @@ Se deben considerar, como mínimo:
 
 La especificación detallada pertenece a:
 
-`06_SEGURIDAD.md`.
+`06_SEGURIDAD_NAYRA.md`.
 
 ---
 
@@ -485,9 +485,9 @@ Este ejemplo no define por sí mismo la arquitectura final; únicamente muestra 
 
 Cuando Claude trabaje sobre la arquitectura deberá:
 
-1. consultar `01_REQUISITOS.md`;
+1. consultar `01_REQUISITOS_NAYRA.md`;
 2. consultar este documento;
-3. revisar `07_DECISIONES_TECNICAS.md`;
+3. revisar `07_DECISIONES_TECNICAS_NAYRA.md`;
 4. no asumir decisiones que no estén aprobadas;
 5. no reutilizar arquitecturas descartadas;
 6. no crear componentes innecesarios;
@@ -506,12 +506,13 @@ Antes de considerar este documento como arquitectura definitiva, deberán defini
 
 - arquitectura lógica final;
 - arquitectura física final;
-- tecnología del frontend;
+- tecnología del frontend móvil (D-007) y del panel web (D-045);
 - estructura definitiva del backend;
 - división exacta de responsabilidades Java/Python;
 - protocolo de comunicación Java-Python;
-- mecanismo de autenticación;
-- mecanismo de autorización;
+- reconocimiento del habla: tecnología y ubicación (D-046);
+- mecanismo técnico de autenticación (el flujo funcional del usuario está aprobado en D-037; siguen pendientes hash D-047, dispositivo D-048 y autenticación del administrador D-050);
+- mecanismo técnico de autorización (roles aprobados en D-041);
 - estrategia de sesiones;
 - estructura definitiva de APIs;
 - estrategia de almacenamiento biométrico;
@@ -525,7 +526,7 @@ Antes de considerar este documento como arquitectura definitiva, deberán defini
 
 Estas decisiones deben registrarse en:
 
-`07_DECISIONES_TECNICAS.md`.
+`07_DECISIONES_TECNICAS_NAYRA.md`.
 
 ---
 
@@ -538,7 +539,7 @@ La arquitectura se considerará aprobada para implementación únicamente cuando
 - haya sido revisada por el equipo;
 - haya sido validada académicamente cuando corresponda;
 - esté documentada en este archivo;
-- las decisiones tecnológicas relevantes estén registradas en `07_DECISIONES_TECNICAS.md`.
+- las decisiones tecnológicas relevantes estén registradas en `07_DECISIONES_TECNICAS_NAYRA.md`.
 
 Hasta entonces, Claude debe tratar las partes pendientes como **no definidas**.
 
@@ -565,10 +566,57 @@ Nayra **no se conectará directamente con bancos reales** dentro del alcance del
 
 El entorno simulado permitirá representar:
 - entidades bancarias;
-- cuentas asociadas al usuario;
+- la cuenta financiera asociada a cada usuario (una por usuario, D-025);
+- el registro de identidad simulado utilizado durante el registro (D-035);
 - operaciones/transacciones;
 - estados necesarios para las pruebas del prototipo.
 
 Las operaciones realizadas durante el desarrollo y la validación serán **simuladas** y no involucrarán dinero real ni cuentas bancarias reales.
 
 Por tanto, la arquitectura debe contemplar la interacción de Nayra con el entorno simulado, pero **no debe asumir integraciones con APIs, sistemas core bancarios o servicios externos de entidades financieras reales**.
+
+## Componentes del primer entregable (AG-01, D-034)
+
+El primer entregable es un **prototipo funcional**. Su arquitectura lógica contempla los siguientes componentes, sin fijar todavía tecnologías pendientes, protocolos ni despliegue:
+
+| Componente | Responsabilidad en el prototipo | Tecnología |
+|---|---|---|
+| **Aplicación móvil** | Interfaz principal del usuario: interacción por voz, registro, autenticación, tutorial, saldo, movimientos, transferencias a otros usuarios (el QR queda para un siguiente entregable, D-042) | PENDIENTE (D-007) |
+| **Backend principal** | Lógica de negocio, cuentas de acceso, contraseña (hash), dispositivos, sesiones, autorización, operaciones simuladas, solicitudes, auditoría y coordinación con el componente biométrico | Java + Spring Boot (D-001) |
+| **Procesamiento biométrico de voz** | Enrolamiento, anti-spoofing y verificación 1:1 | Python (D-002); modelo y anti-spoofing PENDIENTES (D-011, D-012) |
+| **Reconocimiento del habla** | Comando de activación, contraseña dictada, DNI si se dicta (pendiente, D-052), contenido del desafío | PENDIENTE: tecnología y ubicación (D-046) |
+| **Base de datos** | Persistencia estructurada | PostgreSQL (D-003) |
+| **Entorno financiero simulado** | Entidades bancarias, cuentas financieras, operaciones y registro de identidad simulado | Dentro del modelo de datos (D-021, D-035) |
+| **Panel web del administrador** | Usuarios, estado, bloqueo/desbloqueo, dispositivo, solicitudes, auditoría, métricas básicas | PENDIENTE (D-045) |
+
+No se incorporan en el primer entregable: APIs externas de identidad, SMS/OTP, WhatsApp, chatbot, bancos o pagos reales, múltiples dispositivos activos ni infraestructura cloud compleja (D-034, D-043).
+
+### Flujos lógicos aprobados
+
+Estos flujos son **conceptuales**; no definen protocolo, endpoints, ubicación física ni tecnología.
+
+```text
+REGISTRO INICIAL ASISTIDO (D-052, modifica D-036) — usa DNI
+Persona solicita registrarse → representante autorizado (administrador u otra persona autorizada) asiste
+    → se proporciona el DNI → Backend consulta el registro de identidad simulado → se muestran los datos
+    → el representante valida la identidad  [registro técnico y auditoría de quién validó: pendiente]
+    → la persona confirma sus datos → celular (D-043) → contraseña (Backend guarda solo hash)
+    → vinculación del dispositivo
+    → enrolamiento de voz: App → Backend → componente biométrico (anti-spoofing + referencia)
+    → tutorial → fin del registro
+La consulta del DNI por sí sola no prueba la identidad. La biometría no valida la identidad en el registro.
+DNI ya registrado → flujo de cambio de dispositivo / recuperación
+
+INICIO DE SESIÓN HABITUAL (D-037, D-053) — NO usa DNI
+"Iniciar sesión Nayra" → dispositivo vinculado → cuenta
+    → contraseña (Backend) → desafío variable → respuesta por voz
+    → comprobación del contenido → anti-spoofing → verificación 1:1 (componente biométrico)
+    → Backend aplica reglas (3 intentos, D-044) → sesión
+
+CAMBIO / PÉRDIDA DE DISPOSITIVO Y RECUPERACIÓN (D-040, D-053) — usa DNI para localizar la cuenta
+Nuevo dispositivo → DNI → cuenta existente → contraseña + verificación 1:1 contra la referencia existente + anti-spoofing
+    → nuevo dispositivo ACTIVO, anterior REVOCADO → (opcional) nuevo enrolamiento
+Prohibido: DNI → cuenta → nueva voz → acceso
+```
+
+La referencia biométrica permanece asociada a la cuenta en el backend (D-038); su almacenamiento concreto sigue pendiente (D-013). La jerarquía **Servicio → Función → Componente** y su representación en ArchiMate se aplicarán a estos componentes cuando se modele la arquitectura lógica.

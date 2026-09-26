@@ -25,6 +25,8 @@ Este documento **no reemplaza** los requisitos, la arquitectura ni el registro d
 
 **Etapa actual:** Diseño y desarrollo del prototipo, correspondiente principalmente al alcance del Objetivo 2.
 
+**Primer entregable (D-034):** prototipo funcional con aplicación móvil accesible por voz, autenticación contraseña + voz 1:1 + anti-spoofing, entorno financiero simulado (saldo, movimientos y transferencias directas a otros usuarios) y panel web del administrador. Registro **asistido** por un representante autorizado (D-052). El QR (HU-123, HU-124) queda para un siguiente entregable. Alcance por HU en `01_REQUISITOS_NAYRA.md` §12.4.
+
 El short paper contempla hasta el Objetivo 2, incluyendo el diseño de la solución y parte del desarrollo.
 
 ### Estado documental
@@ -32,12 +34,12 @@ El short paper contempla hasta el Objetivo 2, incluyendo el diseño de la soluci
 | Área | Estado |
 |---|---|
 | Contexto del proyecto | COMPLETADO |
-| Requisitos | DOCUMENTADO — depurado por AG-00 (96 HUs vigentes; D1–D6 pendientes) |
-| Arquitectura | EN DEFINICIÓN CONTROLADA |
-| Base de datos | MODELO CORE DOCUMENTADO — actualizado por AG-00 (`ENTIDADES_BANCARIAS`, relaciones financieras) |
-| Biometría de voz | DISEÑO CONCEPTUAL DOCUMENTADO |
-| Seguridad | PRINCIPIOS Y CONTROLES DOCUMENTADOS |
-| Decisiones técnicas | REGISTRADAS |
+| Requisitos | DOCUMENTADO — depurado por AG-00 y actualizado por AG-01 (HU-117 a HU-125; alcance del primer entregable; D1–D6 pendientes) |
+| Arquitectura | EN DEFINICIÓN CONTROLADA — componentes y flujos lógicos del primer entregable documentados (AG-01) |
+| Base de datos | MODELO LÓGICO DOCUMENTADO — AG-00 y AG-01 (`03_BASE_DE_DATOS_NAYRA.md` §16); esquema físico y migraciones PENDIENTES (D-051) |
+| Biometría de voz | REQUISITOS FUNCIONALES DEFINIDOS (AG-01); modelo, anti-spoofing, umbral y almacenamiento PENDIENTES |
+| Seguridad | PRINCIPIOS Y CONTROLES DOCUMENTADOS — controles AG-01 en `06_SEGURIDAD_NAYRA.md` §36 |
+| Decisiones técnicas | REGISTRADAS hasta D-051 (varias técnicas siguen PENDIENTES) |
 | API | PENDIENTE DE DEFINICIÓN FINAL |
 | Estado de implementación | ESTE DOCUMENTO |
 | Reglas de desarrollo | DOCUMENTADAS EN `09_REGLAS_DESARROLLO_NAYRA.md` |
@@ -66,7 +68,14 @@ Responsabilidad general:
 - auditoría;
 - comunicación con servicios especializados cuando corresponda.
 
-**Estado de implementación:** POR VERIFICAR DIRECTAMENTE EN EL REPOSITORIO.
+**Estado de implementación (verificado en el repositorio, commit `127a601`, 2026-09-26):** ESQUELETO PARCIAL. Sin compilación ni ejecución verificadas.
+
+- Existe el proyecto Spring Boot (`Nayra-Back/`).
+- `Users` y `Role` están implementados como entidades JPA, con repositorio, servicio y `UsuarioController` (CRUD). El modelo **no** corresponde al aprobado (`03_BASE_DE_DATOS_NAYRA.md` §16).
+- Hay una configuración de Spring Security con filtro JWT: **no aprobada** (D-018), sin endpoint de inicio de sesión.
+- `Cuentas`, `Sesiones`, `Dispositivos`, `Operaciones`, `Notificaciones`, `Solicitudes_atencion` y `Auditoria` son **clases vacías**, con repositorios y servicios vacíos.
+- Ninguna funcionalidad de negocio de Nayra está implementada.
+- Existen problemas de seguridad que deben corregirse antes de nuevas funcionalidades (ver §11 y `06_SEGURIDAD_NAYRA.md` §36.7).
 
 ---
 
@@ -82,8 +91,8 @@ Responsabilidad:
 - biometría de voz;
 - mecanismos de detección de intentos de suplantación, cuando hayan sido implementados.
 
-**Estado:** EN DISEÑO / DESARROLLO.  
-La implementación concreta de modelos, librerías, endpoints y mecanismo de comunicación debe verificarse en el repositorio.
+**Estado:** EN DISEÑO. **No existe código Python en el repositorio** (verificado 2026-09-26).  
+La implementación concreta de modelos, librerías, endpoints y mecanismo de comunicación está pendiente (D-010, D-011, D-012, D-013, D-046).
 
 ---
 
@@ -91,7 +100,7 @@ La implementación concreta de modelos, librerías, endpoints y mecanismo de com
 
 La tecnología definitiva del frontend todavía debe considerarse una decisión técnica pendiente si no ha sido aprobada formalmente.
 
-**Estado:** POR DEFINIR / VERIFICAR.
+**Estado:** POR DEFINIR. **No existe código de aplicación móvil ni de panel web en el repositorio** (verificado 2026-09-26). Tecnologías pendientes: D-007 (móvil) y D-045 (panel web).
 
 Claude no debe asumir un framework de frontend sin consultar `07_DECISIONES_TECNICAS_NAYRA.md` y el repositorio.
 
@@ -117,9 +126,12 @@ El modelo documentado contempla, entre otras, las siguientes entidades:
 - SOLICITUDES_ATENCION
 - AUDITORÍA
 
-Además, por AG-00 (D-026), el modelo incluye la tabla de referencia del entorno simulado:
+Además, el modelo incluye las tablas de referencia del entorno simulado:
 
-- ENTIDADES_BANCARIAS
+- ENTIDADES_BANCARIAS (AG-00, D-026)
+- REGISTRO_IDENTIDAD_SIMULADO (AG-01, D-035)
+
+El modelo lógico vigente de las tablas afectadas por AG-01 está en `03_BASE_DE_DATOS_NAYRA.md` §16.
 
 El detalle oficial del modelo se encuentra en:
 
@@ -145,6 +157,7 @@ La biometría de voz constituye uno de los componentes centrales de Nayra.
 - SpeechBrain se encuentra bajo evaluación.
 - El objetivo conceptual es realizar **verificación de voz**, no identificación abierta.
 - Se considera protección frente a intentos de suplantación mediante reproducción o voz sintética/manipulada.
+- AG-01: enrolamiento durante el registro con anti-spoofing; verificación 1:1 tras la contraseña; desafío variable con comprobación de contenido; referencia biométrica persistente en el backend (D-036 a D-038, `05_BIOMETRIA_NAYRA.md` §26).
 
 ### Decisiones todavía pendientes
 
@@ -154,7 +167,8 @@ La biometría de voz constituye uno de los componentes centrales de Nayra.
 - estrategia de almacenamiento de datos biométricos;
 - estrategia de retención de audio;
 - modelo definitivo de anti-spoofing;
-- mecanismo de integración con el backend Java.
+- mecanismo de integración con el backend Java;
+- reconocimiento del habla (D-046).
 
 **Estado:** DISEÑO / EVALUACIÓN.
 
@@ -244,6 +258,7 @@ Definiciones aprobadas en AG-00 (ver `07_DECISIONES_TECNICAS_NAYRA.md`, D-024 a 
 - la cuenta financiera se localiza por DNI durante el registro y se vincula al usuario mediante FK con restricción de unicidad;
 - las operaciones referencian la cuenta financiera de origen y la de destino;
 - las transferencias no requieren seleccionar cuenta;
+- AG-01: la identidad se consulta en un registro de identidad simulado (D-035); las transferencias son a otros usuarios de Nayra, directamente o mediante QR (D-042);
 - no se incluyen apertura de cuentas, múltiples cuentas, transferencias entre cuentas propias ni gestión de entidades por el administrador.
 
 ---
@@ -254,19 +269,19 @@ Definiciones aprobadas en AG-00 (ver `07_DECISIONES_TECNICAS_NAYRA.md`, D-024 a 
 
 La lista de funcionalidades implementadas debe mantenerse sincronizada con el repositorio.
 
-**Estado actual documentado:** POR VERIFICAR.
+**Estado actual (verificado 2026-09-26):** ninguna funcionalidad de Nayra implementada.
 
 ### En desarrollo
 
 Deben registrarse aquí las funcionalidades que tengan código parcial pero que todavía no estén completas.
 
-**Estado actual:** POR VERIFICAR.
+**Estado actual:** código parcial no alineado con las decisiones vigentes: modelo `Users`/`Role`, CRUD de usuarios y configuración de seguridad JWT (no aprobada). Requieren revisión antes de reutilizarse.
 
 ### Pendientes
 
 Deben registrarse las funcionalidades que todavía no tengan una implementación funcional.
 
-**Estado actual:** POR VERIFICAR.
+**Estado actual:** todas las funcionalidades del primer entregable (`01_REQUISITOS_NAYRA.md` §12.4): registro, enrolamiento, inicio de sesión, dispositivo, recuperación, saldo, movimientos, transferencias, QR, tutorial, panel del administrador y auditoría.
 
 > No convertir automáticamente una historia de usuario en una funcionalidad implementada.
 
@@ -285,7 +300,7 @@ Las pruebas deben registrar como mínimo:
 
 ### Estado actual
 
-**Pruebas automatizadas:** POR VERIFICAR.  
+**Pruebas automatizadas:** solo existe `NayraBackendApplicationTests.contextLoads`; no se ha verificado que se ejecute correctamente.  
 **Pruebas de integración:** POR VERIFICAR.  
 **Pruebas de biometría:** PENDIENTES DE IMPLEMENTACIÓN/VALIDACIÓN.  
 **Pruebas de seguridad:** POR VERIFICAR.
@@ -300,7 +315,14 @@ Formato recomendado:
 
 | ID | Problema | Impacto | Estado | Responsable |
 |---|---|---|---|---|
-| P-001 | Pendiente de identificar mediante revisión del repositorio | — | POR VERIFICAR | — |
+| P-001 | Credenciales de PostgreSQL en texto plano en `application.properties`; secretos (`jwt.secret`, clave de API) presentes en el historial de Git | Seguridad — **deuda técnica** (D-017, categoría C) | ABIERTO — no bloquea el primer entregable; se corrige antes de producción (segundo entregable) | Equipo |
+| P-002 | `POST /usuarios` guarda contraseñas en texto plano y permite que el cliente elija su rol | Seguridad crítica | ABIERTO | — |
+| P-003 | `GET /usuarios` es público y expone datos personales y el campo contraseña | Seguridad crítica | ABIERTO | — |
+| P-004 | Mecanismo JWT implementado sin aprobación (D-018 pendiente), sin endpoint de inicio de sesión | Alto | ABIERTO | — |
+| P-005 | Código heredado ajeno a Nayra (reglas `/bicicletas`, `/alquileres`, comentarios de plantilla) y CORS abierto | Medio | ABIERTO | — |
+| P-006 | `ddl-auto=update` crea el esquema sin estrategia de migraciones (D-051) | Alto | ABIERTO | — |
+| P-007 | Posible incompatibilidad de versiones en `pom.xml` (Spring Boot 4.1.1 con `spring-boot-starter-security` 3.5.5); compilación sin verificar | Alto | POR VERIFICAR | — |
+| P-008 | Modelo `Users` no corresponde al aprobado (faltan nombres, apellidos y estado; sobran campos sin HU) | Medio | ABIERTO | — |
 
 No inventar problemas si no existe evidencia.
 
@@ -317,6 +339,23 @@ Los próximos pasos deben derivarse de:
 5. dependencias entre componentes.
 
 Antes de comenzar una nueva tarea, Claude debe verificar si existe una decisión pendiente que pueda afectar la implementación.
+
+Orden de trabajo aprobado para el primer entregable (AG-01):
+
+0. ~~Higiene del repositorio: secretos fuera de la configuración, rotación de credenciales.~~ **AG-01 v5:** reclasificado como deuda técnica (D-017); no forma parte del trabajo previo al desarrollo.
+1. Documentación de AG-01 (completada en documentación el 2026-09-26; pendiente de revisión).
+2. Cierre de las decisiones de base que bloquean el desarrollo (`07_DECISIONES_TECNICAS_NAYRA.md`).
+3. Backend base: compilación, corrección del `pom.xml`, retiro del código heredado, manejo de errores y validación.
+4. Modelo de datos v1 con migraciones y datos simulados.
+5. Auditoría (transversal).
+6. Registro asistido sin biometría (validación por representante autorizado, D-052).
+7. Componente Python (en paralelo desde el paso 3).
+8. Inicio de sesión completo con política de intentos.
+9. Aplicación móvil accesible (en paralelo cuando D-007 y D-046 estén decididas).
+10. Operaciones simuladas: saldo, movimientos, transferencia.
+11. Panel web del administrador.
+12. Recuperación, pérdida y cambio de dispositivo.
+13. Secundarias: métricas básicas y notificaciones. El QR (HU-123, HU-124) queda para un siguiente entregable.
 
 ---
 

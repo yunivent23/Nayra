@@ -1,4 +1,4 @@
-# 06_SEGURIDAD.md — Seguridad de la información de Nayra
+# 06_SEGURIDAD_NAYRA.md — Seguridad de la información de Nayra
 
 ## 1. Propósito
 
@@ -16,7 +16,7 @@ La seguridad es un requisito transversal debido a que el sistema contempla:
 - procesamiento biométrico de voz;
 - comunicación entre componentes.
 
-Este documento define criterios de seguridad, pero **no reemplaza las decisiones técnicas específicas** que deberán registrarse en `07_DECISIONES_TECNICAS.md`.
+Este documento define criterios de seguridad, pero **no reemplaza las decisiones técnicas específicas** que deberán registrarse en `07_DECISIONES_TECNICAS_NAYRA.md`.
 
 ---
 
@@ -87,7 +87,7 @@ Nayra contempla la autenticación mediante voz como una funcionalidad central.
 
 La autenticación biométrica debe integrarse con el mecanismo general de autenticación definido para el sistema.
 
-El mecanismo definitivo de autenticación deberá establecerse en `07_DECISIONES_TECNICAS.md`.
+El mecanismo definitivo de autenticación deberá establecerse en `07_DECISIONES_TECNICAS_NAYRA.md`.
 
 No asumir automáticamente:
 
@@ -98,6 +98,8 @@ No asumir automáticamente:
 - autenticación multifactor;
 
 hasta que la decisión correspondiente haya sido aprobada.
+
+**Actualización AG-01 (D-037):** la autenticación del usuario queda **aprobada funcionalmente** como contraseña + verificación biométrica de voz 1:1 + anti-spoofing (dos factores: algo que el usuario sabe y algo que es). JWT, OAuth, sesiones tradicionales, refresh tokens y cualquier mecanismo técnico concreto siguen **sin asumirse** (D-018). La autenticación del administrador sigue pendiente (D-050). Ver §36.
 
 ---
 
@@ -115,7 +117,7 @@ Autorización
 
 El sistema debe impedir que un usuario ejecute operaciones que no correspondan a sus permisos.
 
-Los permisos deben estar relacionados con los roles y requisitos definidos en `01_REQUISITOS.md`.
+Los permisos deben estar relacionados con los roles y requisitos definidos en `01_REQUISITOS_NAYRA.md`.
 
 ---
 
@@ -163,7 +165,7 @@ El sistema deberá considerar:
 - protección de tokens;
 - cierre de sesión.
 
-La estrategia concreta de sesión deberá definirse en `07_DECISIONES_TECNICAS.md`.
+La estrategia concreta de sesión deberá definirse en `07_DECISIONES_TECNICAS_NAYRA.md`.
 
 ---
 
@@ -226,7 +228,7 @@ Cuando corresponda, se deberá utilizar:
 
 No transmitir credenciales, tokens o información biométrica mediante canales sin protección.
 
-El protocolo exacto de comunicación entre Java y Python deberá definirse en la arquitectura y en `07_DECISIONES_TECNICAS.md`.
+El protocolo exacto de comunicación entre Java y Python deberá definirse en la arquitectura y en `07_DECISIONES_TECNICAS_NAYRA.md`.
 
 ---
 
@@ -262,7 +264,7 @@ La solución debe considerar:
 - retención limitada;
 - auditoría.
 
-La estrategia de almacenamiento biométrico debe definirse en `05_BIOMETRIA.md`.
+La estrategia de almacenamiento biométrico debe definirse en `05_BIOMETRIA_NAYRA.md`.
 
 No asumir que el audio original debe conservarse.
 
@@ -279,7 +281,7 @@ Debe considerar amenazas como:
 - voces manipuladas;
 - otras entradas fraudulentas.
 
-El mecanismo concreto deberá definirse en `05_BIOMETRIA.md` y `07_DECISIONES_TECNICAS.md`.
+El mecanismo concreto deberá definirse en `05_BIOMETRIA_NAYRA.md` y `07_DECISIONES_TECNICAS_NAYRA.md`.
 
 No afirmar que una técnica detecta todos los ataques.
 
@@ -310,6 +312,8 @@ Cuando corresponda se podrán considerar:
 Los valores concretos deben determinarse mediante una decisión técnica.
 
 No colocar límites arbitrarios únicamente para completar el código.
+
+**Actualización AG-01 (D-044):** el límite aprobado es **3 intentos fallidos**, tras los cuales se bloquea la cuenta de acceso. Qué resultados cuentan como intento (contraseña, voz no coincidente, spoofing, mala calidad) y si el contador es único o separado siguen pendientes. Los **errores técnicos del servicio no cuentan** como intentos del usuario salvo decisión expresa.
 
 ---
 
@@ -348,7 +352,7 @@ Los eventos que podrían requerir auditoría incluyen:
 
 No almacenar información biométrica completa en logs de auditoría.
 
-Los eventos y campos definitivos deberán definirse en `03_BASE_DE_DATOS.md`.
+Los eventos y campos definitivos deberán definirse en `03_BASE_DE_DATOS_NAYRA.md`.
 
 ---
 
@@ -616,31 +620,33 @@ Claude deberá:
 
 Antes de considerar la seguridad como completamente especificada deberán definirse:
 
-- mecanismo de autenticación;
-- mecanismo de autorización;
+- mecanismo técnico de autenticación (el flujo funcional del usuario está aprobado en D-037; pendiente la autenticación del administrador, D-050);
+- mecanismo técnico de autorización (roles aprobados en D-041);
 - estrategia de sesiones;
 - uso o no de JWT;
 - expiración de tokens;
 - refresh tokens, si corresponden;
-- algoritmo de hash de contraseñas, si existen;
-- estrategia de almacenamiento de secretos;
+- algoritmo de hash de contraseñas, política y normalización de la contraseña dictada (D-047; la existencia de contraseñas está aprobada en D-037);
+- vinculación técnica del dispositivo (D-048);
+- procedimiento de recuperación asistida (D-049);
+- estrategia de almacenamiento de secretos (deuda técnica, D-017; no bloquea el primer entregable);
 - protocolo de comunicación Java-Python;
 - configuración TLS;
 - rate limiting;
-- número máximo de intentos;
-- estrategia de bloqueo;
+- detalle de la política de intentos (el número máximo, 3, está aprobado en D-044);
+- estrategia de desbloqueo;
 - estrategia de auditoría;
 - retención de logs;
 - estrategia de copias de seguridad;
 - estrategia de recuperación;
 - protección de información biométrica;
 - almacenamiento o no de audio;
-- gestión de dispositivos;
+- gestión técnica de dispositivos (la regla de un único dispositivo activo está aprobada en D-039);
 - separación de ambientes.
 
 Estas decisiones deberán registrarse en:
 
-`07_DECISIONES_TECNICAS.md`
+`07_DECISIONES_TECNICAS_NAYRA.md`
 
 ---
 
@@ -670,3 +676,75 @@ Probar
 Las operaciones financieras de Nayra se realizarán dentro de un **entorno simulado**. El sistema no tendrá, dentro del alcance actual, conexión directa con bancos reales ni procesará fondos reales.
 
 Aun tratándose de operaciones simuladas, deberán aplicarse controles de seguridad sobre autenticación, autorización, integridad de datos, sesiones, auditoría y protección contra operaciones no autorizadas, debido a que el prototipo busca representar de forma realista el flujo de una billetera digital.
+
+---
+
+# 36. Controles de seguridad derivados de AG-01 (2026-09-26)
+
+Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-044.
+
+## 36.1 Contraseña
+
+- Se crea en el registro y puede dictarse por voz (D-037).
+- Se almacena **solo mediante hash seguro**; nunca en texto plano, nunca como audio, nunca en logs, ni siquiera en intentos fallidos.
+- La contraseña **no identifica la cuenta**: la cuenta la determina el dispositivo vinculado. No se permite buscar cuentas a partir de la contraseña.
+- **Pendiente (D-047):** algoritmo de hash, política compatible con el dictado y normalización de la contraseña dictada (mayúsculas, espacios, números, tildes), que debe ser idéntica en registro e inicio de sesión. La existencia de BCrypt en el código actual **no** lo convierte en algoritmo aprobado.
+- Riesgo conocido: dictar la contraseña en voz alta puede exponerla a terceros cercanos; el segundo factor (voz) mitiga, pero no elimina, este riesgo.
+
+## 36.2 Registro
+
+- El DNI existente **no** permite crear una segunda cuenta; se deriva a recuperación/cambio de dispositivo (D-036).
+- El rol **nunca** lo elige el cliente; los usuarios registrados desde la aplicación reciben el rol `USER`.
+- La consulta de identidad usa un **registro simulado** (D-035): no se envían datos a terceros.
+- **Registro asistido (D-052):** la consulta del DNI solo recupera datos y **no** prueba la titularidad ni la identidad. Un **representante autorizado** (administrador u otra persona autorizada) valida la identidad de la persona y luego la persona confirma sus datos. La biometría no se usa para validar la identidad en el registro. Es una regla de negocio: **no** se crea un rol del sistema para el representante (roles: `USER`, `ADMIN`).
+- Pendiente: cómo se registra técnicamente quién realizó la validación asistida y cómo se audita, sin crear un rol nuevo.
+- **Usos del DNI (D-053):** registro inicial, recuperación, cambio o pérdida del dispositivo y otros procesos excepcionales para localizar la cuenta. El DNI **no** forma parte del inicio de sesión habitual.
+
+## 36.3 Dispositivo y sesiones
+
+- **Un único dispositivo activo** por cuenta de acceso (D-039). Al autorizar uno nuevo, el anterior se revoca.
+- Al bloquear la cuenta o revocar el dispositivo, se **revocan las sesiones** correspondientes (D-040).
+- La reinstalación no se asume reconocible; si el vínculo no puede verificarse, se usa el flujo de cambio de dispositivo/recuperación.
+- Mecanismo técnico de vinculación (D-048) y estrategia de sesiones (D-018) pendientes.
+
+## 36.4 Recuperación y cambio de dispositivo
+
+- **Prohibido:** `DNI → cuenta encontrada → registrar nueva voz → acceso` (riesgo de suplantación).
+- Cambio de dispositivo normal: contraseña + verificación 1:1 contra la referencia biométrica existente + anti-spoofing (D-040).
+- Pérdida del celular: solicitud → revisión por el administrador → bloqueo de cuenta/dispositivo → revocación de sesiones → auditoría.
+- La recuperación asistida es el punto más expuesto a la ingeniería social; su procedimiento **no está definido (D-049)** y no debe improvisarse en la implementación.
+
+## 36.5 Administrador
+
+- Solo existen los roles `USER` y `ADMIN` (D-041).
+- El administrador **no puede** modificar saldos ni operaciones financieras, ni usar privilegios administrativos para alterar información financiera. Tampoco accede a la referencia biométrica.
+- Toda acción administrativa se audita: quién, cuándo, qué acción y sobre qué usuario.
+- Autenticación del administrador pendiente (D-050).
+
+## 36.6 QR
+
+El QR **no** es un mecanismo de autenticación y no contiene contraseña, datos biométricos ni información sensible innecesaria; solo identifica la cuenta/destinatario dentro del entorno simulado (D-042). Antes de ejecutar una transferencia por QR se confirman por voz los datos de la operación. _(AG-01 v5: el QR queda fuera de la implementación del primer entregable; estas reglas aplican cuando se implemente.)_
+
+## 36.7 Correcciones obligatorias antes de nuevas funcionalidades
+
+El código actual del backend presenta problemas de seguridad identificados en la auditoría de AG-01. Antes de implementar funcionalidades nuevas deben corregirse:
+
+1. contraseñas guardadas en texto plano;
+2. rol elegido libremente por el cliente;
+3. endpoints sin protección y exposición pública de datos sensibles (p. ej. listado público de usuarios);
+4. ~~secretos y credenciales en el código/configuración, y revisión de las credenciales expuestas en el historial de Git (rotación);~~ **AG-01 v5: reclasificado como deuda técnica (D-017, categoría C).** No bloquea el primer entregable; ver §36.8;
+5. revisión del mecanismo JWT existente antes de reutilizarlo (no está aprobado, D-018);
+6. retiro del código heredado ajeno a Nayra.
+
+El código existente **no** debe considerarse correcto solo porque existe.
+
+## 36.8 Deuda técnica de seguridad: secretos y credenciales (D-017)
+
+Las credenciales de PostgreSQL, las claves JWT y otros valores sensibles presentes hoy en la configuración y en el historial de Git constituyen **deuda técnica** reconocida (D-017, categoría C). En el primer entregable:
+
+- **no** se eliminan automáticamente las credenciales actuales;
+- **no** se limpia el historial de Git;
+- **no** se rotan credenciales solo por esta revisión;
+- **no** se detiene el desarrollo funcional por este motivo.
+
+La regla de no introducir **nuevos** secretos en el código se mantiene (§3.5, §23). La corrección completa (variables de entorno, gestión de secretos, rotación, claves JWT, credenciales de base de datos, limpieza del historial si fuera necesaria y separación desarrollo/producción) se realizará **antes de cualquier despliegue en producción**, previsiblemente en el segundo entregable.

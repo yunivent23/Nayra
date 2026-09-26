@@ -1,4 +1,4 @@
-# 05_BIOMETRIA.md — Biometría de voz y protección anti-spoofing
+# 05_BIOMETRIA_NAYRA.md — Biometría de voz y protección anti-spoofing
 
 ## 1. Propósito
 
@@ -66,7 +66,7 @@ Estas tecnologías son **opciones consideradas**, no una obligación de utilizar
 
 La selección definitiva debe registrarse en:
 
-`07_DECISIONES_TECNICAS.md`
+`07_DECISIONES_TECNICAS_NAYRA.md`
 
 ---
 
@@ -153,7 +153,7 @@ El flujo general esperado es:
 10. Se permite o rechaza la autenticación
 ```
 
-Este flujo es conceptual. El protocolo de comunicación y la distribución física de los componentes se definirán en `02_ARQUITECTURA.md`.
+Este flujo es conceptual. El protocolo de comunicación y la distribución física de los componentes se definirán en `02_ARQUITECTURA_NAYRA.md`.
 
 ---
 
@@ -193,7 +193,7 @@ Rechazar       Verificación
                   Resultado
 ```
 
-La ubicación exacta del mecanismo anti-spoofing dentro de la arquitectura deberá definirse en `02_ARQUITECTURA.md`.
+La ubicación exacta del mecanismo anti-spoofing dentro de la arquitectura deberá definirse en `02_ARQUITECTURA_NAYRA.md`.
 
 ---
 
@@ -315,7 +315,7 @@ Se deben considerar:
 - auditoría de accesos;
 - separación de responsabilidades.
 
-Los mecanismos específicos se documentarán en `06_SEGURIDAD.md`.
+Los mecanismos específicos se documentarán en `06_SEGURIDAD_NAYRA.md`.
 
 ---
 
@@ -388,7 +388,7 @@ El sistema debe considerar mecanismos para evitar abusos del componente biométr
 - protección de APIs;
 - controles de autorización.
 
-Las medidas concretas deberán definirse en `06_SEGURIDAD.md`.
+Las medidas concretas deberán definirse en `06_SEGURIDAD_NAYRA.md`.
 
 ---
 
@@ -491,10 +491,12 @@ Antes de implementar definitivamente el componente biométrico deben definirse:
 - período de retención;
 - protocolo de comunicación con Java;
 - manejo de errores;
-- estrategia de reintentos;
-- controles anti-abuso.
+- estrategia de reintentos (el valor de 3 intentos está aprobado en D-044; los tipos de fallo que cuentan siguen pendientes);
+- controles anti-abuso;
+- reconocimiento del habla para comprobar el contenido del desafío (D-046);
+- generación de las frases de desafío (vocabulario, longitud, pronunciabilidad).
 
-Estas decisiones deben registrarse en `07_DECISIONES_TECNICAS.md`.
+Estas decisiones deben registrarse en `07_DECISIONES_TECNICAS_NAYRA.md`.
 
 ---
 
@@ -519,3 +521,43 @@ Implementar
    ↓
 Validar
 ```
+
+---
+
+# 26. Decisiones funcionales de AG-01 (2026-09-26)
+
+Registradas en `07_DECISIONES_TECNICAS_NAYRA.md` (D-036 a D-040, D-044, D-052). Son **requisitos funcionales**; no eligen modelo, framework, umbral, almacenamiento ni protocolo.
+
+## 26.1 Enrolamiento
+
+- El enrolamiento de voz forma parte del registro asistido y se realiza **después** de que un representante autorizado valida el DNI y la identidad de la persona, y después de la creación de la contraseña y la vinculación del dispositivo (D-052, que modifica D-036). La biometría **no** se usa para validar la identidad en el registro.
+- Se aplica **anti-spoofing durante el enrolamiento**, para impedir que se registre una voz sintética, manipulada o reproducida.
+- Se aplican las HUs de captura existentes (instrucciones, control manual, frase de desafío, calidad, condiciones del entorno, repetición: HU-27 a HU-32).
+
+## 26.2 Verificación en el inicio de sesión
+
+- La biometría es una **verificación 1:1** contra la referencia de la cuenta determinada por el **dispositivo vinculado**. **No** se utiliza identificación 1:N (D-037).
+- La verificación biométrica ocurre **después** de validar la contraseña.
+- La muestra biométrica es la respuesta a una **frase de desafío variable** propuesta en cada autenticación. Se debe **comprobar que el contenido** de la respuesta corresponde al desafío; sin esa comprobación, una grabación de la voz del usuario podría superar la verificación.
+- Orden conceptual (se mantiene §10): respuesta al desafío → comprobación del contenido → **anti-spoofing** → **verificación 1:1** → resultado → el backend aplica las reglas (3 intentos, D-044).
+- **No** son muestras biométricas: el comando de activación "Iniciar sesión Nayra" ni la contraseña dictada. La contraseña dictada se descarta tras calcular su hash y nunca se almacena como audio.
+
+## 26.3 Referencia biométrica
+
+- Permanece **asociada a la cuenta de acceso en el backend** y no depende exclusivamente del dispositivo (D-038). Tras un cambio de celular sigue disponible para la verificación 1:1.
+- **Pendiente:** ubicación, formato, modelo que la genera y si es un embedding u otra representación (D-011, D-013).
+- Criterios que cualquier alternativa debe cumplir: no guardar audio innecesariamente (§16); proteger la referencia en tránsito y en reposo; acceso restringido al componente que verifica (el administrador no accede a ella); separación de los datos personales; nunca en logs; eliminación conforme a HU-36.
+
+## 26.4 Cambio de dispositivo y nuevo enrolamiento
+
+- En el cambio de celular, el titular se valida con **contraseña + verificación 1:1 contra la referencia existente + anti-spoofing** (D-040).
+- Un **nuevo enrolamiento** solo puede permitirse **después** de validar al titular. Está prohibido el flujo `DNI → cuenta encontrada → registrar nueva voz → acceso`.
+- Si el usuario no supera la validación, se deriva a recuperación asistida (procedimiento pendiente, D-049).
+
+## 26.5 Voz alterada temporalmente
+
+No se asume ninguna solución fiable para validar voces alteradas por enfermedad o afonía. **No debe reducirse el umbral** para aceptarlas. Si la verificación no es posible, el usuario utiliza el proceso de recuperación (D-040). Su estudio queda como posible experimento futuro, no como funcionalidad del primer entregable.
+
+## 26.6 Reconocimiento del habla
+
+El prototipo necesita reconocimiento del habla (distinto de la verificación del locutor) para el comando de activación, el DNI (si se dicta; forma de ingreso pendiente, D-052), la contraseña dictada y la comprobación del contenido del desafío. Su tecnología y ubicación (dispositivo o servidor) están **pendientes (D-046)**. Si procesa la contraseña dictada, no debe almacenar ni registrar el audio ni la transcripción.

@@ -12,7 +12,7 @@ Claude debe utilizar la documentación de `docs/` como fuente de contexto y deci
 
 Antes de realizar cambios importantes, leer según corresponda:
 
-1. `docs/00_CONTEXT_NAYRA_v2.md`
+1. `docs/00_CONTEXT.md`
 2. `docs/01_REQUISITOS_NAYRA.md`
 3. `docs/02_ARQUITECTURA_NAYRA.md`
 4. `docs/03_BASE_DE_DATOS_NAYRA.md`
@@ -160,6 +160,20 @@ Decisiones AG-00 (`docs/07_DECISIONES_TECNICAS_NAYRA.md`, D-024 a D-033):
 - cada usuario tiene **una única cuenta financiera**, asociada a una **entidad bancaria simulada**;
 - no crear funcionalidades de apertura de cuentas, múltiples cuentas, transferencias entre cuentas propias ni gestión de entidades bancarias por el administrador.
 
+### 4.5 Primer entregable y decisiones AG-01
+
+Decisiones en `docs/07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-053. Reglas operativas en `docs/09_REGLAS_DESARROLLO_NAYRA.md` §26.
+
+- **Alcance (D-034):** prototipo funcional, no sistema productivo. Alcance por HU en `docs/01_REQUISITOS_NAYRA.md` §12.4.
+- **Roles (D-041):** solo `USER` y `ADMIN`. No existe personal de atención. El administrador no puede modificar saldos ni operaciones; sus acciones se auditan.
+- **Identidad (D-035):** registro de identidad simulado (DNI, nombres, apellidos); sin APIs reales de terceros.
+- **Registro inicial asistido (D-052, modifica D-036):** la persona solicita registrarse → un representante autorizado (administrador u otra persona autorizada) la asiste → se proporciona el DNI → consulta al registro de identidad simulado → se muestran los datos → el representante valida la identidad → la persona confirma sus datos → celular → contraseña → vinculación del dispositivo → enrolamiento de voz con anti-spoofing → tutorial → fin. La consulta del DNI no prueba la identidad; la biometría no valida la identidad en el registro. El representante **no** es un rol del sistema. DNI existente → recuperación/cambio de dispositivo.
+- **Flujos diferenciados (D-053):** registro inicial ≠ inicio de sesión ≠ cambio/recuperación de dispositivo. El DNI se usa en el registro, la recuperación y el cambio o pérdida del dispositivo; **no** forma parte del inicio de sesión habitual.
+- **Autenticación (D-037):** "Iniciar sesión Nayra" → dispositivo vinculado → contraseña (solo hash) → desafío variable → comprobación del contenido → anti-spoofing → verificación 1:1 → sesión. Nunca 1:N; el DNI no se pide al iniciar sesión.
+- **Dispositivo (D-039, D-040):** un único dispositivo activo. Prohibido `DNI → cuenta → nueva voz → acceso`.
+- **Excluido del primer entregable:** chatbot, OTP/SMS, contacto de confianza, retiro asistido, eliminación de cuenta, múltiples dispositivos. El QR (HU-123, HU-124) queda documentado para un siguiente entregable.
+- **Pendientes (AG-01 v5):** distinguir A (bloqueantes funcionales), B (decisiones técnicas que se resuelven durante el desarrollo) y C (deudas técnicas); ver `docs/07_DECISIONES_TECNICAS_NAYRA.md`. D-017 (secretos) es deuda técnica y no bloquea el desarrollo.
+
 ---
 
 ## 5. Stack tecnológico de referencia
@@ -217,7 +231,7 @@ No asumir servicios específicos de GCP sin aprobación.
 
 ### Frontend
 
-La tecnología definitiva debe verificarse en `07_DECISIONES_TECNICAS_NAYRA.md` y en el repositorio.
+La tecnología definitiva debe verificarse en `07_DECISIONES_TECNICAS_NAYRA.md` y en el repositorio. La aplicación móvil (D-007) y el panel web del administrador (D-045) siguen PENDIENTES.
 
 No asumir Flutter únicamente por aparecer en la clasificación técnica del Excel si la decisión final no está registrada.
 
@@ -275,9 +289,12 @@ Tablas CORE documentadas:
 - SOLICITUDES_ATENCION
 - AUDITORÍA
 
-Tabla de referencia del entorno simulado (AG-00, D-026):
+Tablas de referencia del entorno simulado:
 
-- ENTIDADES_BANCARIAS (catálogo con `id` y `nombre`; sin gestión por el administrador)
+- ENTIDADES_BANCARIAS (AG-00, D-026: catálogo con `id` y `nombre`; sin gestión por el administrador)
+- REGISTRO_IDENTIDAD_SIMULADO (AG-01, D-035: DNI, nombres, apellidos)
+
+El modelo lógico vigente tras AG-01 está en `docs/03_BASE_DE_DATOS_NAYRA.md` §16. No crear tablas físicas ni migraciones hasta decidir D-051.
 
 Reglas:
 
@@ -348,7 +365,7 @@ Nunca incluir en el código:
 - credenciales de base de datos;
 - secretos cloud.
 
-No asumir JWT, OAuth, refresh tokens u otro mecanismo específico si todavía aparece como pendiente en las decisiones técnicas.
+No asumir JWT, OAuth, refresh tokens u otro mecanismo específico si todavía aparece como pendiente en las decisiones técnicas. El flujo funcional de autenticación del usuario está aprobado (D-037), pero su implementación técnica (sesiones D-018, hash D-047, dispositivo D-048) sigue pendiente. Antes de nuevas funcionalidades, corregir los problemas de seguridad del código actual (`docs/06_SEGURIDAD_NAYRA.md` §36.7). Las credenciales ya existentes en la configuración y el historial son **deuda técnica** (D-017, `docs/06_SEGURIDAD_NAYRA.md` §36.8): no eliminarlas, rotarlas ni limpiar el historial en el primer entregable, y no agregar secretos nuevos.
 
 ---
 

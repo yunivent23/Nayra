@@ -1,10 +1,12 @@
-# 03_BASE_DE_DATOS.md — Modelo de datos de Nayra
+# 03_BASE_DE_DATOS_NAYRA.md — Modelo de datos de Nayra
 
 > **Fuente principal:** hoja `TABLAS CORE` del archivo `REQUERIMIENTOS(6).xlsx`.
 >
 > Este documento registra las estructuras de datos que el equipo había planteado para el proyecto. Se diferencian las estructuras propuestas de las decisiones definitivas de implementación. No se agregan tablas ajenas a la fuente sin una decisión posterior.
 >
 > **Actualización AG-00 (2026-09-25):** por decisión aprobada se incorporó la tabla de referencia `ENTIDADES_BANCARIAS` (D-026). También se definieron la relación 1:1 entre `USUARIOS` y `CUENTAS` (D-025, D-028), la relación entre `CUENTAS` y `ENTIDADES_BANCARIAS` (D-026) y las referencias de `OPERACIONES` a las cuentas de origen y destino (D-029). Ver sección 15.
+>
+> **Actualización AG-01 (2026-09-26):** se incorporó el registro de identidad simulado (`REGISTRO_IDENTIDAD_SIMULADO`, D-035) y se actualizó el modelo lógico de `USUARIOS`, `ROLES`, `CUENTAS`, `DISPOSITIVOS`, `SESIONES`, `OPERACIONES`, `SOLICITUDES_ATENCION` y `AUDITORÍA` según D-035 a D-043. **La sección 16 es la referencia vigente** de esas tablas; las tablas de la sección 3 conservan la propuesta original del Excel. No se crean tablas físicas ni migraciones hasta decidir D-051.
 
 ## 1. Propósito
 
@@ -12,7 +14,7 @@ Definir y documentar el modelo de datos utilizado por Nayra, manteniendo trazabi
 
 ## 2. Motor de base de datos
 
-La tecnología considerada para la base de datos relacional del proyecto es **PostgreSQL**. La versión concreta y la configuración de despliegue deberán registrarse en `07_DECISIONES_TECNICAS.md`.
+La tecnología considerada para la base de datos relacional del proyecto es **PostgreSQL**. La versión concreta y la configuración de despliegue deberán registrarse en `07_DECISIONES_TECNICAS_NAYRA.md`.
 
 ## 3. Tablas CORE
 
@@ -149,6 +151,17 @@ Como regla general, se deberá identificar para cada relación:
 
 Siguen **pendientes** para estas relaciones: obligatoriedad (`NULL/NOT NULL`) de cada FK, comportamiento ante eliminación y actualización, y tipos de dato de las claves (estrategia de identificadores). Las demás relaciones del modelo CORE siguen pendientes.
 
+Relaciones aprobadas en AG-01 (detalle en §16):
+
+| Origen | Destino | Cardinalidad | Clave | Decisión |
+|---|---|---|---|---|
+| `CUENTAS` | `REGISTRO_IDENTIDAD_SIMULADO` (titular) | 1:1 (cada cuenta simulada tiene un titular; un titular tiene una cuenta) | FK de `CUENTAS` al titular simulado | D-025, D-035 |
+| `CUENTAS` | `USUARIOS` | 0..1:1 — la FK es **opcional** hasta que la cuenta se vincula en el registro | FK con `UNIQUE` | D-028, D-035 |
+| `DISPOSITIVOS` | `USUARIOS` | N:1, con **como máximo un dispositivo ACTIVO** por usuario | FK + restricción de unicidad del dispositivo activo | D-039 |
+| `SESIONES` | `USUARIOS` / `DISPOSITIVOS` | N:1 / N:1 | FK | D-037, D-039 |
+| `SOLICITUDES_ATENCION` | `USUARIOS` (solicitante) / `USUARIOS` (administrador que atiende) | N:1 / N:0..1 | FK | D-040, D-041 |
+| `AUDITORÍA` | `USUARIOS` (actor) / `USUARIOS` (afectado) | N:0..1 / N:0..1 | FK | D-041 |
+
 ## 5. Claves primarias y foráneas
 
 Cada tabla deberá tener una clave primaria claramente identificada.
@@ -194,7 +207,7 @@ Por ello, la implementación deberá considerar:
 - registro de operaciones relevantes;
 - copias de seguridad según la estrategia definida.
 
-Los detalles de seguridad deben documentarse en `06_SEGURIDAD.md`.
+Los detalles de seguridad deben documentarse en `06_SEGURIDAD_NAYRA.md`.
 
 ## 8. Información biométrica y datos de voz
 
@@ -207,7 +220,7 @@ Por tanto:
 - no almacenar representaciones biométricas sin definir previamente su propósito;
 - definir los requisitos de seguridad y retención antes de implementar almacenamiento biométrico.
 
-La estrategia definitiva debe documentarse en `05_BIOMETRIA.md` y `06_SEGURIDAD.md`.
+La estrategia definitiva debe documentarse en `05_BIOMETRIA_NAYRA.md` y `06_SEGURIDAD_NAYRA.md`.
 
 ## 9. Relación con el backend
 
@@ -294,7 +307,7 @@ Antes de generar el esquema definitivo de PostgreSQL deben quedar resueltos, cua
 - versión de PostgreSQL;
 - estrategia de despliegue de la base de datos.
 
-Estas decisiones deben registrarse en `07_DECISIONES_TECNICAS.md` cuando constituyan decisiones tecnológicas.
+Estas decisiones deben registrarse en `07_DECISIONES_TECNICAS_NAYRA.md` cuando constituyan decisiones tecnológicas.
 
 ## 14. Fuente de verdad
 
@@ -332,8 +345,122 @@ Decisiones registradas en `07_DECISIONES_TECNICAS_NAYRA.md`:
 
 ### Pendientes que afectan al modelo
 
-- **Dato con el que se localiza la cuenta por DNI.** D-028 establece que el DNI se usa para localizar la cuenta simulada, pero `CUENTAS` no contiene ningún atributo con el DNI del titular y, según A1, la FK al propietario se establece recién al vincular la cuenta. Falta decidir dónde reside, dentro del entorno simulado, el dato que permite esa localización. No se agrega ningún campo hasta que exista una decisión.
-- **Obligatoriedad de la FK al propietario.** Si las cuentas simuladas existen antes del registro del usuario, la FK no puede ser obligatoria desde su creación. Queda pendiente junto con el punto anterior.
-- **Destino de las operaciones de tipo PAGO** (HU-73): no está definido si un pago tiene cuenta financiera de destino.
-- **Cuenta financiera del personal de atención y del administrador:** no está definido si tienen cuenta financiera.
+- ~~**Dato con el que se localiza la cuenta por DNI.**~~ **Resuelto por D-035 (AG-01):** la cuenta financiera simulada referencia a su titular en `REGISTRO_IDENTIDAD_SIMULADO`, que contiene el DNI (ver §16).
+- ~~**Obligatoriedad de la FK al propietario.**~~ **Resuelto por D-035 (AG-01):** las cuentas simuladas existen antes del registro; la FK a `USUARIOS` es opcional hasta la vinculación y única una vez establecida.
+- **Destino de las operaciones de tipo PAGO** (HU-73): no está definido si un pago tiene cuenta financiera de destino. _Los pagos no forman parte del primer entregable (D-034)._
+- **Cuenta financiera del administrador:** no está definido si un usuario con rol `ADMIN` tiene cuenta financiera. _(El personal de atención dejó de existir, D-041.)_
 - **Estados:** estado CANCELADA en `OPERACIONES` (HU-87) y estados de la cuenta de acceso frente a los de la cuenta financiera (AG-05).
+
+## 16. Modelo lógico actualizado — AG-01 (2026-09-26)
+
+Esta sección es la **referencia vigente** del modelo lógico para las tablas indicadas. Describe **atributos lógicos y reglas**, no el esquema físico: los tipos de dato, nombres definitivos de columnas, índices, obligatoriedad fina y comportamiento ante eliminación siguen pendientes (§13), así como la estrategia de identificadores y de migraciones (**D-051**). **No se crean tablas físicas** hasta cerrar esas decisiones. **No se crean tablas biométricas** hasta decidir D-013.
+
+### 16.1 `USUARIOS` (cuenta de acceso)
+
+| Atributo lógico | Regla | Decisión |
+|---|---|---|
+| Identificador | PK | §13 |
+| DNI | Obligatorio y **único**: un DNI no puede tener dos cuentas de acceso | D-036 |
+| Nombres, apellidos | Obtenidos del registro de identidad simulado una vez que el representante autorizado confirma la validación de identidad | D-035, D-052 |
+| Número de celular | Dato de contacto; sin validación OTP en el primer entregable | D-043 |
+| Hash de contraseña | Solo el hash; nunca texto plano ni audio. Algoritmo pendiente | D-037, D-047 |
+| Rol | `USER` o `ADMIN` (ver `ROLES`) | D-041 |
+| Estado de la cuenta de acceso | Al menos `ACTIVA` y `BLOQUEADA` (bloqueo por 3 intentos, por pérdida o por el administrador). Otros estados pendientes (AG-05) | D-040, D-044 |
+| Fechas de creación/actualización | Pendiente de definir | — |
+
+**No forman parte del modelo aprobado:** `username`, `email`, `direccion`, `fecha_nacimiento`, `foto_usuario`. Existen en el código actual (`Users.java`) sin respaldo en HU ni decisión.
+
+**Referencia biométrica:** permanece asociada a la cuenta de acceso en el backend (D-038), pero su estructura y ubicación siguen pendientes (D-013). No se agrega a `USUARIOS` ni se crea una tabla para ella todavía.
+
+### 16.2 `ROLES`
+
+Catálogo con dos valores: `USER` y `ADMIN` (D-041). Si un usuario puede tener uno o varios roles, y la representación exacta (catálogo con FK o valor fijo), quedan pendientes dentro de D-009. El rol **nunca** lo elige el cliente al registrarse.
+
+### 16.3 `REGISTRO_IDENTIDAD_SIMULADO` (nueva — entorno simulado)
+
+Fuente de identidad simulada (D-035). Datos de referencia del entorno controlado; no es una API real ni representa datos de personas reales.
+
+| Atributo lógico | Regla |
+|---|---|
+| Identificador | PK |
+| DNI | Único |
+| Nombres | — |
+| Apellidos | — |
+
+No se gestiona desde el panel administrativo (no hay HU). El nombre de la tabla es provisional hasta definir nombres definitivos (§13).
+
+### 16.4 `CUENTAS` (cuenta financiera simulada)
+
+Mantiene lo aprobado en AG-00 (D-025 a D-029) y agrega:
+
+| Atributo lógico | Regla | Decisión |
+|---|---|---|
+| Titular simulado | FK a `REGISTRO_IDENTIDAD_SIMULADO`, único (una cuenta por titular) | D-025, D-035 |
+| Propietario (usuario de Nayra) | FK a `USUARIOS`, **opcional hasta la vinculación** y **única** una vez vinculada | D-028, D-035 |
+| Entidad bancaria | FK a `ENTIDADES_BANCARIAS` | D-026 |
+| Identificador para QR | **Pendiente** (ver 16.10) | D-042 |
+
+Localización durante el registro: DNI → `REGISTRO_IDENTIDAD_SIMULADO` → cuenta cuyo titular es ese registro → vinculación con `USUARIOS`.
+
+### 16.5 `DISPOSITIVOS`
+
+| Atributo lógico | Regla | Decisión |
+|---|---|---|
+| Propietario | FK a `USUARIOS` | D-039 |
+| Identificación técnica del dispositivo | Pendiente | D-048 |
+| Plataforma | Según propuesta original (ANDROID / IOS) | Excel |
+| Estado | Al menos `ACTIVO` y `REVOCADO` | D-039, D-040 |
+| Fechas de vinculación y revocación | Para trazabilidad | D-040 |
+
+Regla de integridad: **como máximo un dispositivo `ACTIVO` por usuario**. Al autorizar un nuevo dispositivo, el anterior pasa a `REVOCADO`.
+
+### 16.6 `SESIONES`
+
+| Atributo lógico | Regla | Decisión |
+|---|---|---|
+| Usuario | FK a `USUARIOS` | D-037 |
+| Dispositivo | FK a `DISPOSITIVOS` | D-039 |
+| Creación / expiración / revocación | La sesión se crea solo tras contraseña + desafío + anti-spoofing + verificación 1:1. Se revoca al bloquear la cuenta o revocar el dispositivo | D-037, D-040 |
+
+Duración, renovación, formato de sesión o token (incluido si se usa JWT) siguen **pendientes** (D-018).
+
+### 16.7 `OPERACIONES`
+
+Mantiene lo aprobado en AG-00 (origen y destino como FK a `CUENTAS`). En el primer entregable el tipo utilizado es **TRANSFERENCIA directa** entre usuarios de Nayra (D-042). La transferencia mediante QR corresponde a un siguiente entregable; registrar el canal (directa/QR) es opcional y queda pendiente. El administrador **no** puede crear, modificar ni eliminar operaciones (D-041). El estado CANCELADA (HU-87) sigue pendiente.
+
+### 16.8 `SOLICITUDES_ATENCION`
+
+Representa la atención sin chatbot (D-040):
+
+| Atributo lógico | Regla | Decisión |
+|---|---|---|
+| Solicitante | FK a `USUARIOS` | Excel |
+| Tipo | Además de CONSULTA, RECLAMO, INCIDENTE: **PERDIDA_DISPOSITIVO** y **RECUPERACION_ACCESO** | D-040 |
+| Estado de la solicitud | Pendiente de definir sus valores | — |
+| Administrador que atiende | FK a `USUARIOS` (rol `ADMIN`), opcional | D-041 |
+| Fechas de creación y resolución | Para trazabilidad | — |
+
+El cambio de dispositivo normal (contraseña + voz) no requiere solicitud; solo la recuperación asistida y la pérdida del celular.
+
+### 16.9 `AUDITORÍA`
+
+Además de los campos originales, para cumplir D-041:
+
+| Atributo lógico | Regla |
+|---|---|
+| Actor | Usuario que ejecuta la acción (usuario o administrador) |
+| Usuario afectado | Usuario sobre el que recae la acción, cuando difiere del actor |
+| Tipo de acción, resultado, fecha, IP, dispositivo | Según propuesta original |
+
+Eventos mínimos a registrar: registro, validación asistida de identidad por el representante autorizado (D-052; qué datos del representante se registran queda pendiente, sin crear un rol nuevo), rechazo por DNI existente, intentos de autenticación (con tipo de fallo, sin contraseña, audio ni representación biométrica), bloqueos y desbloqueos, vinculación y revocación de dispositivos, solicitudes y su atención, y toda acción administrativa. El catálogo definitivo de eventos y campos sigue pendiente (D-019).
+
+### 16.10 Identificador del QR (pendiente — siguiente entregable)
+
+El QR no forma parte de la implementación del primer entregable (D-042, AG-01 v5); esta decisión no bloquea el desarrollo actual.
+
+El QR solo debe identificar la cuenta/destinatario dentro del entorno simulado (D-042). Alternativas a decidir:
+
+- reutilizar el identificador de la cuenta ya existente en `CUENTAS`;
+- un identificador público no secuencial propio del QR.
+
+La segunda evita exponer identificadores internos o datos financieros innecesarios. No se agrega el campo hasta decidirlo.
