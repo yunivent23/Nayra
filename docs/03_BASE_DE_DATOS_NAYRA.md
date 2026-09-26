@@ -382,7 +382,7 @@ Restricción: **un único dispositivo `ACTIVO` por usuario** (índice único par
 | `id_publico` | UUID UNIQUE NOT NULL | Identificador mostrado en HU-14 |
 | `usuario_id` | BIGINT FK → `usuarios`, NOT NULL, ON DELETE CASCADE | |
 | `dispositivo_id` | BIGINT FK → `dispositivos`, NULL | Dispositivo que abrió la sesión |
-| `token_hash` | CHAR(64) UNIQUE NOT NULL | SHA-256 (hex) del token opaco; el token nunca se guarda |
+| `token_hash` | VARCHAR(64) UNIQUE NOT NULL | SHA-256 (hex) del token opaco; el token nunca se guarda |
 | `fecha_inicio` | TIMESTAMP NOT NULL | |
 | `ultimo_acceso` | TIMESTAMP NOT NULL | Base del cierre por 5 min de inactividad |
 | `fecha_cierre` | TIMESTAMP NULL | Revocación o cierre |

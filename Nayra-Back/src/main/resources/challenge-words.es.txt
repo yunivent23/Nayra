@@ -1,0 +1,43 @@
+# D-037: lista cerrada de palabras del desafío (bisílabas, comunes, fonéticamente distintas, sin homófonos ni parecidos a los dígitos).
+# Lista inicial revisable por el equipo. Debe coincidir con la gramática del servicio de voz
+# (nayra-voz/nayra_voz/vocabulario.py). Una palabra por línea, en minúsculas y sin tildes.
+casa
+mesa
+luna
+gato
+perro
+nube
+playa
+fruta
+libro
+verde
+rojo
+rueda
+campo
+barco
+tigre
+leche
+queso
+silla
+puerta
+llave
+flores
+sopa
+lago
+piedra
+dulce
+nido
+fuego
+mano
+radio
+monte
+bota
+pino
+torre
+reloj
+tela
+vaca
+globo
+pluma
+carta
+salsa
