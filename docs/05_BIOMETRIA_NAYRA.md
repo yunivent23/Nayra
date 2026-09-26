@@ -519,3 +519,47 @@ Implementar
    ↓
 Validar
 ```
+
+---
+
+# 26. Decisiones biométricas aprobadas (2026-09-26)
+
+Las secciones anteriores siguen vigentes como reglas. Las decisiones que antes figuraban como pendientes (§11, §12, §14, §24) quedan resueltas así:
+
+| Aspecto | Decisión | Referencia |
+|---|---|---|
+| Modelo de verificación | SpeechBrain ECAPA-TDNN `speechbrain/spkrec-ecapa-voxceleb`; embedding de 192 valores; similitud coseno 1:1 | D-034 |
+| Modelo experimental de comparación | WeSpeaker (solo evaluación, no se despliega) | D-034 |
+| Anti-spoofing | AASIST (ASVspoof 2019 LA) para TTS y voice conversion; SSL-AASIST como extensión | D-035 |
+| Replay | Desafío dinámico de un solo uso + firma del dispositivo | D-035, D-037, D-041 |
+| Contenido hablado | Vosk `vosk-model-small-es-0.42` con gramática restringida al vocabulario del desafío | D-036 |
+| Desafío | Palabra + 3 dígitos + palabra; nunca 6 dígitos seguidos; `SecureRandom`; un solo uso | D-037 |
+| Umbrales | Configurables; modo calibración mientras no haya valores aprobados; FAR/FRR/EER con desarrollo/prueba separados | D-038 |
+| Almacenamiento | Solo embedding de referencia (centroide de 3 muestras normalizadas), cifrado AES-256-GCM, con modelo y versión; sin audio; actualización solo por re-enrolamiento | D-039 |
+| Integración | REST interno FastAPI; Python devuelve puntajes, Java decide | D-040 |
+| Audio | WAV PCM 16 kHz mono 16 bits | D-045 |
+| Dataset de calibración | Voluntarios con consentimiento, separado del sistema, borrado al terminar la tesis | D-049 |
+
+### Orden de procesamiento dentro del servicio de voz
+
+```text
+Audio WAV 16 kHz
+   ↓
+Calidad (duración, voz neta, SNR, saturación)
+   ↓
+Contenido hablado (Vosk + gramática del desafío)
+   ↓
+Anti-spoofing (AASIST)
+   ↓
+Embedding (ECAPA-TDNN) + similitud coseno con el perfil
+   ↓
+Puntajes → Spring Boot aplica umbrales (D-038)
+```
+
+El servicio calcula todos los puntajes de una muestra en una sola llamada; el orden de §10 (anti-spoofing antes de verificación) se respeta en la **decisión**, que aplica Java: una muestra rechazada por anti-spoofing nunca se acepta por su similitud.
+
+### Limitaciones que deben declararse en la tesis
+
+- ECAPA-TDNN y AASIST se entrenaron principalmente con inglés; su desempeño en español peruano con celulares debe medirse (D-038).
+- AASIST no está entrenado para replay físico ni para deepfakes recientes; la defensa contra replay descansa en el desafío y en la firma del dispositivo.
+- Los valores de umbral publicados en papers no se trasladan a Nayra.

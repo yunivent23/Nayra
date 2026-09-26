@@ -670,3 +670,31 @@ Probar
 Las operaciones financieras de Nayra se realizarán dentro de un **entorno simulado**. El sistema no tendrá, dentro del alcance actual, conexión directa con bancos reales ni procesará fondos reales.
 
 Aun tratándose de operaciones simuladas, deberán aplicarse controles de seguridad sobre autenticación, autorización, integridad de datos, sesiones, auditoría y protección contra operaciones no autorizadas, debido a que el prototipo busca representar de forma realista el flujo de una billetera digital.
+
+---
+
+# Controles de seguridad aprobados (2026-09-26)
+
+Resuelven parte de las decisiones pendientes de este documento. Referencias en `07_DECISIONES_TECNICAS_NAYRA.md`.
+
+| Área | Control aprobado | Decisión |
+|---|---|---|
+| Autenticación del usuario de la app | Firma del dispositivo → PIN → voz; todos los factores deben aprobarse | D-046 |
+| Dispositivo | ECDSA P-256 en Android Keystore; clave privada no exportable; backend guarda solo la clave pública; un dispositivo activo; registrar uno nuevo revoca el anterior | D-041 |
+| Replay | Desafío de voz y nonce de un solo uso, TTL configurable, persistidos en BD | D-037, D-048 |
+| PIN | Argon2id (m = 19 MiB, t = 2, p = 1) + pepper HMAC-SHA256 fuera de BD y repositorio; validación en servidor; nunca en logs | D-043 |
+| Intentos | Contador y bloqueo de la cuenta de acceso; valores configurables obligatorios | D-047 |
+| Sesiones | Token opaco de 256 bits; solo su hash SHA-256 en `sesiones`; 5 min de inactividad en servidor; revocación inmediata; sin JWT | D-042 |
+| Biometría | Embedding cifrado AES-256-GCM; esquema `biometria` con usuario de BD propio; sin audio almacenado | D-039 |
+| Servicio de voz | Solo red interna; token de servicio comparado en tiempo constante; no expuesto a la app | D-040 |
+| Secretos | Variables de entorno fuera del repositorio: credenciales de BD, pepper del PIN, token de servicio, clave de cifrado biométrico. Gestor cloud pendiente (D-016) | D-017 |
+
+### Secretos y configuración
+
+- El repositorio no contiene ningún secreto. Los archivos de configuración solo referencian variables de entorno (`${NAYRA_...}`).
+- Los parámetros de seguridad sin valor aprobado (intentos máximos, TTL de desafío, duración máxima de sesión) **son obligatorios**: si faltan, el backend no arranca.
+- **Incidente conocido (2026-09-26):** el historial de git de la rama `main` contiene una clave de API de Gemini y un secreto JWT publicados en un repositorio público. Deben **revocarse/rotarse** en sus proveedores; eliminarlos del código actual no los elimina del historial. El secreto JWT deja de usarse con D-042.
+
+### Registro y privacidad
+
+Nunca se registran en logs ni en auditoría: PIN, tokens, nonces completos, firmas, audio, embeddings ni puntajes biométricos asociados a usuarios.

@@ -4,10 +4,11 @@ import jakarta.persistence.*;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
+@Table(name = "usuarios")
 public class Users implements Serializable {
 
     @Id
@@ -17,7 +18,8 @@ public class Users implements Serializable {
     @Column(length = 30, unique = true, nullable = false)
     private String username;
 
-    @Column(length = 200, nullable = false)
+    // Pendiente P-A01: no se usa para usuarios de la app (D-043: el PIN no es una contraseña).
+    @Column(length = 200)
     private String password;
 
     @Column(nullable = false)
@@ -40,6 +42,20 @@ public class Users implements Serializable {
 
     @Column(name = "foto_usuario", length = 255)
     private String fotoUsuario;
+
+    // D-043: hash Argon2id del PIN con pepper. Nunca se expone ni se registra en logs.
+    @Column(name = "pin_hash", length = 255)
+    private String pinHash;
+
+    // D-047: intentos fallidos consecutivos y bloqueo de la cuenta de acceso
+    @Column(name = "intentos_fallidos", nullable = false)
+    private Integer intentosFallidos = 0;
+
+    @Column(name = "bloqueado", nullable = false)
+    private Boolean bloqueado = false;
+
+    @Column(name = "fecha_bloqueo")
+    private OffsetDateTime fechaBloqueo;
 
     @OneToMany(
             mappedBy = "user",
@@ -135,5 +151,37 @@ public class Users implements Serializable {
 
     public void setRoles(List<Role> roles) {
         this.roles = roles;
+    }
+
+    public String getPinHash() {
+        return pinHash;
+    }
+
+    public void setPinHash(String pinHash) {
+        this.pinHash = pinHash;
+    }
+
+    public Integer getIntentosFallidos() {
+        return intentosFallidos;
+    }
+
+    public void setIntentosFallidos(Integer intentosFallidos) {
+        this.intentosFallidos = intentosFallidos;
+    }
+
+    public Boolean getBloqueado() {
+        return bloqueado;
+    }
+
+    public void setBloqueado(Boolean bloqueado) {
+        this.bloqueado = bloqueado;
+    }
+
+    public OffsetDateTime getFechaBloqueo() {
+        return fechaBloqueo;
+    }
+
+    public void setFechaBloqueo(OffsetDateTime fechaBloqueo) {
+        this.fechaBloqueo = fechaBloqueo;
     }
 }

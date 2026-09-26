@@ -337,3 +337,93 @@ Decisiones registradas en `07_DECISIONES_TECNICAS_NAYRA.md`:
 - **Destino de las operaciones de tipo PAGO** (HU-73): no está definido si un pago tiene cuenta financiera de destino.
 - **Cuenta financiera del personal de atención y del administrador:** no está definido si tienen cuenta financiera.
 - **Estados:** estado CANCELADA en `OPERACIONES` (HU-87) y estados de la cuenta de acceso frente a los de la cuenta financiera (AG-05).
+
+## 16. Estructuras aprobadas para autenticación, sesiones y biometría (2026-09-26)
+
+Derivadas de D-039, D-041, D-042, D-043, D-047, D-048 y D-052. Los campos de `USUARIOS` que no aparecen aquí se mantienen como están en el código inicial hasta conciliarlos con AG-01 (D-051).
+
+### 16.1 Convenciones físicas
+
+- Nombres de tablas y columnas en `snake_case`, en español, siguiendo los nombres de este documento (`usuarios`, `roles`, `sesiones`, `dispositivos`).
+- Claves primarias `BIGINT` generadas por identidad para tablas internas (continuidad con el código inicial). Los identificadores que se exponen a la app (`dispositivos.id_publico`, `desafios_autenticacion.id_publico`, `sesiones.id_publico`) son `UUID`, para no exponer secuencias.
+- Esquema versionado con Flyway (D-052); `ddl-auto=validate`.
+
+### 16.2 `usuarios` — campos añadidos
+
+| Campo | Tipo | Descripción | Decisión |
+|---|---|---|---|
+| `pin_hash` | VARCHAR(255), NULL | Hash Argon2id del PIN con pepper, en formato que incluye los parámetros | D-043 |
+| `intentos_fallidos` | INTEGER, NOT NULL, 0 | Intentos fallidos consecutivos (PIN o voz) | D-047 |
+| `bloqueado` | BOOLEAN, NOT NULL, false | Cuenta de acceso bloqueada por intentos | D-047 |
+| `fecha_bloqueo` | TIMESTAMP, NULL | Momento del bloqueo | D-047 |
+
+### 16.3 `dispositivos`
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `id_publico` | UUID UNIQUE NOT NULL | Identificador que usa la app |
+| `usuario_id` | BIGINT FK → `usuarios`, NOT NULL, ON DELETE CASCADE | Propietario |
+| `plataforma` | VARCHAR(30) NOT NULL | `ANDROID` / `IOS` (fuente: TABLAS CORE) |
+| `nombre` | VARCHAR(100) | Nombre descriptivo para HU-14 |
+| `clave_publica` | TEXT NOT NULL | Clave pública EC P-256 (X.509 SubjectPublicKeyInfo, base64) |
+| `algoritmo` | VARCHAR(30) NOT NULL | `SHA256withECDSA` |
+| `estado` | VARCHAR(20) NOT NULL | `ACTIVO` / `REVOCADO` |
+| `fecha_registro` | TIMESTAMP NOT NULL | |
+| `fecha_revocacion` | TIMESTAMP NULL | |
+
+Restricción: **un único dispositivo `ACTIVO` por usuario** (índice único parcial `WHERE estado = 'ACTIVO'`, D-041). La clave privada nunca se almacena.
+
+### 16.4 `sesiones`
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `id_publico` | UUID UNIQUE NOT NULL | Identificador mostrado en HU-14 |
+| `usuario_id` | BIGINT FK → `usuarios`, NOT NULL, ON DELETE CASCADE | |
+| `dispositivo_id` | BIGINT FK → `dispositivos`, NULL | Dispositivo que abrió la sesión |
+| `token_hash` | VARCHAR(64) UNIQUE NOT NULL | SHA-256 (hex) del token opaco; el token nunca se guarda |
+| `fecha_inicio` | TIMESTAMP NOT NULL | |
+| `ultimo_acceso` | TIMESTAMP NOT NULL | Base del cierre por 5 min de inactividad |
+| `fecha_cierre` | TIMESTAMP NULL | Revocación o cierre |
+| `motivo_cierre` | VARCHAR(30) NULL | `LOGOUT`, `INACTIVIDAD`, `DISPOSITIVO_REVOCADO`, `BLOQUEO`, `DURACION_MAXIMA` |
+
+### 16.5 `desafios_autenticacion` (nueva, necesaria para D-037/D-048)
+
+Guarda desafíos y nonces de un solo uso en la base de datos para que funcionen con las 2 instancias (D-023).
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `id_publico` | UUID UNIQUE NOT NULL | |
+| `usuario_id` | BIGINT FK → `usuarios`, NULL | Usuario al que se emitió (NULL si el identificador no existe; el desafío fallará) |
+| `dispositivo_id` | BIGINT FK → `dispositivos`, NULL | |
+| `proposito` | VARCHAR(30) NOT NULL | `LOGIN`, `REGISTRO_DISPOSITIVO`, `REAUTENTICACION` |
+| `elementos` | VARCHAR(200) NULL | Texto del desafío de voz (no es dato biométrico) |
+| `nonce` | VARCHAR(64) UNIQUE NOT NULL | Nonce aleatorio (base64url) |
+| `fecha_emision` | TIMESTAMP NOT NULL | |
+| `fecha_expiracion` | TIMESTAMP NOT NULL | Según TTL configurable (D-048) |
+| `fecha_uso` | TIMESTAMP NULL | Marca de un solo uso |
+
+### 16.6 Esquema `biometria` — `perfiles_voz` (D-039)
+
+Pertenece **solo** al servicio Python, con un usuario de base de datos propio. Spring Boot no tiene permisos sobre este esquema. La relación con `usuarios` es **lógica** (mismo `usuario_id`), sin FK entre esquemas, para mantener la separación.
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `id` | BIGSERIAL PK | |
+| `usuario_id` | BIGINT UNIQUE NOT NULL | Un perfil por usuario |
+| `embedding_cifrado` | BYTEA NOT NULL | Centroide (192 × float32) cifrado con AES-256-GCM |
+| `iv` | BYTEA NOT NULL | Nonce de AES-GCM (12 bytes) |
+| `modelo` | VARCHAR(100) NOT NULL | |
+| `modelo_version` | VARCHAR(100) NOT NULL | |
+| `num_muestras` | SMALLINT NOT NULL | 3 |
+| `estado` | VARCHAR(20) NOT NULL | `ACTIVO` |
+| `fecha_creacion` | TIMESTAMP NOT NULL | |
+| `fecha_actualizacion` | TIMESTAMP NOT NULL | |
+
+No existe tabla de audio: el audio no se almacena (D-039). La eliminación (HU-36) es un borrado físico.
+
+### 16.7 Lo que se mantiene pendiente
+
+Los pendientes de §13 y §15 no cubiertos arriba (DNI para localizar la cuenta financiera, obligatoriedad de FKs financieras, columnas definitivas de `usuarios` según AG-01, estrategia de auditoría D-019) siguen pendientes.

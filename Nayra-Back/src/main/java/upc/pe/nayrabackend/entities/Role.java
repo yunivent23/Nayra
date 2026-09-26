@@ -6,7 +6,7 @@ import java.io.Serializable;
 @Table(
         name = "roles",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id", "rol"})
+                @UniqueConstraint(columnNames = {"usuario_id", "rol"})
         }
 )
 public class Role implements Serializable {
@@ -19,7 +19,7 @@ public class Role implements Serializable {
     private String rol;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "usuario_id", nullable = false)
     private Users user;
 
     public Long getId() {

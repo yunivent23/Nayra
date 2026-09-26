@@ -1,12 +1,12 @@
 package upc.pe.nayrabackend.controllers;
 
 
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import upc.pe.nayrabackend.dtos.UsuarioDTO;
+import upc.pe.nayrabackend.dtos.UsuarioRespuestaDTO;
 import upc.pe.nayrabackend.entities.Role;
 import upc.pe.nayrabackend.entities.Users;
 import upc.pe.nayrabackend.serviceinterfaces.IUsuarioService;
@@ -22,8 +22,8 @@ public class UsuarioController {
 
     // LISTAR TODOS LOS USUARIOS
     @GetMapping
-    public List<Users> listar() {
-        return service.listarTodo();
+    public List<UsuarioRespuestaDTO> listar() {
+        return service.listarTodo().stream().map(UsuarioRespuestaDTO::de).toList();
     }
 
     // REGISTRAR USUARIO
@@ -34,7 +34,7 @@ public class UsuarioController {
 
         usuario.setId(null);
         usuario.setUsername(dto.getUsername());
-        usuario.setPassword(dto.getPassword());
+        // P-A01 pendiente: no se registra contraseña; el PIN (D-043) se crea en el flujo de registro de AG-01
         usuario.setEnabled(dto.getEnabled());
         usuario.setDni(dto.getDni());
         usuario.setEmail(dto.getEmail());
@@ -69,7 +69,7 @@ public class UsuarioController {
                     .body("No existe un usuario con el ID: " + id);
         }
 
-        return ResponseEntity.ok(usuario);
+        return ResponseEntity.ok(UsuarioRespuestaDTO.de(usuario));
     }
 
     // ELIMINAR USUARIO
@@ -110,9 +110,14 @@ public class UsuarioController {
                             + dto.getId());
         }
 
-        ModelMapper m = new ModelMapper();
-        m.map(dto, existente);
-
+        // Solo datos personales (HU-23): nunca contraseña, PIN, roles ni estado de bloqueo
+        existente.setUsername(dto.getUsername());
+        existente.setDni(dto.getDni());
+        existente.setEmail(dto.getEmail());
+        existente.setFechaNacimiento(dto.getFechaNacimiento());
+        existente.setTelefono(dto.getTelefono());
+        existente.setDireccion(dto.getDireccion());
+        existente.setFotoUsuario(dto.getFotoUsuario());
         service.edit(existente);
 
         return ResponseEntity.ok(
@@ -135,7 +140,7 @@ public class UsuarioController {
                             + nombre);
         }
 
-        return ResponseEntity.ok(usuarios);
+        return ResponseEntity.ok(usuarios.stream().map(UsuarioRespuestaDTO::de).toList());
     }
 
     // BUSCAR USUARIO POR USERNAME
@@ -152,7 +157,7 @@ public class UsuarioController {
                             + username);
         }
 
-        return ResponseEntity.ok(usuario);
+        return ResponseEntity.ok(UsuarioRespuestaDTO.de(usuario));
     }
 
     // BUSCAR USUARIO POR DNI
@@ -168,7 +173,7 @@ public class UsuarioController {
                     .body("No existe un usuario con el DNI: " + dni);
         }
 
-        return ResponseEntity.ok(usuario);
+        return ResponseEntity.ok(UsuarioRespuestaDTO.de(usuario));
     }
 
     // BUSCAR USUARIO POR EMAIL
@@ -184,6 +189,6 @@ public class UsuarioController {
                     .body("No existe un usuario con el email: " + email);
         }
 
-        return ResponseEntity.ok(usuario);
+        return ResponseEntity.ok(UsuarioRespuestaDTO.de(usuario));
     }
 }
