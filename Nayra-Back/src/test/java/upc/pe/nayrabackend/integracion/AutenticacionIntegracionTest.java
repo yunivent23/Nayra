@@ -231,6 +231,14 @@ class AutenticacionIntegracionTest {
     }
 
     @Test
+    void solicitudesMalFormadasSon400() throws Exception {
+        mvc.perform(post("/api/v1/auth/desafios").contentType("application/json").content("{\"dispositivoId\":\"x\"}"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+        mvc.perform(multipart("/api/v1/auth/sesiones").param("desafioId", "no-uuid"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void sinSesionEsNoAutorizado() throws Exception {
         mvc.perform(get("/usuarios")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/sesiones").header("Authorization", "Bearer inventado"))

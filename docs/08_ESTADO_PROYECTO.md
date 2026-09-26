@@ -385,7 +385,7 @@ Rama de trabajo: `claude/project-thread-irkos4` (desde `yuniv`). Decisiones impl
 | Registro de usuario, creación de PIN, vinculación de cuenta por DNI, enrolamiento público | PENDIENTE | Depende de AG-01 (D-051) |
 | Registro de dispositivo (servicio) | IMPLEMENTADO Y PROBADO; sin endpoint público | El endpoint depende del flujo de registro de AG-01 |
 
-**Pruebas:** 225 pruebas, 0 fallos (3 ejecuciones consecutivas), con `NAYRA_IT_DB_URL` (PostgreSQL) y `NAYRA_IT_VOZ_URL` (servicio de voz en ejecución). Sin esas variables se ejecutan solo las unitarias (208).
+**Pruebas:** 226 pruebas, 0 fallos (el contrato Java ↔ Python pasó en 3 ejecuciones consecutivas), con `NAYRA_IT_DB_URL` (PostgreSQL) y `NAYRA_IT_VOZ_URL` (servicio de voz en ejecución). Sin esas variables se ejecutan solo las unitarias (208).
 
 ### 15.3 Servicio de voz Python (`nayra-voz/`)
 
