@@ -98,6 +98,8 @@ No recuperar ni asumir componentes previamente descartados como:
 
 La arquitectura contempla actualmente **2 instancias de aplicación ubicadas en zonas diferentes** para mejorar la disponibilidad.
 
+El modelo de datos v4 (2026-09-27) separa además la solución en tres servicios por responsabilidad (Negocio, Autenticación y Biométrico). Es una separación **lógica**: no sustituye a las 2 instancias, no significa 3 réplicas y no autoriza a crear infraestructura nueva. Hoy Negocio y Autenticación son una sola aplicación Spring Boot.
+
 Cualquier nuevo componente de infraestructura debe estar respaldado por una decisión técnica.
 
 ---
@@ -457,7 +459,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-053.
 7. **Dispositivo (D-039).** Un único dispositivo activo por cuenta de acceso; la reinstalación no se asume reconocible.
 8. **Prohibición expresa (D-040).** Nunca implementar `DNI → cuenta encontrada → registrar nueva voz → acceso`. Un nuevo enrolamiento solo tras validar al titular.
 9. **Administrador (D-041).** No puede modificar saldos ni operaciones financieras. Toda acción administrativa se audita (actor, afectado, acción, fecha).
-10. **Intentos (D-044).** 3 intentos; no implementar el detalle de qué cuenta como intento hasta que se decida. Los errores técnicos no cuentan como intentos del usuario.
+10. **Intentos (D-044).** 3 intentos; no implementar el detalle de qué cuenta como intento hasta que se decida. Los errores técnicos no cuentan como intentos del usuario. _(Modelo de datos v4, 2026-09-27: solo el PIN incorrecto cuenta; el contador vive en `nayra.credenciales` y se incrementa con un UPDATE atómico (E-01). El contador vuelve a 0 en cuanto el PIN es correcto (H-01, cerrada). No agregar un contador biométrico hasta cerrar P-8.)_
 11. **QR (D-042).** HU-123 y HU-124 quedan documentadas pero **fuera de la implementación del primer entregable** (siguiente entregable).
 12. **Clasificación de pendientes (`07_DECISIONES_TECNICAS_NAYRA.md`, AG-01 v5).** Distinguir A (bloqueantes funcionales), B (decisiones técnicas que se resuelven durante el desarrollo) y C (deudas técnicas). Una deuda técnica no bloquea el desarrollo; solo una decisión A bloquea, y únicamente las funcionalidades que dependen de ella.
 
@@ -466,12 +468,12 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-053.
 Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-007, D-010 a D-013, D-018, D-046, D-048, D-054 a D-061. Diseño en `05_BIOMETRIA_NAYRA.md` §27.
 
 1. **Modelos fijados.** Usar solo SpeechBrain ECAPA-TDNN (D-011), AASIST (D-012) y Vosk con gramática cerrada (D-046). Cambiar de modelo o de versión exige registrarlo en `07` y re-enrolar a los usuarios.
-2. **Umbrales solo en configuración** versionada con el modelo; nunca literales en el código. El umbral provisional debe estar registrado en `07` antes de usarse (D-055). El servicio Python/FastAPI aplica los umbrales técnicos y devuelve veredictos por etapa; Spring Boot toma la decisión final de autenticación y controla intentos, bloqueo, sesión y auditoría (D-056). Esto **no** significa que los valores numéricos estén definidos.
+2. **Umbrales solo en configuración** versionada con el modelo; nunca literales en el código. El umbral provisional debe estar registrado en `07` antes de usarse (D-055). El servicio Python/FastAPI aplica los umbrales técnicos y devuelve veredictos por etapa; Spring Boot toma la decisión final de autenticación y controla intentos, bloqueo, sesión y auditoría (D-056). Esto **no** significa que los valores numéricos estén definidos. _(2026-09-27: D-055 fijó provisionalmente similitud 0.80 y bona fide 0.90, escala [0,1], en `Nayra-Voz/config/parametros_provisionales.yaml`; no presentarlos como calibrados hasta D-060.)_
 3. **Nunca persistir audio** (ni en disco, ni en base de datos, ni en logs). Solo el embedding cifrado en `biometria.PERFILES_VOZ` (D-013).
 4. **El PIN no entra al pipeline biométrico.** Ni el PIN ni el comando de activación son muestras de voz (D-037, D-061). El PIN nunca se registra ni se anuncia en voz alta.
 5. **Desafío y nonce de un solo uso**, generados en Spring Boot con `SecureRandom` y verificados en el servidor (D-054, D-048).
 6. **La clave privada del dispositivo nunca sale del almacén de hardware**; el backend guarda solo la clave pública (D-048).
-7. **Sesión:** cierre automático tras 5 minutos de inactividad controlado en el servidor, sin aviso previo, sin opción de continuar y sin tiempo ajustable (D-018). No implementar JWT, token opaco u otro mecanismo hasta cerrar D-018.
+7. **Sesión:** cierre automático tras 5 minutos de inactividad controlado en el servidor, sin aviso previo, sin opción de continuar y sin tiempo ajustable (D-018). No implementar JWT, token opaco u otro mecanismo hasta cerrar D-018. _(Actualización del modelo de datos v4, 2026-09-27: el mecanismo aprobado es un **JWT** cuyo único claim propio es `jti` = `sesiones.id`, sin guardar el token, sin renovación ni refresh token; la revocación usa UPDATE condicionales (E-02). No agregar `exp`, claims, otro algoritmo, custodia de claves ni límite de sesiones hasta cerrar P-5, y no volver a un token opaco.)_
 8. **Formato de audio:** WAV PCM 16 kHz mono 16 bits; rechazar otros formatos en el servicio de voz (D-057).
 9. **Anti-spoofing en enrolamiento y autenticación**; orden calidad → contenido → anti-spoofing → 1:1 (D-059).
 10. **No crear endpoints del servicio de voz** hasta documentar y aprobar el contrato en `04_API.md` (D-014, pendiente). **Excepción del prototipo (2026-09-27):** para construir el prototipo funcional se autorizaron adaptadores provisionales compatibles con la arquitectura. Sus rutas viven bajo `/prototipo/v1` (servicio Python) y `/prototipo/...` (Spring Boot, solo con el perfil `prototipo`), están marcadas como contrato PROVISIONAL y deben reemplazarse por el contrato de `04_API.md` cuando se apruebe. La excepción, autorizada por el equipo el 2026-09-27 como excepción provisional, vale **solo para el primer entregable**. La API general usa el prefijo `/api/v1/...` como organización provisional (propuesta, no contrato); tampoco cierra D-014.

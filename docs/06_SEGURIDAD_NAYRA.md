@@ -103,6 +103,8 @@ hasta que la decisión correspondiente haya sido aprobada.
 
 **Actualización del 2026-09-27:** la contraseña se concreta como **PIN de 6 dígitos** (D-061; origen AG-01; aprobada el 2026-09-27; hash en AG-11); el dispositivo se vincula con un **par de claves** (D-048; origen AG-01; aprobada el 2026-09-27; anti-replay en AG-11); la sesión se cierra tras **5 minutos de inactividad** (D-018, AG-02, mecanismo técnico pendiente). Ver §36.9.
 
+**Actualización del modelo de datos v4 (2026-09-27):** el mecanismo de sesión aprobado es un **JWT** cuyo `jti` es `sesiones.id`, sin renovación ni refresh token (D-018); `exp`, claims, algoritmo definitivo y custodia de la clave siguen pendientes (P-5). OAuth y la autenticación multifactor adicional siguen sin asumirse. El administrador se autenticará con usuario y contraseña en el panel web (D-050, aprobada funcionalmente, no implementada).
+
 ---
 
 # 5. Autorización
@@ -125,7 +127,7 @@ Los permisos deben estar relacionados con los roles y requisitos definidos en `0
 
 # 6. Roles y control de acceso
 
-El modelo de datos contempla una estructura de roles.
+El modelo de datos contempla una estructura de roles. _(D-009, 2026-09-27: el rol es un valor fijo `USER`/`ADMIN` en `usuarios.rol`; no existe tabla `ROLES`.)_
 
 El control de acceso deberá considerar:
 
@@ -316,6 +318,8 @@ Los valores concretos deben determinarse mediante una decisión técnica.
 No colocar límites arbitrarios únicamente para completar el código.
 
 **Actualización AG-01 (D-044):** el límite aprobado es **3 intentos fallidos**, tras los cuales se bloquea la cuenta de acceso. Qué resultados cuentan como intento (contraseña, voz no coincidente, spoofing, mala calidad) y si el contador es único o separado siguen pendientes. Los **errores técnicos del servicio no cuentan** como intentos del usuario salvo decisión expresa.
+
+**Actualización del modelo de datos v4 (2026-09-27):** solo el **PIN incorrecto** cuenta como intento; el contador vive en `nayra.credenciales` y se incrementa de forma atómica (corrección E-01), de modo que intentos simultáneos no se pierden y nunca pasa de 3. Al tercero se bloquea la cuenta de acceso y se revocan sus sesiones. Siguen pendientes el límite propio de reintentos biométricos (P-8), y el efecto del desbloqueo administrativo (P-11). Un PIN correcto devuelve el contador a 0 de inmediato (H-01, cerrada).
 
 ---
 
@@ -602,7 +606,7 @@ Prueba de ataques simulados
 Claude deberá:
 
 1. no inventar mecanismos de seguridad como si fueran decisiones aprobadas;
-2. no asumir JWT, OAuth u otro mecanismo sin aprobación;
+2. no asumir JWT, OAuth u otro mecanismo sin aprobación; _(2026-09-27: el JWT con `jti` = `sesiones.id` quedó aprobado por el modelo de datos v4, D-018; `exp`, claims definitivos, algoritmo definitivo y custodia de la clave siguen pendientes, P-5; OAuth y refresh tokens no están aprobados)_;
 3. no almacenar secretos en el código;
 4. no registrar contraseñas, tokens completos o biometría;
 5. no crear tablas de seguridad adicionales sin justificación;
@@ -622,12 +626,12 @@ Claude deberá:
 
 Antes de considerar la seguridad como completamente especificada deberán definirse:
 
-- mecanismo técnico de autenticación (el flujo funcional del usuario está aprobado en D-037; pendiente la autenticación del administrador, D-050);
+- mecanismo técnico de autenticación (el flujo funcional del usuario está aprobado en D-037; pendiente la autenticación del administrador, D-050); _(2026-09-27: D-050 aprobada funcionalmente —usuario y contraseña en el panel web—; no implementada; modelo y almacenamiento de la credencial administrativa pendientes)_;
 - mecanismo técnico de autorización (roles aprobados en D-041);
-- estrategia de sesiones;
-- uso o no de JWT;
-- expiración de tokens;
-- refresh tokens, si corresponden;
+- estrategia de sesiones; _(2026-09-27: JWT con `jti` y tabla `sesiones`, 5 min de inactividad, sin renovación ni refresh token, D-018)_;
+- ~~uso o no de JWT~~ — _resuelto por el modelo de datos v4 (JWT con `jti`, D-018)_;
+- expiración de tokens (`exp`, P-5), claims definitivos, algoritmo definitivo, custodia de la clave de firma y número máximo de sesiones (P-5);
+- ~~refresh tokens, si corresponden~~ — _no hay refresh token ni renovación (D-018, modelo v4)_;
 - algoritmo de hash de contraseñas, política y normalización de la contraseña dictada (D-047; la existencia de contraseñas está aprobada en D-037);
 - vinculación técnica del dispositivo (D-048) — _aprobada el 2026-09-27 (origen AG-01; anti-replay en AG-11)_;
 - procedimiento de recuperación asistida (D-049);
@@ -635,8 +639,8 @@ Antes de considerar la seguridad como completamente especificada deberán defini
 - protocolo de comunicación Java-Python — _AG-12: REST interno (D-010)_;
 - configuración TLS;
 - rate limiting;
-- detalle de la política de intentos (el número máximo, 3, está aprobado en D-044);
-- estrategia de desbloqueo;
+- detalle de la política de intentos (el número máximo, 3, está aprobado en D-044); _(modelo v4: solo cuenta el PIN; pendiente P-8; H-01 cerrada: PIN correcto → 0)_;
+- estrategia de desbloqueo (P-11);
 - estrategia de auditoría;
 - retención de logs;
 - estrategia de copias de seguridad;
@@ -709,7 +713,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-044.
 - **Un único dispositivo activo** por cuenta de acceso (D-039). Al autorizar uno nuevo, el anterior se revoca.
 - Al bloquear la cuenta o revocar el dispositivo, se **revocan las sesiones** correspondientes (D-040).
 - La reinstalación no se asume reconocible; si el vínculo no puede verificarse, se usa el flujo de cambio de dispositivo/recuperación.
-- Mecanismo técnico de vinculación (D-048) y estrategia de sesiones (D-018) pendientes. _(2026-09-27: D-048 aprobada — par de claves ECDSA P-256 en el almacén de hardware del teléfono, clave privada no exportable, backend guarda solo la clave pública, desafío-respuesta con nonce de un solo uso. D-018 parcial — cierre automático tras 5 minutos de inactividad controlado en el servidor, sin aviso previo; mecanismo técnico pendiente.)_
+- Mecanismo técnico de vinculación (D-048) y estrategia de sesiones (D-018) pendientes. _(2026-09-27: D-048 aprobada — par de claves ECDSA P-256 en el almacén de hardware del teléfono, clave privada no exportable, backend guarda solo la clave pública, desafío-respuesta con nonce de un solo uso. D-018 parcial — cierre automático tras 5 minutos de inactividad controlado en el servidor, sin aviso previo; mecanismo técnico pendiente.)_ _(Modelo de datos v4, 2026-09-27: sesión con JWT cuyo `jti` es `sesiones.id`, sin guardar el token; la revocación usa UPDATE condicionales y no puede deshacerse por escrituras obsoletas, E-02; P-5 pendiente.)_
 
 ## 36.4 Recuperación y cambio de dispositivo
 
@@ -723,7 +727,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-044.
 - Solo existen los roles `USER` y `ADMIN` (D-041).
 - El administrador **no puede** modificar saldos ni operaciones financieras, ni usar privilegios administrativos para alterar información financiera. Tampoco accede a la referencia biométrica.
 - Toda acción administrativa se audita: quién, cuándo, qué acción y sobre qué usuario.
-- Autenticación del administrador pendiente (D-050).
+- Autenticación del administrador pendiente (D-050). _(2026-09-27: D-050 aprobada funcionalmente: usuario y contraseña en el panel web. **No implementada**: el modelo y el almacenamiento de la credencial administrativa siguen pendientes y el prototipo mantiene provisionalmente el acceso ADMIN con dispositivo + PIN + voz.)_
 
 ## 36.6 QR
 
@@ -740,7 +744,7 @@ El código actual del backend presenta problemas de seguridad identificados en l
 5. revisión del mecanismo JWT existente antes de reutilizarlo (no está aprobado, D-018);
 6. retiro del código heredado ajeno a Nayra.
 
-**Estado (2026-09-27, en el árbol de trabajo, sin commit):** los puntos 1, 2, 3, 5 y 6 están aplicados: se retiraron el CRUD de usuarios, el listado público, el JWT (no se reutilizó) y el código heredado con CORS abierto. El punto 4 sigue como deuda técnica. Detalle en `08_ESTADO_PROYECTO.md` §11.
+**Estado (2026-09-27; incluido en los commits locales `ef007fd`/`5bbd505`, sin push):** los puntos 1, 2, 3, 5 y 6 están aplicados: se retiraron el CRUD de usuarios, el listado público, el JWT (no se reutilizó) y el código heredado con CORS abierto. El punto 4 sigue como deuda técnica. Detalle en `08_ESTADO_PROYECTO.md` §11. _(Posteriormente, el modelo de datos v4 aprobó e implementó un JWT nuevo con `jti` = `sesiones.id` (D-018), distinto del JWT heredado retirado; commits `5bbd505` y `ca98bb3`, sin push.)_
 
 El código existente **no** debe considerarse correcto solo porque existe.
 
@@ -790,6 +794,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-010 a D-013, D-01
 **Sesión**
 
 - Cierre automático tras 5 minutos de inactividad, controlado en el servidor. No hay aviso previo ni opción de continuar, y el tiempo no es configurable por el usuario.
+- Modelo de datos v4: JWT con `jti` = `sesiones.id`; el token no se guarda y la validez depende de la tabla `sesiones`; sin renovación ni refresh token. Algoritmo (HS256 en el prototipo) y custodia de la clave (`NAYRA_JWT_CLAVE`) PROVISIONALES (P-5, D-017).
 
 **Riesgos aceptados en el prototipo**
 

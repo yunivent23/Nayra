@@ -175,6 +175,8 @@ La autenticación del usuario queda definida funcionalmente en **D-037** (contra
 
 **Actualización del 2026-09-27:** la credencial de conocimiento es un **PIN de 6 dígitos** (D-061, modifica D-037); el dispositivo se vincula con un **par de claves** (D-048); la sesión se cierra tras **5 minutos de inactividad** (D-018, parcial); el contenido del desafío se reconoce en el servidor (D-046, parcial). Siguen pendientes: hash del PIN (D-047), mecanismo técnico de sesión (D-018), resto del reconocimiento del habla (D-046) y autenticación del administrador (D-050).
 
+**Actualización del modelo de datos v4 (2026-09-27):** la sesión usa JWT con `jti` = `sesiones.id` (D-018; P-5 pendiente) y D-050 queda aprobada funcionalmente (usuario y contraseña en el panel web), sin implementar. Siguen pendientes D-047, el resto de D-046, P-5 y el modelo de la credencial administrativa.
+
 Texto original de esta decisión (se mantiene para lo que sigue pendiente):
 
 Debe definirse el mecanismo mediante el cual el sistema gestiona la autenticación general.
@@ -348,7 +350,9 @@ Nunca deberán incluirse directamente en el código fuente.
 
 ## D-018 — Estrategia de sesiones
 
-**Estado:** PARCIAL — regla de **cierre tras 5 minutos de inactividad** APROBADA (AG-02, 2026-09-27); mecanismo técnico (formato de sesión o token, almacenamiento, duración máxima absoluta, renovación) PENDIENTE.
+**Estado:** PARCIAL — regla de **cierre tras 5 minutos de inactividad** APROBADA (AG-02, 2026-09-27); **mecanismo JWT con `jti` y tabla `sesiones` APROBADO** (modelo de datos v4, 2026-09-27); `exp`, claims definitivos, algoritmo definitivo, custodia de la clave de firma y número máximo de sesiones simultáneas PENDIENTES (**P-5**).
+
+**Actualización del modelo de datos v4 (2026-09-27):** la sesión se representa con un **JWT** cuyo único claim propio es `jti`, igual a `nayra.sesiones.id`. El JWT **no** se guarda (ni su hash); la validez depende de la fila de `sesiones` (6 columnas: `id`, `usuario_id`, `dispositivo_id`, `fecha_creacion`, `fecha_ultimo_acceso`, `fecha_revocacion`). Cierre tras 5 minutos sin actividad; **sin duración máxima absoluta, sin renovación y sin refresh token**. El servicio de autenticación es la autoridad de la sesión. La revocación y el registro de acceso usan UPDATE condicionales, de modo que una sesión revocada no puede reabrirse por una escritura obsoleta (corrección E-02; no se añadió `@Version` porque `sesiones` mantiene 6 columnas). En el prototipo el JWT es HS256 con clave leída de `NAYRA_JWT_CLAVE` (PROVISIONAL, P-5 y D-017). Detalle en `03_BASE_DE_DATOS_NAYRA.md` §17 y en «Decisiones del modelo de datos v4».
 
 **Actualización AG-02:** la sesión se **cierra automáticamente** tras **5 minutos sin actividad**. El control de la inactividad se realiza en el servidor. **No** hay aviso por voz previo al cierre ni opción de continuar, y el tiempo no es ajustable por el usuario. No se aprueba todavía JWT, token opaco ni otro mecanismo; el análisis A-K (punto I) queda como insumo. Texto original:
 
@@ -387,6 +391,8 @@ Sin embargo, la estrategia integral de disponibilidad continúa pendiente y debe
 - componentes adicionales de infraestructura, si fueran necesarios.
 
 No asumir automáticamente regiones adicionales, balanceadores u otros mecanismos de alta disponibilidad sin una decisión técnica aprobada.
+
+**Aclaración (2026-09-27):** la separación en tres servicios del modelo de datos v4 (Negocio, Autenticación y Biométrico) es una separación **lógica, por responsabilidad**. No sustituye ni reinterpreta las 2 instancias de D-023, y "3 servicios" no significa "3 réplicas".
 
 ---
 
@@ -474,6 +480,18 @@ Registro:
 | D-018 | Estrategia de sesiones | PARCIAL | PARCIAL — cierre automático tras 5 min de inactividad, sin aviso previo ni opción de continuar; mecanismo pendiente | AG-02: aprobación final | 2026-09-27 |
 | D-051 | Estrategia de migraciones de base de datos | PENDIENTE | APROBADA (Flyway, esquema `nayra`, UUID v4, nombres físicos, FK `RESTRICT`, historial propio de `biometria`) | AG-10: aprobada por el equipo tras la propuesta `PROPUESTA_MODELO_FISICO_D051_D009_2026-09-27.md` | 2026-09-27 |
 | D-009 | Autorización | PARCIAL | APROBADA — rol como valor fijo (opción A); sin tabla `ROLES` ni varios roles por usuario | AG-03: misma revisión | 2026-09-27 |
+| D-051 | Estrategia de migraciones de base de datos | APROBADA | APROBADA — ampliada por el modelo de datos v4 (V005–V011 de `nayra`; V001–V003 de `biometria`) | Modelo de datos v4, decidido por el equipo | 2026-09-27 |
+| D-013 | Almacenamiento biométrico | APROBADA | APROBADA — estructura física de `biometria.perfiles_voz` definida (B-1 a B-13); AAD (B-4), frecuencia de rotación (B-5) y CHECK de 784 bytes PENDIENTES | Modelo de datos v4 | 2026-09-27 |
+| D-018 | Estrategia de sesiones | PARCIAL | PARCIAL — JWT con `jti` = `sesiones.id`, tabla `sesiones`, sin renovación ni refresh token; `exp`, claims, algoritmo, custodia de clave y máximo de sesiones PENDIENTES (P-5) | Modelo de datos v4 | 2026-09-27 |
+| D-044 | Política de 3 intentos | APROBADA (valor) / detalle PENDIENTE | APROBADA — solo cuenta el PIN incorrecto; límite 3; un PIN correcto devuelve el contador a 0 (H-01); límite biométrico PENDIENTE (P-8) | Modelo de datos v4 | 2026-09-27 |
+| D-042 | Transferencias: dato del destinatario | APROBADA / dato del destinatario PENDIENTE | APROBADA — el backend usa el **ID interno de la cuenta destino** (G-1 cerrada); formato del QR PENDIENTE (P-3) | Decisión del equipo (G-1) | 2026-09-27 |
+| D-035 | Validación del documento de identidad | APROBADA | APROBADA — documento DNI o CE; sin APIs externas; validación local/simulada **provisional** (P-2) | Modelo de datos v4 y decisión del equipo (P-2) | 2026-09-27 |
+| D-050 | Autenticación del administrador | PENDIENTE | APROBADA FUNCIONALMENTE — usuario y contraseña en el panel web; **no implementada**; modelo y almacenamiento de la credencial administrativa PENDIENTES | Decisión del equipo | 2026-09-27 |
+| D-055 | Umbrales y calibración | Estrategia APROBADA / valores PENDIENTES | APROBADA — similitud mínima **0.80** y probabilidad bona fide mínima **0.90**, escala [0,1]; **provisionales hasta la calibración** (D-060) | Decisión del equipo | 2026-09-27 |
+| D-048 | Vinculación del dispositivo | APROBADA (iOS no definido) | APROBADA — alcance del primer entregable solo Android (APK); iOS fuera de alcance | Modelo de datos v4 | 2026-09-27 |
+| H-01 | Reinicio del contador de PIN | Contradicción abierta | CERRADA — PIN correcto → 0, inmediatamente | Decisión del equipo; coincide con el código | 2026-09-27 |
+| H-02 | Seis reglas de BD "(a confirmar)" | Aplicadas sin confirmación formal | CERRADA — confirmadas | Decisión del equipo | 2026-09-27 |
+| H-03 | Alcance de auditoría | Pendiente | CERRADA — se mantiene `01` §12.4 | Decisión del equipo | 2026-09-27 |
 
 Esto permitirá mantener trazabilidad de las decisiones de diseño.
 
@@ -557,6 +575,8 @@ El código no debe introducir silenciosamente decisiones que contradigan la docu
 La solución contará con **2 instancias de aplicación ubicadas en zonas diferentes**, con el propósito de mejorar la disponibilidad y reducir el impacto de una falla localizada en una zona.
 
 Esta decisión aprueba únicamente la existencia y distribución de las dos instancias. No determina por sí sola otros componentes de infraestructura, tales como balanceador, mecanismo de distribución de tráfico, VPC, subredes, firewall, monitoreo o recuperación ante fallos. Estos elementos deberán aprobarse y registrarse de manera independiente.
+
+**Aclaración (2026-09-27):** D-023 se mantiene sin cambios. Los tres servicios del modelo de datos v4 (Negocio, Autenticación y Biométrico) son una separación **lógica, por responsabilidad**; no sustituyen a las 2 instancias ni significan 3 réplicas.
 
 ### D-021 — Entorno bancario simulado
 **Estado:** APROBADA
@@ -710,7 +730,7 @@ Reglas:
 - La contraseña se crea en el registro, puede dictarse, se almacena **solo mediante hash seguro**; nunca en texto plano, nunca como audio y nunca en logs.
 - Ni el comando de activación ni la contraseña se usan como muestra biométrica; la muestra es la respuesta al desafío.
 
-**Pendiente:** algoritmo de hash, política y normalización de la contraseña dictada (D-047); reconocimiento del habla (D-046); sesiones (D-018); autenticación del administrador (D-050). El algoritmo existente en el código (BCrypt) **no** se considera aprobado por existir.
+**Pendiente:** algoritmo de hash, política y normalización de la contraseña dictada (D-047); reconocimiento del habla (D-046); sesiones (D-018; mecanismo JWT con `jti` aprobado en el modelo v4, P-5 pendiente); autenticación del administrador (D-050; aprobada funcionalmente el 2026-09-27, sin implementar). El algoritmo existente en el código (BCrypt) **no** se considera aprobado por existir.
 
 ### D-038 — Referencia biométrica persistente en backend
 **Estado:** APROBADA COMO PRINCIPIO
@@ -758,7 +778,11 @@ La referencia biométrica permanece **asociada a la cuenta de acceso en el backe
 - El QR **no** es un mecanismo de autenticación y **no** contiene contraseña, datos biométricos ni información sensible innecesaria; solo permite identificar la cuenta/destinatario dentro del entorno simulado.
 - **AG-01 v5:** el QR (HU-123, HU-124) **no forma parte de la implementación del primer entregable**. Se mantiene documentado y trazado como funcionalidad **secundaria para un siguiente entregable**, cuando el producto tenga mayor madurez y pueda validarse con más personas. La transferencia del primer entregable es la transferencia directa a otro usuario de Nayra.
 
-**Pendiente:** dato concreto con el que se busca/selecciona al destinatario; identificador que codifica el QR (`03_BASE_DE_DATOS_NAYRA.md` §16).
+**Pendiente (texto de AG-01):** dato concreto con el que se busca/selecciona al destinatario; identificador que codifica el QR (`03_BASE_DE_DATOS_NAYRA.md` §16).
+
+**Actualización del 2026-09-27:**
+- **G-1 — CERRADA:** el backend identifica al destinatario de una transferencia por el **ID interno de la cuenta financiera de destino** (`cuentas.id`, que `operaciones.cuenta_destino_id` referencia). El frontend usa ese ID para obtener y mostrar la información del destinatario. Las transferencias **todavía no están implementadas** (no hay endpoint); el contrato sigue en D-014.
+- **QR:** `cuentas.codigo_qr` existe como identificador fijo, único y sin datos personales; su valor actual es un identificador aleatorio **PROVISIONAL**. El formato definitivo sigue **PENDIENTE (P-3)** y las funciones de QR (HU-123, HU-124) siguen fuera del primer entregable.
 
 ### D-043 — Número de celular
 **Estado:** APROBADA
@@ -766,7 +790,16 @@ La referencia biométrica permanece **asociada a la cuenta de acceso en el backe
 El número de celular forma parte del registro y se almacena como **dato de contacto** para procesos de atención y recuperación. **No** se implementan SMS reales, proveedores OTP, WhatsApp ni llamadas automáticas. Una eventual simulación de validación del número no es dependencia del primer entregable.
 
 ### D-044 — Política de 3 intentos
-**Estado:** APROBADA (valor) / detalle PENDIENTE
+**Estado:** APROBADA — valor (AG-01) y qué cuenta como intento (modelo de datos v4, 2026-09-27). Reinicio del contador con el PIN correcto (**H-01**, cerrada el 2026-09-27); límite propio de los fallos biométricos PENDIENTE (**P-8**); efecto del desbloqueo administrativo PENDIENTE (**P-11**).
+
+**Actualización del modelo de datos v4 (2026-09-27):**
+- **Solo el PIN incorrecto cuenta** como intento fallido. Los fallos de voz, contenido, anti-spoofing o calidad **no** suman al contador (su límite propio es P-8, pendiente); los errores técnicos tampoco.
+- Contador `intentos_fallidos` en `nayra.credenciales` (no en `usuarios`), con CHECK 0..3. Al **tercer** PIN incorrecto la cuenta de acceso pasa a `BLOQUEADO` y se revocan sus sesiones.
+- El incremento es **atómico** (UPDATE condicional `intentos_fallidos + 1 … WHERE intentos_fallidos < 3`): dos PIN incorrectos simultáneos cuentan como dos y el contador nunca pasa de 3 (corrección E-01).
+- **H-01 (cerrada el 2026-09-27):** `intentos_fallidos` vuelve a 0 **inmediatamente** cuando el PIN introducido es correcto ("PIN correcto → 0"), antes del paso de voz. Coincide con el comportamiento actual del código. Antes de esta decisión, el modelo v4 §2.2 decía "tras una autenticación correcta con PIN" y §A.5 "un PIN correcto → 0".
+- La propuesta de la revisión del 2026-09-27 citada abajo, que contaba también la voz, **no se adoptó**.
+
+Texto original (AG-01):
 
 Tras **3 intentos fallidos** de autenticación la cuenta de acceso se bloquea.
 
@@ -827,7 +860,7 @@ _Resueltos en AG-01 v6:_ momento del registro del celular (paso 8) y posición d
 | D-047 | Algoritmo de hash, política de contraseña compatible con dictado y normalización de la contraseña dictada | PENDIENTE — **AG-11** (2026-09-27): se aplica al **PIN de 6 dígitos** (D-061); el análisis A-K (Argon2id + pepper + límite de intentos) queda como insumo, no aprobado |
 | D-048 | Mecanismo técnico de vinculación del dispositivo | **APROBADA:** par de claves del dispositivo (origen histórico: AG-01; aprobada el 2026-09-27; impacto secundario: AG-11 por anti-replay) (ver sección de decisiones del 2026-09-27) |
 | D-049 | Procedimiento de recuperación asistida | PENDIENTE |
-| D-050 | Autenticación del administrador | PENDIENTE |
+| D-050 | Autenticación del administrador | **APROBADA FUNCIONALMENTE (2026-09-27):** usuario y contraseña en el panel web. **No implementada**; modelo y almacenamiento de la credencial administrativa PENDIENTES. El prototipo mantiene provisionalmente el acceso ADMIN con dispositivo + PIN + voz |
 | D-051 | Estrategia de migraciones de base de datos | **APROBADA (2026-09-27, AG-10)** — ver «Modelo físico de la base de datos» |
 
 Siguen también **PENDIENTES**: D-007 (frontend móvil), D-010 (Java ↔ Python), D-011 (modelo biométrico), D-012 (anti-spoofing), D-013 (almacenamiento biométrico), umbral biométrico, D-014 (API), D-018 (sesiones) y D-019 (auditoría detallada). D-017 (secretos) pasa a **deuda técnica** (categoría C).
@@ -850,6 +883,8 @@ Una deuda técnica pendiente **no** se convierte automáticamente en un bloqueo 
 | **C** | **D-017** (secretos y credenciales) | **Aprobada** (AG-01 v5) |
 
 Cada decisión A afecta solo a las funcionalidades que dependen de ella; las demás pueden avanzar en paralelo.
+
+**Actualización del modelo de datos v4 (2026-09-27):** de la categoría B quedan resueltos D-018 en su mecanismo base (JWT con `jti`; P-5 sigue pendiente) y D-044 en qué cuenta como intento (solo el PIN; el PIN correcto devuelve el contador a 0, H-01). D-050 queda aprobada funcionalmente, pero su implementación depende del modelo de la credencial administrativa (pendiente). D-055 fija valores provisionales (0.80 / 0.90) hasta la calibración de D-060. Ver «Decisiones del modelo de datos v4».
 
 ## Decisiones aprobadas el 2026-09-27 — Módulo de autenticación por voz, anti-spoofing, dispositivo, PIN y sesiones
 
@@ -902,6 +937,7 @@ Defensa en capas:
 - **Eliminación (HU-36):** borrado físico de la referencia y registro en auditoría, sin el embedding.
 - El administrador **no** accede a la referencia (`06_SEGURIDAD_NAYRA.md` §36.5).
 - Modelo lógico en `03_BASE_DE_DATOS_NAYRA.md` §16.11. La tabla física se crea con la estrategia de migraciones (D-051, aprobada el 2026-09-27: historial de migraciones propio para `biometria`; la estructura física de `perfiles_voz` sigue pendiente).
+- **Actualización del modelo de datos v4 (2026-09-27):** `biometria.perfiles_voz` está creada (`Nayra-Voz/migraciones/biometria`, V001–V003, historial propio) con la estructura B-1 a B-13 (`03` §17): **un perfil por usuario** (`UNIQUE(usuario_id)`), `embedding_cifrado` (cifrado AES-GCM + etiqueta) con `iv` de 12 bytes nuevo en cada cifrado, `clave_version` (la clave nunca está en PostgreSQL, en el código ni en el repositorio), modelo y versión del modelo, `numero_muestras`, estado `ACTIVO`/`REVOCADO`; **sin audio**; sin FK física hacia `nayra.usuarios` (referencia lógica). Volver a enrolar borra el perfil anterior e inserta uno nuevo; no hay historial de embeddings. El servicio Python persiste el perfil con psycopg cuando existe `NAYRA_VOZ_BD`; sin esa variable usa memoria (solo desarrollo). **PENDIENTES:** AAD definitiva (**B-4**; hoy PROVISIONAL `nayra-voz:v1|id|usuario_id|modelo|version_modelo`), frecuencia de rotación de claves (**B-5**), CHECK de 784 bytes de `embedding_cifrado` (se aplicará tras ejecutar ECAPA real) y rango de `numero_muestras` (**D-059**).
 
 ### D-010 — Comunicación Java ↔ Python (detalle)
 **Estado:** APROBADA / autenticación entre servicios en la nube PENDIENTE (D-016)
@@ -934,7 +970,8 @@ Defensa en capas:
 - En cada autenticación, Spring Boot emite un **nonce aleatorio de un solo uso y vida corta** (`SecureRandom`); la app firma nonce + identificador del dispositivo + propósito; el backend verifica la firma con la clave pública y rechaza nonces usados o vencidos.
 - Revocación: el dispositivo pasa a `REVOCADO` y toda firma posterior se rechaza; se revocan sus sesiones (D-040).
 - Reinstalación o borrado de datos: la clave se pierde; se trata como dispositivo nuevo (flujo D-040), coherente con D-039.
-- **No aprobado:** Key Attestation (extensión opcional); soporte de iOS (no definido); vida exacta del nonce.
+- **No aprobado:** Key Attestation (extensión opcional); vida exacta del nonce.
+- **Plataforma (modelo de datos v4, 2026-09-27):** el primer entregable es **solo Android**, distribuido como **APK**; `dispositivos.plataforma` solo admite `ANDROID`. **iOS queda fuera de alcance.**
 
 ### D-054 — Generación del desafío de voz
 **Estado:** APROBADA (estructura) / lista v2 y vida del desafío PROVISIONALES — PENDIENTES DE VALIDACIÓN (2026-09-27) / comprensión PENDIENTE DE VALIDACIÓN con usuarios
@@ -952,7 +989,9 @@ Defensa en capas:
 - **Vida del desafío:** valor PROVISIONAL del prototipo en la tabla «Parámetros provisionales del prototipo».
 
 ### D-055 — Umbrales y calibración
-**Estado:** APROBADA (estrategia) / valores PENDIENTES DE VALIDACIÓN
+**Estado:** APROBADA (estrategia) / **valores de similitud y anti-spoofing fijados provisionalmente el 2026-09-27** / calibración PENDIENTE (D-060) / demás valores PENDIENTES DE VALIDACIÓN
+
+- **Valores fijados por el equipo (2026-09-27), escala [0,1]:** similitud de voz mínima (coseno, ECAPA-TDNN) **0.80**; probabilidad bona fide mínima del anti-spoofing (AASIST) **0.90**. Es decir, 80 % = 0.80 y 90 % = 0.90; no se interpretan como 80 ni 90. Aplicados en `Nayra-Voz/config/parametros_provisionales.yaml` (commit `ca98bb3`). Son **provisionales hasta la calibración estadística** de D-060: no provienen de ningún estudio de Nayra y no deben presentarse como resultados. Su efecto real no se ha medido: ECAPA, AASIST y Vosk reales no se ejecutaron en el entorno actual.
 
 - Umbrales de similitud, anti-spoofing, calidad de audio y confianza del reconocimiento en **configuración versionada junto con el modelo**; **nunca en el código** (`05_BIOMETRIA_NAYRA.md` §12).
 - **Umbral provisional:** para que el prototipo funcione (D-034), se fija un valor provisional a partir de un piloto pequeño con consentimiento, registrado aquí como PROVISIONAL con el piloto que lo respalda.
@@ -962,7 +1001,7 @@ Defensa en capas:
 - Normalización de puntajes (AS-norm) solo si la calibración la justifica.
 
 ### D-056 — Responsable de aplicar los umbrales técnicos
-**Estado:** APROBADA (AG-12, 2026-09-27). Los valores numéricos de los umbrales **no** quedan aprobados: siguen pendientes de calibración (D-055).
+**Estado:** APROBADA (AG-12, 2026-09-27). Los valores numéricos de los umbrales **no** quedan aprobados por esta decisión: los de similitud y anti-spoofing se fijaron provisionalmente en D-055 (0.80 / 0.90) y todos siguen pendientes de calibración (D-060).
 
 - El **servicio Python/FastAPI** aplica los umbrales técnicos (calidad, confianza del reconocimiento, anti-spoofing y similitud) dentro del pipeline biométrico, con los valores versionados junto con el modelo.
 - Python realiza las evaluaciones técnicas y devuelve el **veredicto técnico de cada etapa** junto con sus puntajes.
@@ -1009,7 +1048,7 @@ Debe definirse: número de voluntarios (incluidas personas con discapacidad visu
 - El texto de HU-118 se conserva sin cambios; su interpretación bajo esta decisión consta en `01_REQUISITOS_NAYRA.md` §13.
 
 ### D-018 — Sesiones (actualización parcial)
-Ver la actualización en la sección D-018: **cierre automático tras 5 minutos de inactividad**, controlado en el servidor, sin aviso por voz previo, sin opción de continuar y con tiempo no ajustable por el usuario. Mecanismo técnico pendiente.
+Ver la actualización en la sección D-018: **cierre automático tras 5 minutos de inactividad**, controlado en el servidor, sin aviso por voz previo, sin opción de continuar y con tiempo no ajustable por el usuario. Mecanismo técnico pendiente. _(Actualización del modelo de datos v4, 2026-09-27: mecanismo JWT con `jti` = `sesiones.id`, sin renovación; P-5 pendiente. Ver la sección D-018.)_
 
 ### D-016 — Despliegue del servicio de voz (sin cambio de estado)
 **Estado:** PENDIENTE. Estimación del análisis A–K, a medir: contenedor o VM solo CPU (2–4 vCPU, 4 GB RAM). Falta decidir si el servicio Python se replica en las 2 instancias de D-023.
@@ -1027,8 +1066,8 @@ Todos los valores de esta tabla son **PROVISIONAL — PENDIENTE DE VALIDACIÓN**
 | Relación señal/ruido mínima | 10 dB | Python | D-058 |
 | Saturación máxima | 1 % de las muestras | Python | D-058 |
 | Confianza mínima por palabra (Vosk) | 0,60 | Python | D-046, D-055 |
-| Probabilidad mínima de voz genuina (AASIST) | 0,50 | Python | D-012, D-055 |
-| Similitud coseno mínima (ECAPA-TDNN) | 0,25 (valor por defecto de SpeechBrain, no calibrado) | Python | D-011, D-055 |
+| Probabilidad mínima de voz genuina (AASIST) | **0,90** (fijado por D-055 el 2026-09-27, escala [0,1]; antes 0,50) — provisional hasta D-060 | Python | D-012, D-055 |
+| Similitud coseno mínima (ECAPA-TDNN) | **0,80** (fijado por D-055 el 2026-09-27, escala [0,1]; antes 0,25, valor por defecto de SpeechBrain) — provisional hasta D-060 | Python | D-011, D-055 |
 | Muestra atípica en el enrolamiento | similitud < 0,50 con el centroide del resto | Python | D-059 |
 
 **Parámetros autorizados provisionalmente para el prototipo (2026-09-27).** Se mantienen solo para esta entrega; **no** son decisiones aprobadas y ninguna decisión D los fija:
@@ -1047,19 +1086,19 @@ Estos mecanismos pueden usarse en el prototipo, pero son **PROVISIONALES**: no s
 
 | Mecanismo | Decisión relacionada (sigue en su estado) | Qué sí está definido |
 |---|---|---|
-| Sesión con token opaco aleatorio; solo se guarda su hash; `Authorization: Bearer`; sin duración máxima absoluta ni renovación por ahora | D-018 (PARCIAL) | Cierre tras 5 min de inactividad (APROBADO) |
-| El ADMIN se autentica con dispositivo + PIN + voz | D-050 (PENDIENTE) | — |
-| Ruta de arranque del primer ADMIN (perfil `prototipo`). Separada del registro asistido: **no cumple** D-052 porque el primer ADMIN no pasa por la validación de un representante | D-050 (PENDIENTE); relacionada con D-052 | — |
+| ~~Sesión con token opaco aleatorio; solo se guarda su hash~~ — **reemplazado** por el modelo de datos v4: JWT con `jti` = `sesiones.id` en `Authorization: Bearer`, sin guardar el token; HS256 con clave de `NAYRA_JWT_CLAVE` (algoritmo y custodia PROVISIONALES, P-5) | D-018 (PARCIAL) | Cierre tras 5 min de inactividad; JWT con `jti` y tabla `sesiones`; sin renovación |
+| El ADMIN se autentica con dispositivo + PIN + voz (acceso provisional del prototipo) | D-050 (APROBADA FUNCIONALMENTE: usuario y contraseña en el panel web; no implementada; modelo de la credencial administrativa PENDIENTE) | Que el administrador usará usuario y contraseña |
+| Ruta de arranque del primer ADMIN (perfil `prototipo`). Separada del registro asistido: **no cumple** D-052 porque el primer ADMIN no pasa por la validación de un representante | D-050 (no implementada); relacionada con D-052 | — |
 | Código de registro de un solo uso para pasar del representante al celular de la persona | D-052 (registro técnico pendiente, categoría B) | Los 13 pasos del flujo |
 | Solo un ADMIN actúa como representante | D-052 | D-052 admite un administrador u otra persona autorizada; queda pendiente si puede ser otra persona |
 | Un ADMIN no puede bloquearse ni revocar su propio dispositivo (regla añadida para no dejar el prototipo sin administrador; no proviene de D-041) | — | — |
-| Formatos: DNI de 8 dígitos; celular de 9 a 15 dígitos con `+` opcional | D-035, D-043 | Los datos, no el formato |
+| Formatos: DNI de 8 dígitos; CE alfanumérico de hasta 30 caracteres (modelo v4); celular de 9 a 15 dígitos con `+` opcional | D-035, D-043, P-2 (provisional) | Los datos, no el formato |
 | Organización de rutas `/api/v1/...` para la API general (propuesta, no contrato) | D-014 (PENDIENTE) | — |
 | Cancelar el registro si la persona no confirma sus datos | D-052 | Que la persona confirma sus datos (paso 7) |
 | El primer ADMIN puede no tener cuenta financiera (no es una exención definitiva) | D-025 | Cada usuario tiene una única cuenta financiera |
 | Mecanismo de autorización por rutas con denegación por defecto | D-009 (APROBADA solo en la representación de roles) | Roles USER y ADMIN (D-041); un rol por usuario como valor fijo (D-009, 2026-09-27) |
 
-Valores ya aprobados que el prototipo usa sin cambios: 3 intentos (D-044) y WAV PCM 16 kHz mono 16 bits (D-057). El prototipo usa además 3 muestras válidas como valor inicial (hasta 5), provisional y pendiente de validación según D-059.
+Valores ya aprobados que el prototipo usa sin cambios: 3 intentos de PIN (D-044), WAV PCM 16 kHz mono 16 bits (D-057) y umbrales de similitud y anti-spoofing 0.80 / 0.90 (D-055, provisionales hasta D-060). El prototipo usa además 3 muestras válidas como valor inicial (hasta 5), provisional y pendiente de validación según D-059.
 
 ### Alternativas descartadas el 2026-09-27
 
@@ -1094,8 +1133,10 @@ Origen: propuesta `/mnt/project-files/analisis/PROPUESTA_MODELO_FISICO_D051_D009
 - **FK:** `ON DELETE RESTRICT ON UPDATE RESTRICT` por defecto. Sin `CASCADE` ni `SET NULL` salvo decisión explícita posterior.
 - **Usuarios de base de datos:** el usuario de migración es distinto del usuario de ejecución. El usuario de ejecución no tiene `UPDATE` ni `DELETE` sobre `auditoria` (solo inserción).
 - **Biometría:** `biometria` sigue como esquema separado, con **historial de migraciones propio** y usuario de migración distinto del de ejecución. **Sin FK física** entre `biometria.perfiles_voz.usuario_id` y `nayra.usuarios.id` por ahora: referencia lógica, para preservar la separación de D-013. La estructura física de `perfiles_voz` **sigue pendiente** y no se crea todavía.
-- **Tablas implementadas:** `entidades_bancarias`, `registro_identidad_simulado`, `usuarios`, `cuentas`, `dispositivos`, `auditoria`. **No se crean todavía:** `sesiones` (D-018 parcial), `operaciones`, `solicitudes_atencion`, `notificaciones`, almacenamiento de desafíos y nonces, identificador del QR y `biometria.perfiles_voz`.
-- **PROVISIONAL:** la columna `usuarios.intentos_fallidos` depende del detalle de D-044.
+- **Tablas implementadas al aprobar D-051 (V001–V004):** `entidades_bancarias`, `registro_identidad_simulado`, `usuarios`, `cuentas`, `dispositivos`, `auditoria`. En ese momento no se creaban `sesiones`, `operaciones`, `solicitudes_atencion`, `notificaciones`, almacenamiento de desafíos y nonces, identificador del QR ni `biometria.perfiles_voz`.
+- ~~PROVISIONAL: la columna `usuarios.intentos_fallidos` depende del detalle de D-044.~~ Retirada por el modelo v4: el contador vive en `nayra.credenciales` (V006).
+- **Actualización del modelo de datos v4 (2026-09-27):** V005–V011 añaden documento DNI/CE y estados `ACTIVO`/`BLOQUEADO`/`INACTIVO` (V005), `credenciales` (V006, con `pin_hash` e `intentos_fallidos` retirados de `usuarios`), `codigo_qr` PROVISIONAL y moneda `PEN` (V007), plataforma solo `ANDROID` (V008), `sesiones` (V009), `operaciones` y `notificaciones` (V010) y permisos por servicio (V011). El esquema `biometria` tiene V001–V003 con `perfiles_voz`. **Siguen sin crearse:** `roles`, `solicitudes_atencion`, almacenamiento de desafíos y nonces, historial de embeddings y tablas nuevas de auditoría.
+- **PENDIENTE (P-4):** qué servicio ejecuta Flyway en `nayra` y en `biometria`, con qué usuario, permisos definitivos por servicio y orden de despliegue. Hoy Spring Boot ejecuta las de `nayra` al arrancar; las de `biometria` solo se ejecutan en pruebas.
 
 **No aprobado por esta decisión:** versión de PostgreSQL, despliegue de la base de datos (D-016), retención y copias de seguridad (`03` §13), creación de los usuarios de base de datos y sus credenciales (D-017).
 
@@ -1105,6 +1146,66 @@ Origen: propuesta `/mnt/project-files/analisis/PROPUESTA_MODELO_FISICO_D051_D009
 - El rol es un **valor fijo**: `usuarios.rol varchar(10) NOT NULL CHECK (rol IN ('USER', 'ADMIN'))`.
 - **No** se crea la tabla `ROLES`. **No** hay varios roles por usuario.
 - En Java se mantiene el enum `Rol`, mapeado como `EnumType.STRING`.
+
+## Decisiones del modelo de datos v4 (2026-09-27)
+
+Origen: `/mnt/project-files/analisis/MODELO_DATOS_NAYRA_COMPLETO_2026-09-27.md` (versión 4), decidido por el equipo el 2026-09-27, y decisiones posteriores del mismo día (G-1, P-2, D-050, D-055). Implementado en los commits `5bbd505` y `ca98bb3` de `yuniv` (todavía sin push). Los identificadores P-, B-, G-, E- y H- son los del documento v4 y de la auditoría `AUDITORIA_CONSISTENCIA_V4_2026-09-27.md`; no son decisiones D nuevas. Sin AG temático asignado. Detalle físico en `03_BASE_DE_DATOS_NAYRA.md` §17.
+
+### Decisiones aprobadas
+
+| Tema | Decisión | Decisión D relacionada |
+|---|---|---|
+| Credencial del PIN (P-1) | Tabla `nayra.credenciales` del servicio de autenticación, 1:1 con `usuarios` (`UNIQUE(usuario_id)`), con `pin_hash` e `intentos_fallidos`. `usuarios` ya no contiene `pin_hash` ni `intentos_fallidos`. `pin_hash` no sale del servicio de autenticación ni se expone en ninguna API | D-061, D-047, D-044 |
+| Roles | Sin tabla `roles`: `usuarios.rol` con `USER`/`ADMIN` | D-009, D-041 |
+| Documento de identidad | `tipo_documento_identidad` (`DNI`, `CE`) + `numero_documento varchar(30)`, `UNIQUE(tipo, número)` en `usuarios` y `registro_identidad_simulado`. Donde AG-01 dice "DNI", el dato físico es el documento de identidad | D-035, D-053 |
+| P-2 (cerrada provisionalmente) | No se usan APIs externas para validar el documento; la validación es local/simulada. El formato por tipo de documento queda provisional | D-035 |
+| Estados de la cuenta de acceso | `ACTIVO`, `BLOQUEADO`, `INACTIVO` | D-044, D-041 |
+| Intentos | Solo el PIN incorrecto cuenta; límite 3; bloqueo y revocación de sesiones al tercero | D-044 |
+| Reinicio del contador (H-01, cerrada) | `intentos_fallidos` vuelve a 0 inmediatamente cuando el PIN es correcto ("PIN correcto → 0"), antes del paso de voz. Coincide con el código actual | D-044 |
+| Reglas de BD confirmadas (H-02, cerrada) | Se confirman formalmente las seis reglas que v4 marcaba "(a confirmar)", ya aplicadas en las migraciones: CHECK `intentos_fallidos BETWEEN 0 AND 3`; `DEFAULT 'PEN'` en `cuentas` y `operaciones`; `CHECK (fecha_ultimo_acceso >= fecha_creacion)` en `sesiones`; `CHECK (leida = (fecha_lectura IS NOT NULL))` y `UNIQUE (operacion_id, destinatario_id)` en `notificaciones`; índices de `sesiones` y `operaciones` | D-051 |
+| Alcance de auditoría (H-03, cerrada) | Se mantiene el alcance de `01` §12.4: HU-80, HU-89, HU-93, HU-94, HU-102 y HU-121 siguen en el primer entregable y las consultas administrativas de auditoría existentes permanecen. Sin tablas nuevas de auditoría | D-034, D-041 |
+| Estados de operación (HU-87) | `EXITOSO`, `FALLIDO` y `CANCELADO`; no existe estado pendiente | D-029 |
+| Moneda | `PEN` en `cuentas` y `operaciones` | D-021 |
+| QR | `cuentas.codigo_qr` fijo y `UNIQUE`; valor aleatorio PROVISIONAL; formato definitivo P-3 | D-042 |
+| Plataforma | Solo Android (APK) en el primer entregable; iOS fuera de alcance | D-048, D-007 |
+| Servicios | Tres servicios por responsabilidad: **Negocio** (usuarios, cuentas, entidades, registro de identidad, operaciones, notificaciones), **Autenticación** (`credenciales`, `dispositivos`, `sesiones`; desafíos y nonces en memoria; decisión final de autenticación, D-056) y **Biométrico** (Python/FastAPI, `biometria.perfiles_voz`). Hoy Negocio y Autenticación son **una sola aplicación Spring Boot**. Separación lógica: **no** sustituye a las 2 instancias de D-023 ni significa 3 réplicas. PostgreSQL compartido | D-023, D-002, D-010, D-056 |
+| Sesiones | JWT con `jti` = `sesiones.id`; tabla `sesiones` de 6 columnas; el token no se guarda; 5 min de inactividad; sin renovación ni refresh token; el servicio de autenticación es la autoridad de la sesión | D-018 |
+| Operaciones | Solo `TRANSFERENCIA`; estados `EXITOSO`/`FALLIDO`/`CANCELADO`; `codigo_referencia` de 6 dígitos único global; canal `MOVIL`; monto mayor que 0 y menor que 500 (0.01 a 499.99); origen y destino obligatorios y distintos | D-029, D-030 |
+| Destinatario (G-1, cerrada) | El backend usa el ID interno de la cuenta destino; el frontend lo usa para obtener y mostrar al destinatario. Transferencias todavía **no implementadas** | D-042 |
+| Notificaciones | Solo tipo `OPERACION`; `operacion_id` obligatorio; texto "Nombres Ape... te realizó una transferencia de S/ …" | — |
+| Biometría | `biometria.perfiles_voz`: un perfil por usuario, embedding cifrado, sin audio (B-1 a B-13) | D-013 |
+| Administrador (D-050) | Aprobada funcionalmente: usuario y contraseña en el panel web. **No implementada**: el modelo y el almacenamiento de la credencial administrativa siguen pendientes. El prototipo mantiene provisionalmente el acceso ADMIN con dispositivo + PIN + voz | D-050, D-045 |
+| Umbrales (D-055) | Similitud 0.80 y bona fide 0.90, escala [0,1], provisionales hasta D-060 | D-055 |
+| Fuera del primer modelo | Tablas `roles`, `solicitudes_atencion`, desafíos y nonces, historial de embeddings y tablas nuevas de auditoría | — |
+
+### Correcciones técnicas de desarrollo (E-01, E-02, E-03)
+
+Registradas como decisiones técnicas de implementación (categoría B), sin cambios de esquema:
+
+- **E-01 — contador del PIN:** incremento atómico con `UPDATE … SET intentos_fallidos = intentos_fallidos + 1 … WHERE intentos_fallidos < 3` y lectura en la misma transacción. Dos PIN incorrectos simultáneos cuentan como dos; el contador nunca pasa de 3.
+- **E-02 — sesiones:** alta con `crear` (rechaza un id existente); revocación y registro de acceso con UPDATE condicionales (`fecha_revocacion IS NULL`, último acceso dentro del límite de inactividad, fecha que nunca retrocede). Una sesión revocada no puede reabrirse por una escritura obsoleta. No se añadió `@Version`: exigiría una séptima columna y `sesiones` mantiene 6.
+- **E-03 — monto:** `BigDecimal` validado antes de persistir: escala ≤ 2 (sin redondeo; `MONTO_ESCALA_INVALIDA`), precisión ≤ 15 y 0 < monto < 500 (`MONTO_FUERA_DE_RANGO`). No se depende del redondeo implícito de `numeric(15,2)` en PostgreSQL.
+
+Pruebas en `ConcurrenciaPostgresTest`, `ModeloDatosV4Test` y `ModeloDatosV4PostgresTest`.
+
+### Pendientes que se mantienen
+
+| ID | Pendiente | Tipo |
+|---|---|---|
+| P-3 | Formato definitivo del QR | No bloqueante |
+| P-4 | Servicio que ejecuta Flyway (`nayra` y `biometria`), permisos definitivos por servicio y orden de despliegue | No bloqueante; antes de las migraciones definitivas |
+| P-5 | `exp`, claims definitivos, algoritmo definitivo, custodia de la clave de firma y número máximo de sesiones | No bloqueante; antes de producción |
+| P-7 / D-059 | Rango definitivo de muestras de enrolamiento | No bloqueante |
+| P-8 | Límite propio de reintentos biométricos | No bloqueante |
+| P-10 | Orquestación definitiva del registro asistido entre servicios | No bloqueante |
+| P-11 | Mecanismo de desbloqueo administrativo y si reinicia el contador | No bloqueante |
+| B-4 | AAD definitiva del cifrado biométrico | No bloqueante |
+| B-5 | Frecuencia de rotación de claves | No bloqueante |
+| — | CHECK de 784 bytes de `embedding_cifrado` (tras ejecutar ECAPA real) | Deuda técnica, no es una decisión abierta |
+| — | Comentario SQL de V010 sobre `operaciones` que todavía dice "G-1 PENDIENTE BLOQUEANTE" (G-1 está cerrada; V010 no se edita ni se crea V012 por ello) | Deuda documental |
+| D-050 | Modelo y almacenamiento de la credencial administrativa | Pendiente |
+
+Siguen también pendientes, sin cambios: D-047 (hash del PIN y *pepper*), D-014 (contrato de API), D-046 en lo que permanece abierto (comando "Iniciar sesión Nayra", tecnología definitiva del PIN dictado y del documento), D-060 (dataset y calibración), D-061 en el rechazo de PIN triviales y D-045 (panel web).
 
 ## Agendas temáticas (AG)
 

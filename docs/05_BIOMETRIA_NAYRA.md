@@ -8,7 +8,7 @@ La biometría de voz es uno de los elementos centrales de la solución, debido a
 
 Este documento **no fija todavía un modelo biométrico, algoritmo, umbral o arquitectura definitiva de procesamiento**. Esos elementos deberán seleccionarse y documentarse mediante decisiones técnicas aprobadas.
 
-> **Actualización AG-13 (2026-09-27):** el modelo biométrico, la estrategia anti-spoofing, el reconocimiento del contenido del desafío, el almacenamiento biométrico y la comunicación con Java quedaron aprobados (D-010 a D-013, D-046 parcial, D-054 a D-059); la comunicación con Java (D-010) y D-056 pertenecen a AG-12. El diseño técnico vigente está en la **sección 27**. Los **valores** de umbrales siguen sin definir hasta la calibración (D-055).
+> **Actualización AG-13 (2026-09-27):** el modelo biométrico, la estrategia anti-spoofing, el reconocimiento del contenido del desafío, el almacenamiento biométrico y la comunicación con Java quedaron aprobados (D-010 a D-013, D-046 parcial, D-054 a D-059); la comunicación con Java (D-010) y D-056 pertenecen a AG-12. El diseño técnico vigente está en la **sección 27**. Los **valores** de umbrales siguen sin definir hasta la calibración (D-055). _(2026-09-27: D-055 fijó provisionalmente similitud 0.80 y bona fide 0.90, escala [0,1], hasta la calibración de D-060; el modelo de datos v4 implementó `biometria.perfiles_voz`, §27.6. La biometría real no se ha validado en el entorno actual.)_
 
 ---
 
@@ -253,7 +253,7 @@ Comparación con umbral
 Aceptado                    Rechazado
 ```
 
-El valor del umbral **no está definido todavía en este documento**.
+El valor del umbral **no está definido todavía en este documento**. _(2026-09-27: D-055 fija valores provisionales de similitud 0.80 y bona fide 0.90, en configuración versionada y no en el código; el valor definitivo sigue dependiendo de la calibración, D-060. Ver §27.7.)_
 
 No se debe colocar un valor arbitrario en el código.
 
@@ -481,7 +481,7 @@ Claude debe aplicar las siguientes reglas al trabajar con biometría:
 
 Antes de implementar definitivamente el componente biométrico deben definirse:
 
-> **Estado AG-13 (2026-09-27; protocolo con Java y D-056 en AG-12):** resueltos modelo, framework, anti-spoofing, extracción de características, representación, método de comparación, estrategia de almacenamiento (sin audio: no hay retención de audio), protocolo con Java, reconocimiento del contenido del desafío y generación del desafío (estructura). El responsable de aplicar los umbrales técnicos también quedó aprobado (servicio Python, D-056). Siguen pendientes: **valores** de umbral (D-055), dataset y procedimiento de evaluación (D-060), detalle de reintentos (D-044), herramienta de VAD (D-058), lista de palabras y vida del desafío (D-054) y el resto del reconocimiento del habla (D-046).
+> **Estado AG-13 (2026-09-27; protocolo con Java y D-056 en AG-12):** resueltos modelo, framework, anti-spoofing, extracción de características, representación, método de comparación, estrategia de almacenamiento (sin audio: no hay retención de audio), protocolo con Java, reconocimiento del contenido del desafío y generación del desafío (estructura). El responsable de aplicar los umbrales técnicos también quedó aprobado (servicio Python, D-056). Siguen pendientes: **valores** de umbral (D-055) _(2026-09-27: similitud 0.80 y bona fide 0.90 fijados como provisionales hasta la calibración)_, dataset y procedimiento de evaluación (D-060), detalle de reintentos (D-044) _(modelo v4: solo el PIN cuenta; límite biométrico pendiente, P-8)_, herramienta de VAD (D-058), lista de palabras y vida del desafío (D-054) y el resto del reconocimiento del habla (D-046).
 
 - modelo de reconocimiento/verificación;
 - framework definitivo;
@@ -497,7 +497,7 @@ Antes de implementar definitivamente el componente biométrico deben definirse:
 - período de retención;
 - protocolo de comunicación con Java;
 - manejo de errores;
-- estrategia de reintentos (el valor de 3 intentos está aprobado en D-044; los tipos de fallo que cuentan siguen pendientes);
+- estrategia de reintentos (el valor de 3 intentos está aprobado en D-044; los tipos de fallo que cuentan siguen pendientes); _(modelo v4, 2026-09-27: el contador de 3 intentos es solo del PIN; los fallos biométricos no suman; su límite propio sigue pendiente, P-8)_;
 - controles anti-abuso;
 - reconocimiento del habla para comprobar el contenido del desafío (D-046);
 - generación de las frases de desafío (vocabulario, longitud, pronunciabilidad).
@@ -545,13 +545,13 @@ Registradas en `07_DECISIONES_TECNICAS_NAYRA.md` (D-036 a D-040, D-044, D-052). 
 - La biometría es una **verificación 1:1** contra la referencia de la cuenta determinada por el **dispositivo vinculado**. **No** se utiliza identificación 1:N (D-037).
 - La verificación biométrica ocurre **después** de validar la contraseña. _(2026-09-27: la contraseña se concreta como **PIN de 6 dígitos**, D-061; origen AG-01; aprobada el 2026-09-27.)_
 - La muestra biométrica es la respuesta a una **frase de desafío variable** propuesta en cada autenticación. Se debe **comprobar que el contenido** de la respuesta corresponde al desafío; sin esa comprobación, una grabación de la voz del usuario podría superar la verificación.
-- Orden conceptual (se mantiene §10): respuesta al desafío → comprobación del contenido → **anti-spoofing** → **verificación 1:1** → resultado → el backend aplica las reglas (3 intentos, D-044).
+- Orden conceptual (se mantiene §10): respuesta al desafío → comprobación del contenido → **anti-spoofing** → **verificación 1:1** → resultado → el backend aplica las reglas (3 intentos, D-044). _(Modelo v4, 2026-09-27: los 3 intentos corresponden solo al PIN; los fallos de calidad, contenido, anti-spoofing o similitud no suman al contador, P-8.)_
 - **No** son muestras biométricas: el comando de activación "Iniciar sesión Nayra" ni la contraseña dictada. La contraseña dictada se descarta tras calcular su hash y nunca se almacena como audio.
 
 ## 26.3 Referencia biométrica
 
 - Permanece **asociada a la cuenta de acceso en el backend** y no depende exclusivamente del dispositivo (D-038). Tras un cambio de celular sigue disponible para la verificación 1:1.
-- **Pendiente:** ubicación, formato, modelo que la genera y si es un embedding u otra representación (D-011, D-013).
+- **Pendiente:** ubicación, formato, modelo que la genera y si es un embedding u otra representación (D-011, D-013). _(Resuelto: D-011 y D-013 en AG-13; tabla `biometria.perfiles_voz` implementada en el modelo de datos v4, ver §27.6.)_
 - Criterios que cualquier alternativa debe cumplir: no guardar audio innecesariamente (§16); proteger la referencia en tránsito y en reposo; acceso restringido al componente que verifica (el administrador no accede a ella); separación de los datos personales; nunca en logs; eliminación conforme a HU-36.
 
 ## 26.4 Cambio de dispositivo y nuevo enrolamiento
@@ -568,13 +568,13 @@ No se asume ninguna solución fiable para validar voces alteradas por enfermedad
 
 El prototipo necesita reconocimiento del habla (distinto de la verificación del locutor) para el comando de activación, el DNI (si se dicta; forma de ingreso pendiente, D-052), la contraseña dictada y la comprobación del contenido del desafío. Su tecnología y ubicación (dispositivo o servidor) están **pendientes (D-046)**. Si procesa la contraseña dictada, no debe almacenar ni registrar el audio ni la transcripción.
 
-_(2026-09-27: el contenido del desafío se reconoce con Vosk en el servidor (D-046, parcial; AG-13); la contraseña se concreta como PIN de 6 dígitos (D-061; origen AG-01; aprobada el 2026-09-27) y si puede dictarse sigue pendiente; el comando y el DNI siguen pendientes.)_
+_(2026-09-27: el contenido del desafío se reconoce con Vosk en el servidor (D-046, parcial; AG-13); la contraseña se concreta como PIN de 6 dígitos (D-061; origen AG-01; aprobada el 2026-09-27) y si puede dictarse sigue pendiente; el comando y el DNI siguen pendientes.)_ _(Actualización posterior del 2026-09-27: el dictado del PIN quedó aprobado por D-061; su tecnología de reconocimiento sigue pendiente en D-046.)_
 
 ---
 
 # 27. Diseño técnico aprobado del módulo de voz — AG-13 (2026-09-27)
 
-Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-010 a D-013, D-046 (parcial), D-048, D-054 a D-061. Ningún valor numérico de umbral está aprobado; ver §27.7.
+Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-010 a D-013, D-046 (parcial), D-048, D-054 a D-061. Ningún valor numérico de umbral está aprobado; ver §27.7. _(2026-09-27: D-055 fijó provisionalmente la similitud en 0.80 y la probabilidad bona fide en 0.90, escala [0,1], hasta la calibración de D-060; los demás valores siguen pendientes.)_
 
 ## 27.1 Modelos y herramientas
 
@@ -608,12 +608,12 @@ c) Anti-spoofing (AASIST) ────────────── falla → P
    ↓
 d) Embedding ECAPA + coseno 1:1 contra la referencia cifrada ── falla → NO_COINCIDE
    ↓
-Resultado por etapa → Spring Boot aplica las reglas de autenticación (D-044) → audio descartado
+Resultado por etapa → Spring Boot aplica las reglas de autenticación (D-056; el contador de D-044 es solo del PIN) → audio descartado
 ```
 
 - Se mantiene el orden de §10 y §26.2 (contenido → anti-spoofing → verificación), con la calidad como etapa previa.
 - En operación, el pipeline se detiene en la primera etapa fallida; en modo de evaluación se registran todos los puntajes anonimizados (D-059).
-- El servicio Python/FastAPI **aplica los umbrales técnicos** en cada etapa y devuelve el veredicto técnico de cada una junto con sus puntajes (D-056). Los **valores** de esos umbrales siguen pendientes de calibración (D-055). La decisión final de autenticar, los intentos, el bloqueo, la sesión y la auditoría son de Spring Boot (§5).
+- El servicio Python/FastAPI **aplica los umbrales técnicos** en cada etapa y devuelve el veredicto técnico de cada una junto con sus puntajes (D-056). Los **valores** de esos umbrales siguen pendientes de calibración (D-055, D-060); los de similitud (0.80) y anti-spoofing (0.90) están fijados provisionalmente. La decisión final de autenticar, los intentos, el bloqueo, la sesión y la auditoría son de Spring Boot (§5).
 - En el **cambio de dispositivo** (D-040), el desafío se liga a la solicitud de cambio y al dispositivo nuevo, y la verificación es contra la **referencia existente**.
 
 ## 27.5 Enrolamiento
@@ -630,11 +630,14 @@ Dentro del registro asistido (D-052, paso 11), con dispositivo ya vinculado y PI
 
 Solo embedding cifrado (AES-256-GCM), en el esquema `biometria` del PostgreSQL del proyecto, accesible únicamente por el servicio Python (D-013, `03_BASE_DE_DATOS_NAYRA.md` §16.11). Sin audio, sin adaptación automática, actualización solo por re-enrolamiento tras validar al titular (§26.4), borrado físico según HU-36. Java y el administrador no acceden a la referencia.
 
+**Modelo físico (modelo de datos v4, 2026-09-27; `03` §17.11):** tabla `biometria.perfiles_voz` (migraciones `Nayra-Voz/migraciones/biometria` V001–V003, historial propio) con **un perfil por usuario** (`UNIQUE(usuario_id)`, sin FK física hacia `nayra.usuarios`), `embedding_cifrado`, `iv` de 12 bytes, `clave_version`, modelo, versión del modelo, `numero_muestras`, estado y fechas (B-1 a B-13). La clave nunca está en PostgreSQL, en el código ni en el repositorio. Volver a enrolar borra el perfil anterior; no hay historial de embeddings. **Pendientes:** AAD definitiva (B-4; hoy provisional), frecuencia de rotación de claves (B-5), rango de `numero_muestras` (D-059) y el CHECK de 784 bytes de `embedding_cifrado`, que se aplicará cuando se ejecute ECAPA real.
+
 ## 27.7 Umbrales y calibración (D-055)
 
 - Umbrales en configuración versionada con el modelo, nunca en el código.
 - **Umbral provisional** para el prototipo, obtenido en un piloto pequeño y registrado como provisional en `07`.
 - Hasta que exista el piloto, el prototipo usa valores provisionales **sin estudio que los respalde**, autorizados el 2026-09-27 y listados en `07` («Parámetros provisionales del prototipo»).
+- **Valores fijados por D-055 (2026-09-27), escala [0,1]:** similitud de voz mínima **0.80** y probabilidad bona fide mínima del anti-spoofing **0.90** (80 % = 0.80; 90 % = 0.90). Son **provisionales hasta la calibración** (D-060) y su efecto no se ha medido: ECAPA, AASIST y Vosk reales no se ejecutaron en el entorno actual. Configurados en `Nayra-Voz/config/parametros_provisionales.yaml`.
 - Valores definitivos por calibración con voluntarios (dataset y consentimiento pendientes, D-060), desarrollo y prueba separados, FAR/FRR/EER, punto de operación de baja FAR.
 - No reducir el umbral para voces alteradas (§26.5).
 
@@ -653,7 +656,9 @@ Precisión biométrica en español y con celulares; umbral provisional y definit
 
 Implementación del flujo de §27.4 y §27.5 para el primer entregable, con las reglas de `09_REGLAS_DESARROLLO_NAYRA.md` §27:
 
-- **Servicio de voz:** `Nayra-Voz/` (FastAPI). Calidad con WebRTC VAD (candidata provisional, D-058) → Vosk con gramática cerrada → AASIST → ECAPA-TDNN con coseno 1:1. Parámetros en `Nayra-Voz/config/parametros_provisionales.yaml`, todos PROVISIONALES — PENDIENTES DE VALIDACIÓN.
+- **Servicio de voz:** `Nayra-Voz/` (FastAPI). Calidad con WebRTC VAD (candidata provisional, D-058) → Vosk con gramática cerrada → AASIST → ECAPA-TDNN con coseno 1:1. Parámetros en `Nayra-Voz/config/parametros_provisionales.yaml`, todos PROVISIONALES — PENDIENTES DE VALIDACIÓN (similitud 0.80 y bona fide 0.90 fijados por D-055 hasta la calibración de D-060).
 - **PIN dictado** (D-061): transcripción con Vosk restringido a dígitos (candidata provisional, D-046). El audio no entra al pipeline biométrico y no se guarda ni se registra.
-- **Provisionales por dependencias externas:** referencias biométricas cifradas en memoria en lugar del esquema `biometria` (estructura física de `biometria.perfiles_voz` pendiente; el esquema separado está decidido en D-051); clave de cifrado y token de servicio leídos de variables de entorno (D-017); contrato bajo `/prototipo/v1` (D-014).
+- **Referencia biométrica persistida (modelo de datos v4):** el servicio guarda el perfil en `biometria.perfiles_voz` con psycopg cuando existe `NAYRA_VOZ_BD`; sin esa variable lo guarda en memoria (solo desarrollo; se pierde al reiniciar). Fuera de las pruebas, ningún proceso ejecuta todavía las migraciones de `biometria` (P-4).
+- **Provisionales por dependencias externas:** clave de cifrado y token de servicio leídos de variables de entorno (D-017); contrato bajo `/prototipo/v1` (D-014).
+- **Validación real no realizada:** ECAPA-TDNN, AASIST y Vosk reales **no se ejecutaron** en el entorno actual (descarga de modelos externos bloqueada). Las pruebas automáticas usan dobles de los modelos (`Nayra-Voz/tests/falsos.py`); la prueba con AASIST real (`test_aasist_real`) se omite. Pruebas actuales del servicio de voz: 57 ejecutadas, 56 correctas, 0 fallos, 1 omitida.
 - **Sin resultados biométricos:** el prototipo no produce ni reporta FAR, FRR ni EER (§27.8).

@@ -568,6 +568,8 @@ El sistema contempla **2 instancias de aplicación**, ubicadas en **zonas difere
 
 Esta definición forma parte del diseño actual. No se deben asumir componentes de infraestructura adicionales (por ejemplo, balanceador, DMZ, VPC, API Gateway u otros) si no han sido aprobados explícitamente en la documentación de arquitectura.
 
+_(2026-09-27: el modelo de datos v4 organiza la solución en tres servicios por responsabilidad —Negocio, Autenticación y Biométrico—. Es una separación **lógica**: no sustituye a estas 2 instancias ni significa 3 réplicas. Ver `02_ARQUITECTURA_NAYRA.md` y D-023 en `07_DECISIONES_TECNICAS_NAYRA.md`.)_
+
 ### Entorno bancario simulado
 Nayra **no contempla una integración directa con bancos reales** dentro del alcance del proyecto. Para el desarrollo, las pruebas y la validación se utilizará un **entorno controlado y simulado**, en el que se representarán entidades bancarias, cuentas y operaciones necesarias para demostrar el funcionamiento de la solución.
 

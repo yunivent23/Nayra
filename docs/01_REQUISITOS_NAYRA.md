@@ -184,7 +184,7 @@ Regla: el término "cuenta" en una HU debe interpretarse según su contexto como
 
 | ID | Actor | Historia de usuario | Prioridad | Tipo |
 |---|---|---|---|---|
-| HU-87 | Usuario | Como usuario, quiero identificar el estado de una operación para saber si fue completada, rechazada, cancelada o se encuentra pendiente. | Alta | F |
+| HU-87 | Usuario | Como usuario, quiero identificar el estado de una operación para saber si fue completada, rechazada, cancelada o se encuentra pendiente. _(Modelo v4, 2026-09-27: los estados son `EXITOSO`, `FALLIDO` y `CANCELADO`; no existe estado pendiente. Ver §14.)_ | Alta | F |
 | HU-88 | Usuario | Como usuario, quiero consultar el identificador de una operación para poder reconocerla y realizar consultas posteriores. | Media | F |
 | HU-89 | Administrador | Como administrador, quiero consultar los registros de auditoría para analizar las actividades realizadas en la plataforma. | Alta | F |
 | HU-90 | Administrador | Como administrador, quiero buscar y filtrar eventos de auditoría mediante diferentes criterios para localizar rápidamente información relevante. | Alta | F |
@@ -612,7 +612,8 @@ Se mantienen **separados y sin modificar** hasta una decisión explícita:
 - Casos del registro por DNI: DNI inexistente en el registro de identidad simulado, DNI sin cuenta financiera simulada, documentos distintos del DNI (p. ej. CE), corrección posterior del DNI, y si el administrador tiene cuenta financiera. _(AG-01: el DNI ya registrado deriva a recuperación/cambio de dispositivo, D-036; el personal de atención dejó de existir, D-041.)_
 - ~~Dato del entorno simulado con el que se localiza la cuenta por DNI~~ — **resuelto por D-035** (registro de identidad simulado).
 - Destino de las operaciones de tipo PAGO (HU-73) — _los pagos no forman parte del primer entregable_ (sección 12.4) — y regla de moneda en transferencias.
-- Estado CANCELADA de operaciones (HU-87) y estados de la cuenta de acceso frente a los de la cuenta financiera (AG-05).
+- ~~Estado CANCELADA de operaciones (HU-87) y estados de la cuenta de acceso frente a los de la cuenta financiera (AG-05).~~ _(Resuelto por el modelo v4, ver la nota siguiente y §14.)_
+- _Actualización del modelo de datos v4 (2026-09-27): el documento de identidad puede ser **DNI o CE** (validación local/simulada provisional, P-2, sin APIs externas); la moneda de las transferencias es `PEN`; las operaciones usan `EXITOSO`/`FALLIDO`/`CANCELADO` y la cuenta de acceso `ACTIVO`/`BLOQUEADO`/`INACTIVO`. Ver §14._
 - Nombre de EP-01 y código de épica para "Monitoreo y métricas".
 - Renumeración de HUs (aplazada).
 
@@ -633,14 +634,14 @@ Estas aclaraciones precisan cómo se interpretan las HUs bajo las decisiones de 
 | HU-12 | El acceso requiere: comando "Iniciar sesión Nayra" → dispositivo vinculado → contraseña → desafío de voz variable → comprobación del contenido → anti-spoofing → verificación 1:1. El DNI **no** forma parte del inicio de sesión habitual (D-053). | D-037, D-039, D-053 |
 | HU-14 | Con un único dispositivo activo por cuenta, la HU se refiere a la sesión y al dispositivo vinculado de la cuenta; su reformulación queda pendiente. | D-039 |
 | HU-18 | La recuperación cubre pérdida del celular, cambio de celular, cuenta bloqueada y problemas de autenticación. El procedimiento asistido queda pendiente (D-049). | D-040 |
-| HU-19 | Además del bloqueo manual por el administrador, la cuenta de acceso se bloquea automáticamente tras 3 intentos fallidos y puede bloquearse por pérdida del celular. | D-040, D-044 |
+| HU-19 | Además del bloqueo manual por el administrador, la cuenta de acceso se bloquea automáticamente tras 3 intentos fallidos y puede bloquearse por pérdida del celular. _(Modelo v4: los 3 intentos son de PIN; si el desbloqueo reinicia el contador queda pendiente, P-11.)_ | D-040, D-044 |
 | HU-26, HU-29 | El enrolamiento se realiza durante el registro, después de confirmar la identidad, con anti-spoofing durante el enrolamiento. | D-036, D-038 |
 | HU-35 | Un nuevo enrolamiento solo se permite después de validar al titular (nunca DNI → cuenta → nueva voz). | D-040 |
 | HU-40 | "Iniciar sesión Nayra" es solo un comando de activación; la verificación biométrica es 1:1 contra la referencia de la cuenta determinada por el dispositivo y se realiza después de validar la contraseña. | D-037 |
 | HU-43 | La frase de desafío es **variable** en cada autenticación y su contenido se comprueba; su respuesta es la muestra biométrica. | D-037 |
-| HU-44, HU-47 | Aplica la política de 3 intentos; los detalles (qué cuenta como intento) quedan pendientes. | D-044 |
+| HU-44, HU-47 | Aplica la política de 3 intentos; los detalles (qué cuenta como intento) quedan pendientes. _(Modelo v4, 2026-09-27: solo el PIN incorrecto cuenta como intento; repetir la captura de voz no suma al contador; el límite propio de reintentos biométricos sigue pendiente, P-8.)_ | D-044 |
 | HU-48 | El anti-spoofing se aplica en el enrolamiento y en la autenticación. | D-036, D-037 |
-| HU-69 | El destinatario es otro usuario registrado en Nayra (seleccionado/buscado o identificado por QR, HU-124). El dato concreto de búsqueda queda pendiente. | D-042 |
+| HU-69 | El destinatario es otro usuario registrado en Nayra (seleccionado/buscado o identificado por QR, HU-124). El dato concreto de búsqueda queda pendiente. _(G-1 cerrada el 2026-09-27: el backend usa el ID interno de la cuenta destino y el frontend lo usa para obtener y mostrar al destinatario.)_ | D-042 |
 
 ### 12.2 HUs nuevas
 
@@ -690,14 +691,18 @@ Clasificación según D-034 y el diagnóstico AG-01 aprobado. Las HUs **secundar
 | **Fuera del primer entregable (marcadas)** | HU-25, HU-37 |
 | **Sin objeto (marcadas)** | HU-24, HU-96, HU-98, HU-100 |
 
+**Plataforma (modelo de datos v4, 2026-09-27):** el primer entregable se desarrolla y valida **solo en Android**, instalado mediante **APK**. **iOS queda fuera de alcance.**
+
+**H-03 (cerrada, 2026-09-27):** se mantiene el alcance actual de esta sección. HU-80, HU-89, HU-93, HU-94, HU-102 y HU-121 siguen en el primer entregable, y las consultas administrativas de auditoría que ya existen en el código permanecen. El modelo de datos v4 no crea tablas nuevas de auditoría ni `solicitudes_atencion`.
+
 Funcionalidades **fuera del primer entregable sin HU**: retiro asistido por administrador, eliminación de cuenta, chatbot, OTP/SMS/WhatsApp, contacto de confianza (posible evolución futura), agenda del teléfono, múltiples dispositivos activos.
 
 ### 12.5 Pendientes funcionales derivados de AG-01
 
-- Dato con el que el emisor busca/selecciona al destinatario de una transferencia (HU-69).
-- Identificador que codifica el QR (ver `03_BASE_DE_DATOS_NAYRA.md` §16) — no bloquea el primer entregable (QR en siguiente entregable).
-- Estados de la cuenta de acceso (al menos ACTIVA y BLOQUEADA por D-044/D-040; "registro incompleto", "suspendida", "desactivada" pendientes).
-- Detalle de la política de 3 intentos (D-044) y procedimiento de recuperación asistida (D-049).
+- ~~Dato con el que el emisor busca/selecciona al destinatario de una transferencia (HU-69).~~ **Resuelto (G-1, 2026-09-27):** ID interno de la cuenta destino.
+- Identificador que codifica el QR (ver `03_BASE_DE_DATOS_NAYRA.md` §16) — no bloquea el primer entregable (QR en siguiente entregable). _(Modelo v4: existe `codigo_qr` provisional; formato definitivo pendiente, P-3.)_
+- Estados de la cuenta de acceso (al menos ACTIVA y BLOQUEADA por D-044/D-040; "registro incompleto", "suspendida", "desactivada" pendientes). _(Modelo v4: `ACTIVO`, `BLOQUEADO` e `INACTIVO`.)_
+- Detalle de la política de 3 intentos (D-044) y procedimiento de recuperación asistida (D-049). _(Modelo v4: solo cuenta el PIN; el contador vuelve a 0 con el PIN correcto (H-01, cerrada); siguen pendientes el límite biométrico (P-8), el desbloqueo administrativo (P-11) y D-049.)_
 - Reformulación de HU-14 y HU-25.
 - Confirmación de la prioridad de las HUs nuevas y de la clasificación de alcance de la sección 12.4.
 - Canal por el que un usuario que perdió su celular solicita asistencia (HU-121), sin chatbot.
@@ -720,3 +725,21 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-007, D-018, D-048
 | HU-36 | La eliminación borra físicamente la referencia biométrica; no existe audio que eliminar | D-013 |
 
 **Clasificación técnica (sección 5):** las filas de HU-117 a HU-124 que indican "Por definir (D-007)" deben leerse como **Flutter** tras D-007 (2026-09-27); las referencias del Excel a "almacenamiento de audio" (HU-26, HU-28, HU-30, HU-35, HU-36) **no** aplican, porque D-013 prohíbe guardar audio. La clasificación del Excel se conserva sin modificar como referencia del archivo fuente.
+
+## 14. Interpretación de HUs por el modelo de datos v4 (2026-09-27)
+
+Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, «Decisiones del modelo de datos v4», D-018, D-044, D-050 y D-055. No se agregan HUs, no se cambia su redacción ni el alcance de §12.4.
+
+| HU | Interpretación | Decisión |
+|---|---|---|
+| HU-01, HU-02, HU-03 | El documento de identidad puede ser **DNI o CE**; se consulta en el registro de identidad simulado, sin APIs externas (validación local/simulada provisional, P-2). Donde las HUs y AG-01 dicen "DNI", se lee "documento de identidad" | D-035, P-2 |
+| HU-12, HU-40 | La verificación biométrica usa los umbrales provisionales de D-055 (similitud 0.80, bona fide 0.90, escala [0,1]) hasta la calibración (D-060) | D-055 |
+| HU-13 | La sesión es un JWT con `jti` asociado a la tabla `sesiones`; se cierra tras 5 minutos de inactividad, sin renovación | D-018 |
+| HU-19 | El bloqueo automático ocurre al tercer PIN incorrecto y revoca las sesiones activas; el efecto del desbloqueo sobre el contador queda pendiente (P-11) | D-044 |
+| HU-44, HU-47 | Solo el PIN incorrecto suma al contador de 3 intentos; los fallos de voz permiten repetir la captura sin sumar; límite biométrico pendiente (P-8). El contador vuelve a 0 en cuanto se introduce el PIN correcto (H-01, cerrada) | D-044 |
+| HU-69 | El destinatario se identifica por el ID interno de la cuenta destino (G-1). Las transferencias todavía no están implementadas | D-042 |
+| HU-77 | La notificación de operación tiene tipo `OPERACION` y un texto generado del estilo "Nombres Ape... te realizó una transferencia de S/ 150.00." | Modelo v4 |
+| HU-87 | Las operaciones usan `EXITOSO`, `FALLIDO` y `CANCELADO`. No existe un estado "pendiente": la referencia a "se encuentra pendiente" de la HU no se aplica en el modelo v4 | Modelo v4 |
+| HU-97 | El administrador se autenticará en el panel web con **usuario y contraseña** (D-050, aprobada funcionalmente). **No está implementado**: el modelo de la credencial administrativa sigue pendiente y el prototipo mantiene provisionalmente el acceso ADMIN con dispositivo + PIN + voz. Tecnología del panel: D-045 (pendiente) | D-050, D-045 |
+| HU-80, HU-89, HU-93, HU-94 | Se mantienen en el primer entregable (§12.4); las consultas administrativas de auditoría existentes permanecen, sin tablas nuevas de auditoría (H-03, cerrada) | H-03 |
+| HU-119, HU-120 | Solo dispositivos Android | D-048, modelo v4 |

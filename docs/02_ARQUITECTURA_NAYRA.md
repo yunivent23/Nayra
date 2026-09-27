@@ -511,9 +511,9 @@ Antes de considerar este documento como arquitectura definitiva, deberán defini
 - división exacta de responsabilidades Java/Python (_AG-12: definida en la arquitectura lógica del módulo de voz y en D-056_);
 - protocolo de comunicación Java-Python (_AG-12: REST interno, D-010_);
 - reconocimiento del habla: tecnología y ubicación (D-046) — _AG-13: contenido del desafío resuelto; resto pendiente_;
-- mecanismo técnico de autenticación (el flujo funcional del usuario está aprobado en D-037; siguen pendientes hash D-047, dispositivo D-048 y autenticación del administrador D-050);
+- mecanismo técnico de autenticación (el flujo funcional del usuario está aprobado en D-037; siguen pendientes hash D-047, dispositivo D-048 y autenticación del administrador D-050); _(2026-09-27: D-048 aprobada; D-050 aprobada funcionalmente —usuario y contraseña en el panel web— y no implementada)_;
 - mecanismo técnico de autorización (roles aprobados en D-041);
-- estrategia de sesiones;
+- estrategia de sesiones (_modelo de datos v4: JWT con `jti` y tabla `sesiones`, 5 min de inactividad, sin renovación; P-5 pendiente_);
 - estructura definitiva de APIs;
 - estrategia de almacenamiento biométrico (_AG-13: D-013_);
 - estrategia anti-spoofing (_AG-13: D-012_);
@@ -560,6 +560,18 @@ La arquitectura contempla **2 instancias de aplicación**, ubicadas en **zonas d
 
 Esta decisión no implica asumir automáticamente otros componentes de infraestructura. La arquitectura física deberá documentar por separado los elementos que sean aprobados, evitando incorporar componentes como DMZ, balanceador, API Gateway, VPC u otros sin una decisión explícita.
 
+### Servicios lógicos por responsabilidad (modelo de datos v4, 2026-09-27)
+
+El modelo de datos v4 separa la solución en **tres servicios por responsabilidad**. Es una separación **lógica**: no sustituye a las 2 instancias en zonas diferentes (D-023), "3 servicios" **no** significa "3 réplicas" y no agrega infraestructura.
+
+| Servicio | Responsabilidad | Datos que posee | Implementación actual |
+|---|---|---|---|
+| **Negocio** | Usuarios, cuentas financieras, entidades, registro de identidad simulado, operaciones, notificaciones, administración | `usuarios`, `registro_identidad_simulado`, `entidades_bancarias`, `cuentas`, `operaciones`, `notificaciones` | Spring Boot (`Nayra-Back`) |
+| **Autenticación** | PIN, dispositivos, desafíos y nonces (en memoria), sesiones (JWT con `jti`) y decisión final de autenticación (D-056). Es la única autoridad sobre la sesión: Negocio le consulta si una sesión es válida y no implementa lógica propia de sesiones | `credenciales`, `dispositivos`, `sesiones` | Spring Boot (`Nayra-Back`, **misma aplicación** que Negocio) |
+| **Biométrico** | Calidad, contenido del desafío, anti-spoofing, verificación 1:1 y referencia biométrica cifrada | `biometria.perfiles_voz` | Python + FastAPI (`Nayra-Voz`) |
+
+Ambos servicios Java insertan en `auditoria`. PostgreSQL es compartido: un esquema `nayra` con FK entre dominios y el esquema `biometria` separado, sin FK física. Separar físicamente Negocio y Autenticación, la orquestación del registro asistido entre servicios (P-10) y la ejecución de las migraciones y permisos por servicio (P-4) siguen **pendientes**. Flujo de la sesión: APK → Negocio → Autenticación.
+
 ## Integración bancaria y alcance de las transacciones
 
 Nayra **no se conectará directamente con bancos reales** dentro del alcance del proyecto. Para demostrar el funcionamiento de la autenticación y de las operaciones de una billetera digital, se utilizará un **entorno bancario simulado/controlado**.
@@ -581,13 +593,13 @@ El primer entregable es un **prototipo funcional**. Su arquitectura lógica cont
 
 | Componente | Responsabilidad en el prototipo | Tecnología |
 |---|---|---|
-| **Aplicación móvil** | Interfaz principal del usuario: interacción por voz, registro, autenticación, tutorial, saldo, movimientos, transferencias a otros usuarios (el QR queda para un siguiente entregable, D-042). Genera y custodia el par de claves del dispositivo (D-048) | **Flutter** (D-007) + canal de plataforma Kotlin para el almacén de claves |
-| **Backend principal** | Lógica de negocio, cuentas de acceso, PIN (hash, D-061), dispositivos (clave pública y verificación de firma, D-048), desafíos y nonces, sesiones (5 min de inactividad, D-018), autorización, operaciones simuladas, solicitudes, auditoría, decisión de autenticación y coordinación con el componente biométrico | Java + Spring Boot (D-001) |
+| **Aplicación móvil** | _(Modelo v4: solo Android, instalada mediante APK; iOS fuera de alcance.)_ Interfaz principal del usuario: interacción por voz, registro, autenticación, tutorial, saldo, movimientos, transferencias a otros usuarios (el QR queda para un siguiente entregable, D-042). Genera y custodia el par de claves del dispositivo (D-048) | **Flutter** (D-007) + canal de plataforma Kotlin para el almacén de claves |
+| **Backend principal** | _(Modelo v4: contiene los servicios lógicos Negocio y Autenticación en una sola aplicación.)_ Lógica de negocio, cuentas de acceso, PIN (hash en `credenciales`, D-061), dispositivos (clave pública y verificación de firma, D-048), desafíos y nonces (en memoria), sesiones (JWT con `jti` = `sesiones.id`, 5 min de inactividad, sin renovación, D-018), autorización, operaciones simuladas, solicitudes, auditoría, decisión de autenticación y coordinación con el componente biométrico | Java + Spring Boot (D-001) |
 | **Procesamiento biométrico de voz** | Calidad de audio, contenido del desafío, anti-spoofing, enrolamiento, verificación 1:1 y custodia de la referencia biométrica cifrada | Python (D-002) + FastAPI (D-010) + SpeechBrain ECAPA-TDNN (D-011) + AASIST (D-012) + Vosk (D-046, parcial); referencia en esquema `biometria` (D-013) |
 | **Reconocimiento del habla** | Contenido del desafío (APROBADO: Vosk en el servicio Python); comando de activación, tecnología del PIN dictado (el dictado está aprobado por D-061; en el prototipo, candidata provisional) y DNI en recuperación (PENDIENTES) | D-046 (parcial) |
 | **Base de datos** | Persistencia estructurada | PostgreSQL (D-003) |
 | **Entorno financiero simulado** | Entidades bancarias, cuentas financieras, operaciones y registro de identidad simulado | Dentro del modelo de datos (D-021, D-035) |
-| **Panel web del administrador** | Usuarios, estado, bloqueo/desbloqueo, dispositivo, solicitudes, auditoría, métricas básicas | PENDIENTE (D-045) |
+| **Panel web del administrador** | Usuarios, estado, bloqueo/desbloqueo, dispositivo, solicitudes, auditoría, métricas básicas. Autenticación con usuario y contraseña (D-050, aprobada funcionalmente, **no implementada**; el prototipo usa provisionalmente dispositivo + PIN + voz para el ADMIN). Las consultas de auditoría existentes se mantienen en el alcance de `01` §12.4 (H-03, cerrada) | PENDIENTE (D-045) |
 
 No se incorporan en el primer entregable: APIs externas de identidad, SMS/OTP, WhatsApp, chatbot, bancos o pagos reales, múltiples dispositivos activos ni infraestructura cloud compleja (D-034, D-043).
 
@@ -611,7 +623,7 @@ INICIO DE SESIÓN HABITUAL (D-037, D-053) — NO usa DNI
 "Iniciar sesión Nayra" → dispositivo vinculado → cuenta
     → contraseña (Backend) → desafío variable → respuesta por voz
     → comprobación del contenido → anti-spoofing → verificación 1:1 (componente biométrico)
-    → Backend aplica reglas (3 intentos, D-044) → sesión
+    → Backend aplica reglas (3 intentos de PIN, D-044) → sesión (JWT con jti, D-018)
 
 CAMBIO / PÉRDIDA DE DISPOSITIVO Y RECUPERACIÓN (D-040, D-053) — usa DNI para localizar la cuenta
 Nuevo dispositivo → DNI → cuenta existente → contraseña + verificación 1:1 contra la referencia existente + anti-spoofing
@@ -653,8 +665,8 @@ APP (Flutter)                         SPRING BOOT                               
 | Validar el PIN | Spring Boot (D-061, D-047) |
 | Generar, guardar e invalidar desafío y nonce | Spring Boot (D-054, D-048) |
 | Calidad, contenido, anti-spoofing, similitud 1:1 | Servicio Python (D-011, D-012, D-046, D-058, D-059) |
-| Aplicar los umbrales técnicos y devolver veredictos por etapa | Servicio Python/FastAPI (D-056); valores pendientes de calibración (D-055) |
-| Aceptar o rechazar la autenticación, intentos, bloqueo, sesión | Spring Boot (D-044, D-018) |
+| Aplicar los umbrales técnicos y devolver veredictos por etapa | Servicio Python/FastAPI (D-056); similitud 0.80 y bona fide 0.90 (D-055, provisionales hasta la calibración de D-060) |
+| Aceptar o rechazar la autenticación, intentos, bloqueo, sesión | Spring Boot, servicio lógico de Autenticación (D-044: solo el PIN cuenta; D-018: JWT con `jti`) |
 | Guardar y leer la referencia biométrica | Servicio Python (D-013) |
 | Auditoría (sin audio, embeddings ni PIN) | Spring Boot |
 

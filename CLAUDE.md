@@ -139,6 +139,8 @@ La documentación actual establece que Nayra contempla:
 
 Esta decisión no autoriza a inventar otros componentes de infraestructura.
 
+El modelo de datos v4 (2026-09-27) organiza la solución en **tres servicios por responsabilidad**: Negocio, Autenticación y Biométrico. Es una separación **lógica**: no sustituye a las 2 instancias (D-023), no significa 3 réplicas y no autoriza infraestructura nueva. Hoy Negocio y Autenticación son una sola aplicación Spring Boot (`Nayra-Back`) y Biométrico es el servicio Python (`Nayra-Voz`). Detalle en `docs/02_ARQUITECTURA_NAYRA.md`.
+
 ### 4.4 Entorno financiero
 
 Nayra utiliza un entorno bancario simulado/controlado.
@@ -166,15 +168,21 @@ Decisiones en `docs/07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-053. Reglas oper
 
 - **Alcance (D-034):** prototipo funcional, no sistema productivo. Alcance por HU en `docs/01_REQUISITOS_NAYRA.md` §12.4.
 - **Roles (D-041):** solo `USER` y `ADMIN`. No existe personal de atención. El administrador no puede modificar saldos ni operaciones; sus acciones se auditan.
-- **Identidad (D-035):** registro de identidad simulado (DNI, nombres, apellidos); sin APIs reales de terceros.
+- **Identidad (D-035):** registro de identidad simulado (DNI, nombres, apellidos); sin APIs reales de terceros. Modelo v4: documento `DNI` o `CE`; validación local/simulada provisional (P-2).
 - **Registro inicial asistido (D-052, modifica D-036):** la persona solicita registrarse → un representante autorizado (administrador u otra persona autorizada) la asiste → se proporciona el DNI → consulta al registro de identidad simulado → se muestran los datos → el representante valida la identidad → la persona confirma sus datos → celular → contraseña → vinculación del dispositivo → enrolamiento de voz con anti-spoofing → tutorial → fin. La consulta del DNI no prueba la identidad; la biometría no valida la identidad en el registro. El representante **no** es un rol del sistema. DNI existente → recuperación/cambio de dispositivo.
 - **Flujos diferenciados (D-053):** registro inicial ≠ inicio de sesión ≠ cambio/recuperación de dispositivo. El DNI se usa en el registro, la recuperación y el cambio o pérdida del dispositivo; **no** forma parte del inicio de sesión habitual.
 - **Autenticación (D-037, modificada por D-061):** "Iniciar sesión Nayra" → dispositivo vinculado (firma con par de claves, D-048) → **PIN de 6 dígitos** (solo hash, D-061) → desafío variable → comprobación del contenido → anti-spoofing → verificación 1:1 → sesión (cierre automático tras 5 min de inactividad, sin aviso previo, D-018). Nunca 1:N; el DNI no se pide al iniciar sesión.
+- **Intentos (D-044, modelo v4):** 3 intentos, contados **solo por PIN incorrecto** en `nayra.credenciales`, con incremento atómico (E-01); al tercero, bloqueo y revocación de sesiones. Un PIN correcto devuelve el contador a 0 de inmediato (H-01, cerrada). Límite biométrico pendiente (P-8).
+- **Sesión (D-018, modelo v4):** JWT cuyo `jti` es `sesiones.id`; el token no se guarda; sin renovación ni refresh token; revocación con UPDATE condicionales (E-02). `exp`, claims, algoritmo definitivo, custodia de clave y máximo de sesiones pendientes (P-5).
+- **Administrador (D-050):** aprobada funcionalmente: usuario y contraseña en el panel web. **No implementada**; el modelo y almacenamiento de la credencial administrativa siguen pendientes y no deben implementarse sin decisión. El prototipo mantiene provisionalmente el acceso ADMIN con dispositivo + PIN + voz.
+- **Transferencias (G-1):** el backend identifica al destinatario por el ID interno de la cuenta destino. Todavía no implementadas. Monto `BigDecimal` validado sin redondeo (E-03).
+- **Plataforma:** solo Android (APK) en el primer entregable; iOS fuera de alcance.
 - **Dispositivo (D-039, D-040):** un único dispositivo activo. Prohibido `DNI → cuenta → nueva voz → acceso`.
 - **Excluido del primer entregable:** chatbot, OTP/SMS, contacto de confianza, retiro asistido, eliminación de cuenta, múltiples dispositivos. El QR (HU-123, HU-124) queda documentado para un siguiente entregable.
-- **Módulo de voz (AG-13; frontera Java↔Python en AG-12; 2026-09-27):** SpeechBrain ECAPA-TDNN (D-011), AASIST (D-012), Vosk con gramática cerrada para el desafío (D-046, parcial), solo embedding cifrado sin audio (D-013), REST interno con FastAPI (D-010), desafío palabra + 3 dígitos + palabra (D-054). El servicio Python aplica los umbrales técnicos y Spring Boot decide la autenticación (D-056); los valores de los umbrales siguen pendientes de calibración (D-055). Diseño en `docs/05_BIOMETRIA_NAYRA.md` §27; reglas en `docs/09_REGLAS_DESARROLLO_NAYRA.md` §27.
+- **Módulo de voz (AG-13; frontera Java↔Python en AG-12; 2026-09-27):** SpeechBrain ECAPA-TDNN (D-011), AASIST (D-012), Vosk con gramática cerrada para el desafío (D-046, parcial), solo embedding cifrado sin audio (D-013), REST interno con FastAPI (D-010), desafío palabra + 3 dígitos + palabra (D-054). El servicio Python aplica los umbrales técnicos y Spring Boot decide la autenticación (D-056); D-055 fija provisionalmente similitud 0.80 y bona fide 0.90 (escala [0,1]) hasta la calibración (D-060). ECAPA, AASIST y Vosk reales no se han validado en el entorno actual. Diseño en `docs/05_BIOMETRIA_NAYRA.md` §27; reglas en `docs/09_REGLAS_DESARROLLO_NAYRA.md` §27.
 - **Agendas temáticas (AG):** trazabilidad D → AG en `docs/07_DECISIONES_TECNICAS_NAYRA.md`, sección «Agendas temáticas (AG)». AG-02 = Sesiones; AG-13 = Biometría y autenticación por voz; AG-00 y AG-01 son rondas históricas cerradas.
 - **Pendientes (AG-01 v5):** distinguir A (bloqueantes funcionales), B (decisiones técnicas que se resuelven durante el desarrollo) y C (deudas técnicas); ver `docs/07_DECISIONES_TECNICAS_NAYRA.md`. D-017 (secretos) es deuda técnica y no bloquea el desarrollo.
+- **Pendientes del modelo v4 (no cerrar sin decisión):** P-3 (QR), P-4 (Flyway, permisos y despliegue), P-5, P-7/D-059, P-8, P-10, P-11, B-4, B-5, D-047, D-014, D-046 (resto), D-060, D-061 (PIN triviales), D-045 y credencial administrativa (D-050). H-01, H-02 (seis reglas de BD confirmadas) y H-03 (se mantiene `01` §12.4) quedaron cerradas el 2026-09-27. Ver «Decisiones del modelo de datos v4» en `docs/07_DECISIONES_TECNICAS_NAYRA.md`.
 
 ---
 
@@ -223,7 +231,7 @@ No entrenar modelos desde cero salvo decisión explícita.
 
 ### Biometría
 
-SpeechBrain ECAPA-TDNN está aprobado (D-011, AG-13) junto con AASIST (D-012) y Vosk (D-046, parcial). Los umbrales no tienen valores aprobados (D-055).
+SpeechBrain ECAPA-TDNN está aprobado (D-011, AG-13) junto con AASIST (D-012) y Vosk (D-046, parcial). Umbrales provisionales fijados por D-055 (similitud 0.80, bona fide 0.90, escala [0,1]); sin calibración hasta D-060.
 
 ### Cloud
 
@@ -277,22 +285,25 @@ Usar `docs/03_BASE_DE_DATOS_NAYRA.md` como referencia inicial.
 
 Tablas CORE documentadas:
 
-- ROLES
+- ROLES _(propuesta original; no se implementa como tabla: `usuarios.rol` USER/ADMIN, D-009)_
 - USUARIOS
+- CREDENCIALES _(modelo v4: hash del PIN e intentos, 1:1 con USUARIOS)_
 - CUENTAS
 - SESIONES
 - DISPOSITIVOS
 - OPERACIONES
 - NOTIFICACIONES
-- SOLICITUDES_ATENCION
+- SOLICITUDES_ATENCION _(sin tabla física)_
 - AUDITORÍA
+
+Esquema biométrico: `biometria.perfiles_voz` (un perfil por usuario, embedding cifrado, sin audio; D-013).
 
 Tablas de referencia del entorno simulado:
 
 - ENTIDADES_BANCARIAS (AG-00, D-026: catálogo con `id` y `nombre`; sin gestión por el administrador)
 - REGISTRO_IDENTIDAD_SIMULADO (AG-01, D-035: DNI, nombres, apellidos)
 
-El modelo lógico vigente tras AG-01 está en `docs/03_BASE_DE_DATOS_NAYRA.md` §16. El modelo físico aprobado (D-051, D-009) está en §17: migraciones Flyway en `Nayra-Back/src/main/resources/db/migration/nayra/`, `ddl-auto=validate`. No crear tablas fuera de §17 (sesiones, operaciones, `biometria.perfiles_voz`) sin decisión explícita.
+El modelo lógico vigente tras AG-01 está en `docs/03_BASE_DE_DATOS_NAYRA.md` §16. El modelo físico implementado (D-051, D-009 y modelo de datos v4) está en §17: migraciones Flyway V001–V011 en `Nayra-Back/src/main/resources/db/migration/nayra/` y V001–V003 de `biometria` en `Nayra-Voz/migraciones/biometria/`, `ddl-auto=validate`. No crear tablas fuera de §17 sin decisión explícita; en particular, **no** crear `roles`, `solicitudes_atencion`, tablas de desafíos o nonces, historial de embeddings ni tablas nuevas de auditoría. Los cambios de esquema van en migraciones nuevas (V012+); nunca editar una migración aplicada.
 
 Reglas:
 
@@ -363,7 +374,7 @@ Nunca incluir en el código:
 - credenciales de base de datos;
 - secretos cloud.
 
-No asumir JWT, OAuth, refresh tokens u otro mecanismo específico si todavía aparece como pendiente en las decisiones técnicas. El flujo funcional de autenticación del usuario está aprobado (D-037, con PIN por D-061) y el dispositivo usa par de claves (D-048); siguen pendientes el mecanismo técnico de sesión (D-018; solo la regla de 5 min está aprobada) y el hash del PIN (D-047). Antes de nuevas funcionalidades, corregir los problemas de seguridad del código actual (`docs/06_SEGURIDAD_NAYRA.md` §36.7). Las credenciales ya existentes en la configuración y el historial son **deuda técnica** (D-017, `docs/06_SEGURIDAD_NAYRA.md` §36.8): no eliminarlas, rotarlas ni limpiar el historial en el primer entregable, y no agregar secretos nuevos.
+No asumir OAuth, refresh tokens u otro mecanismo específico si todavía aparece como pendiente en las decisiones técnicas. El flujo funcional de autenticación del usuario está aprobado (D-037, con PIN por D-061) y el dispositivo usa par de claves (D-048). La sesión usa el **JWT con `jti` = `sesiones.id`** aprobado por el modelo de datos v4 (D-018), sin renovación ni refresh token; siguen pendientes `exp`, claims, algoritmo definitivo y custodia de la clave (P-5) y el hash del PIN (D-047). `pin_hash` nunca se expone en las APIs. Antes de nuevas funcionalidades, corregir los problemas de seguridad del código actual (`docs/06_SEGURIDAD_NAYRA.md` §36.7). Las credenciales ya existentes en la configuración y el historial son **deuda técnica** (D-017, `docs/06_SEGURIDAD_NAYRA.md` §36.8): no eliminarlas, rotarlas ni limpiar el historial en el primer entregable, y no agregar secretos nuevos.
 
 ---
 
