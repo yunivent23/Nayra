@@ -461,7 +461,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-053.
 11. **QR (D-042).** HU-123 y HU-124 quedan documentadas pero **fuera de la implementación del primer entregable** (siguiente entregable).
 12. **Clasificación de pendientes (`07_DECISIONES_TECNICAS_NAYRA.md`, AG-01 v5).** Distinguir A (bloqueantes funcionales), B (decisiones técnicas que se resuelven durante el desarrollo) y C (deudas técnicas). Una deuda técnica no bloquea el desarrollo; solo una decisión A bloquea, y únicamente las funcionalidades que dependen de ella.
 
-## 27. Reglas del módulo de voz, dispositivo y sesión (AG-02, 2026-09-27)
+## 27. Reglas del módulo de voz, dispositivo y sesión (2026-09-27; AG-13, AG-12, AG-11 y AG-02)
 
 Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-007, D-010 a D-013, D-018, D-046, D-048, D-054 a D-061. Diseño en `05_BIOMETRIA_NAYRA.md` §27.
 

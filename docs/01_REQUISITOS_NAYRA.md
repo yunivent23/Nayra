@@ -10,7 +10,7 @@
 >
 > **Actualización AG-01 v6 (2026-09-26):** flujo de registro asistido definitivo en 13 pasos (D-052) y separación explícita entre registro inicial, inicio de sesión y cambio/recuperación de dispositivo; el DNI **no** forma parte del inicio de sesión habitual (D-053).
 >
-> **Actualización AG-02 (2026-09-27):** decisiones técnicas del módulo de voz (D-010 a D-013, D-046 parcial, D-054 a D-060) y cuatro decisiones que afectan la interpretación de las HUs: **PIN de 6 dígitos** como credencial (D-061, modifica D-037), **par de claves del dispositivo** (D-048), **cierre de sesión tras 5 minutos de inactividad** (D-018, parcial) y **Flutter** para la aplicación móvil (D-007). No se agregan HUs ni se modifica la redacción de las existentes; las interpretaciones están en la sección 13.
+> **Actualización del 2026-09-27:** decisiones técnicas del módulo de voz (D-010 a D-013, D-046 parcial, D-054 a D-060; AG-13, con D-010 y D-056 en AG-12) y cuatro decisiones que afectan la interpretación de las HUs: **PIN de 6 dígitos** como credencial (D-061, modifica D-037; origen AG-01; aprobada el 2026-09-27), **par de claves del dispositivo** (D-048; origen AG-01; aprobada el 2026-09-27), **cierre de sesión tras 5 minutos de inactividad** (D-018, parcial; AG-02) y **Flutter** para la aplicación móvil (D-007; sin AG temático). No se agregan HUs ni se modifica la redacción de las existentes; las interpretaciones están en la sección 13.
 
 ## 1. Propósito
 
@@ -703,7 +703,7 @@ Funcionalidades **fuera del primer entregable sin HU**: retiro asistido por admi
 - Canal por el que un usuario que perdió su celular solicita asistencia (HU-121), sin chatbot.
 - Registro asistido (D-052): cómo se registra técnicamente quién realizó la validación asistida (sobre todo si el representante no es `ADMIN`) y cómo se refleja en la auditoría. _(Resueltos en AG-01 v6: momento del celular y posición del DNI.)_
 
-## 13. Interpretación de HUs por las decisiones de AG-02 (2026-09-27)
+## 13. Interpretación de HUs por las decisiones del 2026-09-27
 
 Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-007, D-018, D-048, D-054 a D-061. No se agregan HUs ni se cambia su redacción.
 
@@ -719,4 +719,4 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-007, D-018, D-048
 | HU-26, HU-48 | El enrolamiento aplica calidad, contenido y anti-spoofing a cada muestra; se guarda solo un embedding cifrado | D-012, D-013, D-059 |
 | HU-36 | La eliminación borra físicamente la referencia biométrica; no existe audio que eliminar | D-013 |
 
-**Clasificación técnica (sección 5):** las filas de HU-117 a HU-124 que indican "Por definir (D-007)" deben leerse como **Flutter** tras AG-02; las referencias del Excel a "almacenamiento de audio" (HU-26, HU-28, HU-30, HU-35, HU-36) **no** aplican, porque D-013 prohíbe guardar audio. La clasificación del Excel se conserva sin modificar como referencia del archivo fuente.
+**Clasificación técnica (sección 5):** las filas de HU-117 a HU-124 que indican "Por definir (D-007)" deben leerse como **Flutter** tras D-007 (2026-09-27); las referencias del Excel a "almacenamiento de audio" (HU-26, HU-28, HU-30, HU-35, HU-36) **no** aplican, porque D-013 prohíbe guardar audio. La clasificación del Excel se conserva sin modificar como referencia del archivo fuente.

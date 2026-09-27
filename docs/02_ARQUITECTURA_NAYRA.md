@@ -506,17 +506,17 @@ Antes de considerar este documento como arquitectura definitiva, deberán defini
 
 - arquitectura lógica final;
 - arquitectura física final;
-- tecnología del frontend móvil (D-007, _resuelta en AG-02: Flutter_) y del panel web (D-045);
+- tecnología del frontend móvil (D-007, _resuelta el 2026-09-27: Flutter_) y del panel web (D-045);
 - estructura definitiva del backend;
-- división exacta de responsabilidades Java/Python (_AG-02: definida en la arquitectura lógica del módulo de voz y en D-056_);
-- protocolo de comunicación Java-Python (_AG-02: REST interno, D-010_);
-- reconocimiento del habla: tecnología y ubicación (D-046) — _AG-02: contenido del desafío resuelto; resto pendiente_;
+- división exacta de responsabilidades Java/Python (_AG-12: definida en la arquitectura lógica del módulo de voz y en D-056_);
+- protocolo de comunicación Java-Python (_AG-12: REST interno, D-010_);
+- reconocimiento del habla: tecnología y ubicación (D-046) — _AG-13: contenido del desafío resuelto; resto pendiente_;
 - mecanismo técnico de autenticación (el flujo funcional del usuario está aprobado en D-037; siguen pendientes hash D-047, dispositivo D-048 y autenticación del administrador D-050);
 - mecanismo técnico de autorización (roles aprobados en D-041);
 - estrategia de sesiones;
 - estructura definitiva de APIs;
-- estrategia de almacenamiento biométrico (_AG-02: D-013_);
-- estrategia anti-spoofing (_AG-02: D-012_);
+- estrategia de almacenamiento biométrico (_AG-13: D-013_);
+- estrategia anti-spoofing (_AG-13: D-012_);
 - servicios concretos de GCP;
 - red y segmentación;
 - estrategia de disponibilidad;
@@ -581,7 +581,7 @@ El primer entregable es un **prototipo funcional**. Su arquitectura lógica cont
 
 | Componente | Responsabilidad en el prototipo | Tecnología |
 |---|---|---|
-| **Aplicación móvil** | Interfaz principal del usuario: interacción por voz, registro, autenticación, tutorial, saldo, movimientos, transferencias a otros usuarios (el QR queda para un siguiente entregable, D-042). Genera y custodia el par de claves del dispositivo (D-048) | **Flutter** (D-007, AG-02) + canal de plataforma Kotlin para el almacén de claves |
+| **Aplicación móvil** | Interfaz principal del usuario: interacción por voz, registro, autenticación, tutorial, saldo, movimientos, transferencias a otros usuarios (el QR queda para un siguiente entregable, D-042). Genera y custodia el par de claves del dispositivo (D-048) | **Flutter** (D-007) + canal de plataforma Kotlin para el almacén de claves |
 | **Backend principal** | Lógica de negocio, cuentas de acceso, PIN (hash, D-061), dispositivos (clave pública y verificación de firma, D-048), desafíos y nonces, sesiones (5 min de inactividad, D-018), autorización, operaciones simuladas, solicitudes, auditoría, decisión de autenticación y coordinación con el componente biométrico | Java + Spring Boot (D-001) |
 | **Procesamiento biométrico de voz** | Calidad de audio, contenido del desafío, anti-spoofing, enrolamiento, verificación 1:1 y custodia de la referencia biométrica cifrada | Python (D-002) + FastAPI (D-010) + SpeechBrain ECAPA-TDNN (D-011) + AASIST (D-012) + Vosk (D-046, parcial); referencia en esquema `biometria` (D-013) |
 | **Reconocimiento del habla** | Contenido del desafío (APROBADO: Vosk en el servicio Python); comando de activación, PIN dictado si se permite y DNI en recuperación (PENDIENTES) | D-046 (parcial) |
@@ -619,9 +619,9 @@ Nuevo dispositivo → DNI → cuenta existente → contraseña + verificación 1
 Prohibido: DNI → cuenta → nueva voz → acceso
 ```
 
-La referencia biométrica permanece asociada a la cuenta en el backend (D-038); su almacenamiento concreto sigue pendiente (D-013). _(AG-02: resuelto por D-013, ver abajo.)_
+La referencia biométrica permanece asociada a la cuenta en el backend (D-038); su almacenamiento concreto sigue pendiente (D-013). _(AG-13: resuelto por D-013, ver abajo.)_
 
-### Arquitectura lógica del módulo de voz (AG-02, 2026-09-27)
+### Arquitectura lógica del módulo de voz (AG-13 y AG-12, 2026-09-27)
 
 Decisiones: D-007, D-010 a D-013, D-018, D-046 (parcial), D-048, D-054 a D-061. Este flujo es **lógico**: no define URL, puertos, rutas de endpoints ni infraestructura física (§8, §16). El contrato se documentará en `04_API.md` (D-014) cuando se decida D-056.
 

@@ -104,9 +104,9 @@ La solución elegida no debe ser innecesariamente compleja para el alcance del p
 
 ## D-005 — Framework para biometría de voz
 
-**Estado:** APROBADA — concretada en **D-011** (AG-02, 2026-09-27)
+**Estado:** APROBADA — concretada en **D-011** (AG-13, 2026-09-27)
 
-**Actualización AG-02:** SpeechBrain queda seleccionado mediante el modelo concreto definido en D-011. El texto original se conserva para trazabilidad.
+**Actualización AG-13:** SpeechBrain queda seleccionado mediante el modelo concreto definido en D-011. El texto original se conserva para trazabilidad.
 
 **Tecnología considerada:** SpeechBrain.
 
@@ -148,9 +148,9 @@ No asumir automáticamente:
 
 ## D-007 — Tecnología del frontend
 
-**Estado:** APROBADA para la aplicación móvil: **Flutter** (AG-02, 2026-09-27). El panel web del administrador sigue PENDIENTE (D-045).
+**Estado:** APROBADA para la aplicación móvil: **Flutter** (2026-09-27; sin AG temático). El panel web del administrador sigue PENDIENTE (D-045).
 
-**Actualización AG-02:** la aplicación móvil se desarrolla con **Flutter**. El código nativo necesario para el almacén de claves del dispositivo (D-048) se implementa mediante un canal de plataforma en Kotlin. Las librerías concretas de accesibilidad, audio y TTS no quedan aprobadas por esta decisión y deben cumplir los criterios de D-057 (formato de audio) y de las HUs de accesibilidad. Texto original:
+**Actualización del 2026-09-27:** la aplicación móvil se desarrolla con **Flutter**. El código nativo necesario para el almacén de claves del dispositivo (D-048) se implementa mediante un canal de plataforma en Kotlin. Las librerías concretas de accesibilidad, audio y TTS no quedan aprobadas por esta decisión y deben cumplir los criterios de D-057 (formato de audio) y de las HUs de accesibilidad. Texto original:
 
 Debe seleccionarse la tecnología definitiva para la aplicación móvil.
 
@@ -173,7 +173,7 @@ La selección deberá considerar:
 
 La autenticación del usuario queda definida funcionalmente en **D-037** (contraseña + desafío de voz variable + anti-spoofing + verificación biométrica 1:1). Siguen **pendientes**: la autenticación del administrador (D-050), el hash y la política de contraseña (D-047), el reconocimiento del habla (D-046), la estrategia de sesiones (D-018) y los mecanismos técnicos concretos.
 
-**Actualización AG-02 (2026-09-27):** la credencial de conocimiento es un **PIN de 6 dígitos** (D-061, modifica D-037); el dispositivo se vincula con un **par de claves** (D-048); la sesión se cierra tras **5 minutos de inactividad** (D-018, parcial); el contenido del desafío se reconoce en el servidor (D-046, parcial). Siguen pendientes: hash del PIN (D-047), mecanismo técnico de sesión (D-018), resto del reconocimiento del habla (D-046) y autenticación del administrador (D-050).
+**Actualización del 2026-09-27:** la credencial de conocimiento es un **PIN de 6 dígitos** (D-061, modifica D-037); el dispositivo se vincula con un **par de claves** (D-048); la sesión se cierra tras **5 minutos de inactividad** (D-018, parcial); el contenido del desafío se reconoce en el servidor (D-046, parcial). Siguen pendientes: hash del PIN (D-047), mecanismo técnico de sesión (D-018), resto del reconocimiento del habla (D-046) y autenticación del administrador (D-050).
 
 Texto original de esta decisión (se mantiene para lo que sigue pendiente):
 
@@ -210,9 +210,9 @@ Debe mantener correspondencia con:
 
 ## D-010 — Comunicación Java ↔ Python
 
-**Estado:** APROBADA (AG-02, 2026-09-27) — ver detalle en la sección AG-02. Autenticación entre servicios en la nube PENDIENTE (D-016).
+**Estado:** APROBADA (AG-12, 2026-09-27) — ver detalle en la sección de decisiones del 2026-09-27. Autenticación entre servicios en la nube PENDIENTE (D-016).
 
-**Actualización AG-02:** API REST interna con FastAPI en el servicio Python, accesible solo desde la red interna y únicamente por el backend principal. Texto original:
+**Actualización AG-12:** API REST interna con FastAPI en el servicio Python, accesible solo desde la red interna y únicamente por el backend principal. Texto original:
 
 Debe definirse cómo se comunicará el backend principal con el componente especializado de voz.
 
@@ -228,7 +228,7 @@ No implementar una alternativa como definitiva sin documentarla aquí.
 
 ## D-011 — Modelo biométrico
 
-**Estado:** APROBADA (selección) / desempeño PENDIENTE DE VALIDACIÓN (AG-02, 2026-09-27) — ver sección AG-02.
+**Estado:** APROBADA (selección) / desempeño PENDIENTE DE VALIDACIÓN (AG-13, 2026-09-27) — ver sección de decisiones del 2026-09-27.
 
 Texto original:
 
@@ -246,7 +246,7 @@ La selección debe basarse en la investigación realizada y en la capacidad de v
 
 ## D-012 — Modelo anti-spoofing
 
-**Estado:** APROBADA (estrategia) / tasa de detección PENDIENTE DE VALIDACIÓN (AG-02, 2026-09-27) — ver sección AG-02.
+**Estado:** APROBADA (estrategia) / tasa de detección PENDIENTE DE VALIDACIÓN (AG-13, 2026-09-27) — ver sección de decisiones del 2026-09-27.
 
 Texto original:
 
@@ -258,7 +258,7 @@ Se deben considerar las amenazas identificadas en `05_BIOMETRIA_NAYRA.md`.
 
 ## D-013 — Almacenamiento de información biométrica
 
-**Estado:** APROBADA (AG-02, 2026-09-27) — ver sección AG-02. Gestión de la clave de cifrado vinculada a D-017.
+**Estado:** APROBADA (AG-13, 2026-09-27) — ver sección de decisiones del 2026-09-27. Gestión de la clave de cifrado vinculada a D-017.
 
 Texto original:
 
@@ -454,20 +454,21 @@ Registro:
 | D-053 | Flujos diferenciados y usos del DNI | — (nueva) | APROBADA | AG-01 v6: el DNI no forma parte del inicio de sesión habitual | 2026-09-26 |
 | D-017 | Gestión de secretos | PENDIENTE | DEUDA TÉCNICA (categoría C) | AG-01 v5: no bloquea el primer entregable; se aborda antes de producción | 2026-09-26 |
 | D-042 | QR (HU-123, HU-124) | APROBADA | APROBADA — fuera de la implementación del primer entregable | AG-01 v5: siguiente entregable | 2026-09-26 |
-| D-005 | Framework para biometría de voz | EN EVALUACIÓN | APROBADA — concretada en D-011 | AG-02: revisión del módulo de voz | 2026-09-27 |
-| D-007 | Tecnología de la aplicación móvil | PENDIENTE | APROBADA (Flutter); panel web sigue en D-045 | AG-02 | 2026-09-27 |
-| D-010 | Comunicación Java ↔ Python | PENDIENTE | APROBADA (REST interno, FastAPI) | AG-02 | 2026-09-27 |
-| D-011 | Modelo biométrico | PENDIENTE | APROBADA (SpeechBrain ECAPA-TDNN); desempeño por validar | AG-02 | 2026-09-27 |
-| D-012 | Anti-spoofing | PENDIENTE | APROBADA (defensa en capas con AASIST); detección por validar | AG-02 | 2026-09-27 |
-| D-013 | Almacenamiento biométrico | PENDIENTE | APROBADA (solo embedding cifrado, sin audio) | AG-02 | 2026-09-27 |
+| D-005 | Framework para biometría de voz | EN EVALUACIÓN | APROBADA — concretada en D-011 | AG-13: revisión del 2026-09-27 | 2026-09-27 |
+| D-007 | Tecnología de la aplicación móvil | PENDIENTE | APROBADA (Flutter); panel web sigue en D-045 | Revisión del 2026-09-27 (sin AG temático) | 2026-09-27 |
+| D-010 | Comunicación Java ↔ Python | PENDIENTE | APROBADA (REST interno, FastAPI) | AG-12 | 2026-09-27 |
+| D-011 | Modelo biométrico | PENDIENTE | APROBADA (SpeechBrain ECAPA-TDNN); desempeño por validar | AG-13 | 2026-09-27 |
+| D-012 | Anti-spoofing | PENDIENTE | APROBADA (defensa en capas con AASIST); detección por validar | AG-13 | 2026-09-27 |
+| D-013 | Almacenamiento biométrico | PENDIENTE | APROBADA (solo embedding cifrado, sin audio) | AG-13 | 2026-09-27 |
 | D-018 | Estrategia de sesiones | PENDIENTE | PARCIAL (5 minutos de inactividad aprobados; mecanismo pendiente) | AG-02 | 2026-09-27 |
-| D-046 | Reconocimiento del habla | PENDIENTE | PARCIAL (contenido del desafío aprobado) | AG-02 | 2026-09-27 |
-| D-048 | Vinculación del dispositivo | PENDIENTE | APROBADA (par de claves del dispositivo) | AG-02 | 2026-09-27 |
-| D-037 | Autenticación del usuario | APROBADA FUNCIONALMENTE | APROBADA FUNCIONALMENTE — MODIFICADA POR D-061 (PIN de 6 dígitos) | AG-02 | 2026-09-27 |
-| D-054, D-057 a D-059, D-061 | Decisiones nuevas del módulo de voz y PIN | — (nuevas) | APROBADAS (con valores pendientes de validación donde se indica) | AG-02 | 2026-09-27 |
-| D-055 | Umbrales y calibración | — (nueva) | Estrategia y proceso de calibración APROBADOS; **valores PENDIENTES** de calibración | AG-02 | 2026-09-27 |
-| D-060 | Dataset y consentimiento | — (nueva) | PENDIENTE | AG-02 | 2026-09-27 |
-| D-056 | Responsable de aplicar los umbrales técnicos | — (nueva) | APROBADA (servicio Python/FastAPI aplica los umbrales técnicos; Spring Boot decide la autenticación; valores en D-055) | AG-02: aprobación final | 2026-09-27 |
+| D-046 | Reconocimiento del habla | PENDIENTE | PARCIAL (contenido del desafío aprobado) | AG-13 (parte del desafío) | 2026-09-27 |
+| D-048 | Vinculación del dispositivo | PENDIENTE | APROBADA (par de claves del dispositivo) | Origen histórico: AG-01. Aprobada el 2026-09-27 (revisión del 2026-09-27). Impacto secundario: AG-11 (anti-replay) | 2026-09-27 |
+| D-037 | Autenticación del usuario | APROBADA FUNCIONALMENTE | APROBADA FUNCIONALMENTE — MODIFICADA POR D-061 (PIN de 6 dígitos) | Revisión del 2026-09-27: modificada por D-061 (D-061: origen AG-01; aprobada el 2026-09-27) | 2026-09-27 |
+| D-054, D-057 a D-059 | Decisiones nuevas del módulo de voz | — (nuevas) | APROBADAS (con valores pendientes de validación donde se indica) | AG-13 | 2026-09-27 |
+| D-061 | PIN de 6 dígitos como credencial de conocimiento (modifica D-037) | — (nueva) | APROBADA | Origen histórico: AG-01 (modifica D-037). Aprobada el 2026-09-27 (revisión del 2026-09-27). Impacto secundario: AG-11 (hash del PIN) | 2026-09-27 |
+| D-055 | Umbrales y calibración | — (nueva) | Estrategia y proceso de calibración APROBADOS; **valores PENDIENTES** de calibración | AG-13 | 2026-09-27 |
+| D-060 | Dataset y consentimiento | — (nueva) | PENDIENTE | AG-13 | 2026-09-27 |
+| D-056 | Responsable de aplicar los umbrales técnicos | — (nueva) | APROBADA (servicio Python/FastAPI aplica los umbrales técnicos; Spring Boot decide la autenticación; valores en D-055) | AG-12: aprobación final | 2026-09-27 |
 | D-018 | Estrategia de sesiones | PARCIAL | PARCIAL — cierre automático tras 5 min de inactividad, sin aviso previo ni opción de continuar; mecanismo pendiente | AG-02: aprobación final | 2026-09-27 |
 
 Esto permitirá mantener trazabilidad de las decisiones de diseño.
@@ -691,7 +692,7 @@ Flujo original:
 **Si el DNI ya pertenece a una cuenta de acceso:** no se crea una segunda cuenta; se deriva al proceso de recuperación/cambio de dispositivo (D-040).
 
 ### D-037 — Autenticación del usuario
-**Estado:** APROBADA FUNCIONALMENTE — **MODIFICADA POR D-061** (AG-02, 2026-09-27): la "contraseña" se concreta como **PIN de 6 dígitos**. El resto del flujo se mantiene.
+**Estado:** APROBADA FUNCIONALMENTE — **MODIFICADA POR D-061** (2026-09-27): la "contraseña" se concreta como **PIN de 6 dígitos**. El resto del flujo se mantiene.
 
 La autenticación del usuario se compone de **contraseña + verificación biométrica de voz 1:1 + anti-spoofing**. Flujo de inicio de sesión:
 
@@ -714,7 +715,7 @@ La referencia biométrica permanece **asociada a la cuenta de acceso en el backe
 
 **No aprobado:** dónde se almacena, su formato, el modelo que la genera ni si se guarda como embedding u otra representación (D-011, D-013 siguen PENDIENTES). No se almacena audio de voz innecesariamente.
 
-**Actualización AG-02 (2026-09-27):** resuelto por D-011 y D-013. "Backend" en esta decisión comprende el **servicio Python de voz**, que es el único componente que guarda y lee la referencia (embedding cifrado) en un esquema propio del PostgreSQL del proyecto.
+**Actualización AG-13 (2026-09-27):** resuelto por D-011 y D-013. "Backend" en esta decisión comprende el **servicio Python de voz**, que es el único componente que guarda y lee la referencia (embedding cifrado) en un esquema propio del PostgreSQL del proyecto.
 
 ### D-039 — Un único dispositivo activo por cuenta de acceso
 **Estado:** APROBADA
@@ -723,7 +724,7 @@ La referencia biométrica permanece **asociada a la cuenta de acceso en el backe
 - El dispositivo se vincula al final del registro y determina la cuenta al iniciar sesión.
 - **Reinstalación:** no se asume que la aplicación reconozca siempre el dispositivo tras reinstalarse. Si el vínculo puede verificarse, se continúa; si no, se usa el flujo de cambio de dispositivo/recuperación (D-040). No se desarrolla una solución compleja de identificación de dispositivos solo para la reinstalación.
 
-**Pendiente:** mecanismo técnico de vinculación del dispositivo (D-048). _(AG-02: resuelto por D-048 — par de claves del dispositivo.)_
+**Pendiente:** mecanismo técnico de vinculación del dispositivo (D-048). _(2026-09-27: resuelto por D-048 — par de claves del dispositivo.)_
 
 ### D-040 — Cambio de dispositivo, pérdida y recuperación
 **Estado:** APROBADA (procedimiento de recuperación asistida PENDIENTE, D-049)
@@ -767,7 +768,7 @@ Tras **3 intentos fallidos** de autenticación la cuenta de acceso se bloquea.
 
 **Pendiente** antes de implementar: qué resultados cuentan como intento fallido (contraseña incorrecta, voz no coincidente, spoofing, mala calidad de audio); si hay un contador único o separado; ventana y reinicio del contador. Los **errores técnicos del servicio no se consideran intentos fallidos del usuario** salvo decisión expresa en contrario.
 
-**Propuesta AG-02 (PENDIENTE DE DECISIÓN, no aprobada):** cuentan como intento fallido el PIN incorrecto, el contenido del desafío incorrecto, el posible spoofing y la voz no coincidente; la calidad de audio insuficiente permite repetir la captura sin contar (HU-44); los errores técnicos no cuentan; contador único por cuenta de acceso.
+**Propuesta de la revisión del 2026-09-27 (PENDIENTE DE DECISIÓN, no aprobada):** cuentan como intento fallido el PIN incorrecto, el contenido del desafío incorrecto, el posible spoofing y la voz no coincidente; la calidad de audio insuficiente permite repetir la captura sin contar (HU-44); los errores técnicos no cuentan; contador único por cuenta de acceso.
 
 ### D-052 — Registro asistido con validación de identidad por un representante autorizado
 **Estado:** APROBADA (regla de negocio — AG-01 v5, 2026-09-26; flujo actualizado en AG-01 v6, 2026-09-26). **Modifica D-036.**
@@ -818,16 +819,16 @@ _Resueltos en AG-01 v6:_ momento del registro del celular (paso 8) y posición d
 | ID | Decisión | Estado |
 |---|---|---|
 | D-045 | Tecnología del panel web del administrador | PENDIENTE |
-| D-046 | Reconocimiento del habla (comando, DNI, contraseña dictada, contenido del desafío): tecnología y ubicación (dispositivo o servidor) | **PARCIAL (AG-02):** contenido del desafío APROBADO (Vosk en servidor); comando, PIN dictado (si se permite) y DNI PENDIENTES |
-| D-047 | Algoritmo de hash, política de contraseña compatible con dictado y normalización de la contraseña dictada | PENDIENTE — **AG-02:** se aplica al **PIN de 6 dígitos** (D-061); el análisis A-K (Argon2id + pepper + límite de intentos) queda como insumo, no aprobado |
-| D-048 | Mecanismo técnico de vinculación del dispositivo | **APROBADA (AG-02):** par de claves del dispositivo (ver sección AG-02) |
+| D-046 | Reconocimiento del habla (comando, DNI, contraseña dictada, contenido del desafío): tecnología y ubicación (dispositivo o servidor) | **PARCIAL (AG-13):** contenido del desafío APROBADO (Vosk en servidor); comando, PIN dictado (si se permite) y DNI PENDIENTES |
+| D-047 | Algoritmo de hash, política de contraseña compatible con dictado y normalización de la contraseña dictada | PENDIENTE — **AG-11** (2026-09-27): se aplica al **PIN de 6 dígitos** (D-061); el análisis A-K (Argon2id + pepper + límite de intentos) queda como insumo, no aprobado |
+| D-048 | Mecanismo técnico de vinculación del dispositivo | **APROBADA:** par de claves del dispositivo (origen histórico: AG-01; aprobada el 2026-09-27; impacto secundario: AG-11 por anti-replay) (ver sección de decisiones del 2026-09-27) |
 | D-049 | Procedimiento de recuperación asistida | PENDIENTE |
 | D-050 | Autenticación del administrador | PENDIENTE |
 | D-051 | Estrategia de migraciones de base de datos | PENDIENTE |
 
 Siguen también **PENDIENTES**: D-007 (frontend móvil), D-010 (Java ↔ Python), D-011 (modelo biométrico), D-012 (anti-spoofing), D-013 (almacenamiento biométrico), umbral biométrico, D-014 (API), D-018 (sesiones) y D-019 (auditoría detallada). D-017 (secretos) pasa a **deuda técnica** (categoría C).
 
-_(AG-02, 2026-09-27: D-007 (móvil), D-010, D-011, D-012, D-013, D-048 y D-056 quedan aprobadas; D-018 y D-046 pasan a parciales; el umbral biométrico se rige por D-055 (estrategia aprobada, valores pendientes de calibración). Ver sección AG-02.)_
+_(Revisión del 2026-09-27: D-007 (móvil), D-010, D-011, D-012, D-013, D-048 y D-056 quedan aprobadas; D-018 y D-046 pasan a parciales; el umbral biométrico se rige por D-055 (estrategia aprobada, valores pendientes de calibración). Ver sección de decisiones del 2026-09-27.)_
 
 ### Clasificación de lo pendiente (AG-01 v5)
 
@@ -839,14 +840,16 @@ Una deuda técnica pendiente **no** se convierte automáticamente en un bloqueo 
 
 | Categoría | Decisiones | Estado de la clasificación |
 |---|---|---|
-| **A** | D-045 (panel web), D-046 (resto del reconocimiento del habla: comando y, si se permite, PIN dictado) | Propuesta para revisión (actualizada AG-02) |
-| **B** | D-047 (hash del PIN), D-018 (mecanismo técnico de sesión), D-051 (migraciones e identificadores), D-044 (detalle de intentos), D-050 (autenticación del administrador), D-049 (recuperación asistida), D-052 (registro técnico y auditoría de quién realizó la validación asistida), D-014 (API; incluye el contrato interno del servicio de voz), D-019 (auditoría detallada), D-058 (herramienta de VAD), D-054 (lista de palabras y TTL del desafío), D-060 (dataset y consentimiento), D-016 (despliegue del servicio de voz) | Propuesta para revisión (actualizada AG-02) |
-| **Cerradas por AG-02** | D-007 (app móvil), D-010, D-011, D-012, D-013, D-048, D-056 (responsable de aplicar los umbrales técnicos), umbral biométrico (solo la estrategia, en D-055; los valores siguen pendientes de calibración) | APROBADAS (2026-09-27) |
+| **A** | D-045 (panel web), D-046 (resto del reconocimiento del habla: comando y, si se permite, PIN dictado) | Propuesta para revisión (actualizada el 2026-09-27) |
+| **B** | D-047 (hash del PIN), D-018 (mecanismo técnico de sesión), D-051 (migraciones e identificadores), D-044 (detalle de intentos), D-050 (autenticación del administrador), D-049 (recuperación asistida), D-052 (registro técnico y auditoría de quién realizó la validación asistida), D-014 (API; incluye el contrato interno del servicio de voz), D-019 (auditoría detallada), D-058 (herramienta de VAD), D-054 (lista de palabras y TTL del desafío), D-060 (dataset y consentimiento), D-016 (despliegue del servicio de voz) | Propuesta para revisión (actualizada el 2026-09-27) |
+| **Cerradas el 2026-09-27** | D-007 (app móvil), D-010, D-011, D-012, D-013, D-048, D-056 (responsable de aplicar los umbrales técnicos), umbral biométrico (solo la estrategia, en D-055; los valores siguen pendientes de calibración) | APROBADAS (2026-09-27) |
 | **C** | **D-017** (secretos y credenciales) | **Aprobada** (AG-01 v5) |
 
 Cada decisión A afecta solo a las funcionalidades que dependen de ella; las demás pueden avanzar en paralelo.
 
-## Decisiones aprobadas de AG-02 — Módulo de autenticación por voz, anti-spoofing, dispositivo, PIN y sesiones (2026-09-27)
+## Decisiones aprobadas el 2026-09-27 — Módulo de autenticación por voz, anti-spoofing, dispositivo, PIN y sesiones
+
+_Bloque sin número de agenda (revisión del 2026-09-27); la trazabilidad temática de cada decisión está en «Agendas temáticas (AG)»._
 
 Origen: revisión cruzada entre el análisis técnico A–K (2026-09-26) y la documentación de la rama `yuniv` (commit `e16cb45`), aprobada por el equipo el 2026-09-27 junto con cuatro puntos que no estaban sincronizados en el repositorio: **PIN de 6 dígitos** (D-061), **par de claves del dispositivo** (D-048), **cierre de sesión tras 5 minutos de inactividad** (D-018) y **Flutter** para la aplicación móvil (D-007).
 
@@ -951,7 +954,7 @@ Defensa en capas:
 - Normalización de puntajes (AS-norm) solo si la calibración la justifica.
 
 ### D-056 — Responsable de aplicar los umbrales técnicos
-**Estado:** APROBADA (AG-02, 2026-09-27). Los valores numéricos de los umbrales **no** quedan aprobados: siguen pendientes de calibración (D-055).
+**Estado:** APROBADA (AG-12, 2026-09-27). Los valores numéricos de los umbrales **no** quedan aprobados: siguen pendientes de calibración (D-055).
 
 - El **servicio Python/FastAPI** aplica los umbrales técnicos (calidad, confianza del reconocimiento, anti-spoofing y similitud) dentro del pipeline biométrico, con los valores versionados junto con el modelo.
 - Python realiza las evaluaciones técnicas y devuelve el **veredicto técnico de cada etapa** junto con sus puntajes.
@@ -1001,7 +1004,7 @@ Ver la actualización en la sección D-018: **cierre automático tras 5 minutos 
 ### D-016 — Despliegue del servicio de voz (sin cambio de estado)
 **Estado:** PENDIENTE. Estimación del análisis A–K, a medir: contenedor o VM solo CPU (2–4 vCPU, 4 GB RAM). Falta decidir si el servicio Python se replica en las 2 instancias de D-023.
 
-### Alternativas descartadas por AG-02
+### Alternativas descartadas el 2026-09-27
 
 | Alternativa | Decisión | Motivo |
 |---|---|---|
@@ -1019,3 +1022,28 @@ Ver la actualización en la sección D-018: **cierre automático tras 5 minutos 
 | RSA / Ed25519 para la clave del dispositivo | D-048 | Firmas grandes (RSA) / compatibilidad de dispositivos (Ed25519) |
 | Adaptación automática de la plantilla de voz | D-013 | Riesgo de envenenamiento de la plantilla |
 | Guardar audio de enrolamiento o autenticación | D-013 | Minimización (`05` §16) |
+
+## Agendas temáticas (AG)
+
+Las agendas temáticas (AG) agrupan las decisiones por tema. Son distintas del **origen histórico** de cada decisión, es decir, la ronda en la que se decidió. AG-00 y AG-01 son **rondas históricas cerradas**: no se reabren y sus decisiones conservan su origen. El bloque aprobado el 2026-09-27 se denomina **revisión del 2026-09-27** y no tiene número de AG. La asignación temática no modifica el contenido, el estado ni la numeración de ninguna decisión.
+
+| AG | Título | Decisiones (primarias) | Impacto secundario |
+|---|---|---|---|
+| AG-00 | Terminología, modelo financiero y depuración de requisitos (ronda histórica cerrada) | Origen histórico: D-024 a D-033 | — |
+| AG-01 | Registro, autenticación, dispositivo, recuperación y alcance del primer entregable (ronda histórica cerrada) | Origen histórico: D-034 a D-053 (D-045, D-047 y D-051 tienen además AG temático propio o ninguno, ver filas siguientes). D-048 y D-061: origen AG-01; aprobada el 2026-09-27 | AG-11 para D-048 (anti-replay) y D-061 (hash del PIN) |
+| AG-02 | Sesiones | D-018 | — |
+| AG-03 | Autorización | D-009 | — |
+| AG-04 | Modelo funcional de usuario | Sin decisiones asignadas actualmente | — |
+| AG-05 | Estados de cuenta y sus efectos | Sin decisiones asignadas actualmente | — |
+| AG-06 | Eliminación/ciclo de vida de datos | Sin decisiones asignadas actualmente | — |
+| AG-07 | Modelo de roles | Sin decisiones asignadas actualmente | — |
+| AG-08 | Convenciones y contrato de API | D-014 | — |
+| AG-09 | Modelo CORE de base de datos | Sin decisiones asignadas actualmente | — |
+| AG-10 | Migraciones de base de datos | D-051 | — |
+| AG-11 | Seguridad | D-017, D-047 | Aspectos de seguridad de D-048 (anti-replay), D-054, D-061 (hash del PIN) y D-013, cuando corresponda |
+| AG-12 | Frontera/responsabilidades Java ↔ Python | D-010, D-056 | D-057 y D-059, cuando corresponda a la frontera entre servicios |
+| AG-13 | Biometría y autenticación por voz | D-005 (concretada en D-011), D-011, D-012, D-013, D-046 (solo la parte del desafío/reconocimiento de voz), D-054, D-055, D-057, D-058, D-059, D-060 | — |
+
+**Sin AG temático por ahora:** D-007 (aplicación móvil, Flutter) y D-045 (panel web del administrador).
+
+**Origen histórico en AG-01 sin referencias secundarias todavía:** D-040, D-041, D-044, D-049, D-050 y D-052.

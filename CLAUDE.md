@@ -172,7 +172,8 @@ Decisiones en `docs/07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-053. Reglas oper
 - **Autenticación (D-037, modificada por D-061):** "Iniciar sesión Nayra" → dispositivo vinculado (firma con par de claves, D-048) → **PIN de 6 dígitos** (solo hash, D-061) → desafío variable → comprobación del contenido → anti-spoofing → verificación 1:1 → sesión (cierre automático tras 5 min de inactividad, sin aviso previo, D-018). Nunca 1:N; el DNI no se pide al iniciar sesión.
 - **Dispositivo (D-039, D-040):** un único dispositivo activo. Prohibido `DNI → cuenta → nueva voz → acceso`.
 - **Excluido del primer entregable:** chatbot, OTP/SMS, contacto de confianza, retiro asistido, eliminación de cuenta, múltiples dispositivos. El QR (HU-123, HU-124) queda documentado para un siguiente entregable.
-- **Módulo de voz (AG-02, 2026-09-27):** SpeechBrain ECAPA-TDNN (D-011), AASIST (D-012), Vosk con gramática cerrada para el desafío (D-046, parcial), solo embedding cifrado sin audio (D-013), REST interno con FastAPI (D-010), desafío palabra + 3 dígitos + palabra (D-054). El servicio Python aplica los umbrales técnicos y Spring Boot decide la autenticación (D-056); los valores de los umbrales siguen pendientes de calibración (D-055). Diseño en `docs/05_BIOMETRIA_NAYRA.md` §27; reglas en `docs/09_REGLAS_DESARROLLO_NAYRA.md` §27.
+- **Módulo de voz (AG-13; frontera Java↔Python en AG-12; 2026-09-27):** SpeechBrain ECAPA-TDNN (D-011), AASIST (D-012), Vosk con gramática cerrada para el desafío (D-046, parcial), solo embedding cifrado sin audio (D-013), REST interno con FastAPI (D-010), desafío palabra + 3 dígitos + palabra (D-054). El servicio Python aplica los umbrales técnicos y Spring Boot decide la autenticación (D-056); los valores de los umbrales siguen pendientes de calibración (D-055). Diseño en `docs/05_BIOMETRIA_NAYRA.md` §27; reglas en `docs/09_REGLAS_DESARROLLO_NAYRA.md` §27.
+- **Agendas temáticas (AG):** trazabilidad D → AG en `docs/07_DECISIONES_TECNICAS_NAYRA.md`, sección «Agendas temáticas (AG)». AG-02 = Sesiones; AG-13 = Biometría y autenticación por voz; AG-00 y AG-01 son rondas históricas cerradas.
 - **Pendientes (AG-01 v5):** distinguir A (bloqueantes funcionales), B (decisiones técnicas que se resuelven durante el desarrollo) y C (deudas técnicas); ver `docs/07_DECISIONES_TECNICAS_NAYRA.md`. D-017 (secretos) es deuda técnica y no bloquea el desarrollo.
 
 ---
@@ -222,7 +223,7 @@ No entrenar modelos desde cero salvo decisión explícita.
 
 ### Biometría
 
-SpeechBrain ECAPA-TDNN está aprobado (D-011, AG-02) junto con AASIST (D-012) y Vosk (D-046, parcial). Los umbrales no tienen valores aprobados (D-055).
+SpeechBrain ECAPA-TDNN está aprobado (D-011, AG-13) junto con AASIST (D-012) y Vosk (D-046, parcial). Los umbrales no tienen valores aprobados (D-055).
 
 ### Cloud
 
@@ -232,7 +233,7 @@ No asumir servicios específicos de GCP sin aprobación.
 
 ### Frontend
 
-La aplicación móvil se desarrolla con **Flutter** (D-007, aprobada en AG-02), con un canal de plataforma Kotlin para el almacén de claves del dispositivo (D-048). El panel web del administrador (D-045) sigue PENDIENTE.
+La aplicación móvil se desarrolla con **Flutter** (D-007, aprobada el 2026-09-27; sin AG temático), con un canal de plataforma Kotlin para el almacén de claves del dispositivo (D-048). El panel web del administrador (D-045) sigue PENDIENTE.
 
 ---
 
@@ -266,7 +267,7 @@ Debe concentrar el procesamiento especializado de voz y modelos biométricos.
 
 No trasladar lógica general de negocio a Python innecesariamente.
 
-La comunicación Java ↔ Python es REST interno con FastAPI (D-010, AG-02). El servicio Python aplica los umbrales técnicos y devuelve veredictos por etapa; Spring Boot toma la decisión final de autenticación (D-056). El contrato todavía no está documentado (`04_API.md`, D-014); no inventarlo.
+La comunicación Java ↔ Python es REST interno con FastAPI (D-010, AG-12). El servicio Python aplica los umbrales técnicos y devuelve veredictos por etapa; Spring Boot toma la decisión final de autenticación (D-056). El contrato todavía no está documentado (`04_API.md`, D-014); no inventarlo.
 
 ---
 

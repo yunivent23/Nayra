@@ -101,7 +101,7 @@ hasta que la decisión correspondiente haya sido aprobada.
 
 **Actualización AG-01 (D-037):** la autenticación del usuario queda **aprobada funcionalmente** como contraseña + verificación biométrica de voz 1:1 + anti-spoofing (dos factores: algo que el usuario sabe y algo que es). JWT, OAuth, sesiones tradicionales, refresh tokens y cualquier mecanismo técnico concreto siguen **sin asumirse** (D-018). La autenticación del administrador sigue pendiente (D-050). Ver §36.
 
-**Actualización AG-02 (2026-09-27):** la contraseña se concreta como **PIN de 6 dígitos** (D-061); el dispositivo se vincula con un **par de claves** (D-048); la sesión se cierra tras **5 minutos de inactividad** (D-018, mecanismo técnico pendiente). Ver §36.9.
+**Actualización del 2026-09-27:** la contraseña se concreta como **PIN de 6 dígitos** (D-061; origen AG-01; aprobada el 2026-09-27; hash en AG-11); el dispositivo se vincula con un **par de claves** (D-048; origen AG-01; aprobada el 2026-09-27; anti-replay en AG-11); la sesión se cierra tras **5 minutos de inactividad** (D-018, AG-02, mecanismo técnico pendiente). Ver §36.9.
 
 ---
 
@@ -629,10 +629,10 @@ Antes de considerar la seguridad como completamente especificada deberán defini
 - expiración de tokens;
 - refresh tokens, si corresponden;
 - algoritmo de hash de contraseñas, política y normalización de la contraseña dictada (D-047; la existencia de contraseñas está aprobada en D-037);
-- vinculación técnica del dispositivo (D-048) — _AG-02: aprobada_;
+- vinculación técnica del dispositivo (D-048) — _aprobada el 2026-09-27 (origen AG-01; anti-replay en AG-11)_;
 - procedimiento de recuperación asistida (D-049);
 - estrategia de almacenamiento de secretos (deuda técnica, D-017; no bloquea el primer entregable);
-- protocolo de comunicación Java-Python — _AG-02: REST interno (D-010)_;
+- protocolo de comunicación Java-Python — _AG-12: REST interno (D-010)_;
 - configuración TLS;
 - rate limiting;
 - detalle de la política de intentos (el número máximo, 3, está aprobado en D-044);
@@ -641,8 +641,8 @@ Antes de considerar la seguridad como completamente especificada deberán defini
 - retención de logs;
 - estrategia de copias de seguridad;
 - estrategia de recuperación;
-- protección de información biométrica — _AG-02: D-013, §36.9_;
-- almacenamiento o no de audio — _AG-02: no se almacena audio (D-013)_;
+- protección de información biométrica — _AG-13 (seguridad en AG-11): D-013, §36.9_;
+- almacenamiento o no de audio — _AG-13: no se almacena audio (D-013)_;
 - gestión técnica de dispositivos (la regla de un único dispositivo activo está aprobada en D-039);
 - separación de ambientes.
 
@@ -687,7 +687,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-044.
 
 ## 36.1 Contraseña
 
-> **AG-02 (D-061):** la contraseña se concreta como **PIN numérico de 6 dígitos**. Todas las reglas de esta sección aplican al PIN. Por su espacio pequeño (10⁶ combinaciones), el hash por sí solo no lo protege ante una filtración de la base de datos: se requiere además un secreto del servidor (*pepper*) fuera de la BD y el límite estricto de intentos (D-044). El PIN se ingresa con un teclado accesible que anuncia solo el avance, nunca los dígitos. Si se permite dictarlo por voz sigue **pendiente** (D-061, D-046).
+> **D-061 (origen AG-01; aprobada el 2026-09-27; hash en AG-11):** la contraseña se concreta como **PIN numérico de 6 dígitos**. Todas las reglas de esta sección aplican al PIN. Por su espacio pequeño (10⁶ combinaciones), el hash por sí solo no lo protege ante una filtración de la base de datos: se requiere además un secreto del servidor (*pepper*) fuera de la BD y el límite estricto de intentos (D-044). El PIN se ingresa con un teclado accesible que anuncia solo el avance, nunca los dígitos. Si se permite dictarlo por voz sigue **pendiente** (D-061, D-046).
 
 - Se crea en el registro y puede dictarse por voz (D-037).
 - Se almacena **solo mediante hash seguro**; nunca en texto plano, nunca como audio, nunca en logs, ni siquiera en intentos fallidos.
@@ -709,7 +709,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-044.
 - **Un único dispositivo activo** por cuenta de acceso (D-039). Al autorizar uno nuevo, el anterior se revoca.
 - Al bloquear la cuenta o revocar el dispositivo, se **revocan las sesiones** correspondientes (D-040).
 - La reinstalación no se asume reconocible; si el vínculo no puede verificarse, se usa el flujo de cambio de dispositivo/recuperación.
-- Mecanismo técnico de vinculación (D-048) y estrategia de sesiones (D-018) pendientes. _(AG-02: D-048 aprobada — par de claves ECDSA P-256 en el almacén de hardware del teléfono, clave privada no exportable, backend guarda solo la clave pública, desafío-respuesta con nonce de un solo uso. D-018 parcial — cierre automático tras 5 minutos de inactividad controlado en el servidor, sin aviso previo; mecanismo técnico pendiente.)_
+- Mecanismo técnico de vinculación (D-048) y estrategia de sesiones (D-018) pendientes. _(2026-09-27: D-048 aprobada — par de claves ECDSA P-256 en el almacén de hardware del teléfono, clave privada no exportable, backend guarda solo la clave pública, desafío-respuesta con nonce de un solo uso. D-018 parcial — cierre automático tras 5 minutos de inactividad controlado en el servidor, sin aviso previo; mecanismo técnico pendiente.)_
 
 ## 36.4 Recuperación y cambio de dispositivo
 
@@ -753,7 +753,7 @@ Las credenciales de PostgreSQL, las claves JWT y otros valores sensibles present
 
 La regla de no introducir **nuevos** secretos en el código se mantiene (§3.5, §23). La corrección completa (variables de entorno, gestión de secretos, rotación, claves JWT, credenciales de base de datos, limpieza del historial si fuera necesaria y separación desarrollo/producción) se realizará **antes de cualquier despliegue en producción**, previsiblemente en el segundo entregable.
 
-## 36.9 Controles del módulo de voz, dispositivo y sesión (AG-02, 2026-09-27)
+## 36.9 Controles del módulo de voz, dispositivo y sesión (2026-09-27; AG-13, AG-11 y AG-02)
 
 Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-010 a D-013, D-018, D-048, D-054 a D-061.
 

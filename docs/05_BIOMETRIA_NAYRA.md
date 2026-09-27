@@ -8,7 +8,7 @@ La biometría de voz es uno de los elementos centrales de la solución, debido a
 
 Este documento **no fija todavía un modelo biométrico, algoritmo, umbral o arquitectura definitiva de procesamiento**. Esos elementos deberán seleccionarse y documentarse mediante decisiones técnicas aprobadas.
 
-> **Actualización AG-02 (2026-09-27):** el modelo biométrico, la estrategia anti-spoofing, el reconocimiento del contenido del desafío, el almacenamiento biométrico y la comunicación con Java quedaron aprobados (D-010 a D-013, D-046 parcial, D-054 a D-059). El diseño técnico vigente está en la **sección 27**. Los **valores** de umbrales siguen sin definir hasta la calibración (D-055).
+> **Actualización AG-13 (2026-09-27):** el modelo biométrico, la estrategia anti-spoofing, el reconocimiento del contenido del desafío, el almacenamiento biométrico y la comunicación con Java quedaron aprobados (D-010 a D-013, D-046 parcial, D-054 a D-059); la comunicación con Java (D-010) y D-056 pertenecen a AG-12. El diseño técnico vigente está en la **sección 27**. Los **valores** de umbrales siguen sin definir hasta la calibración (D-055).
 
 ---
 
@@ -66,7 +66,7 @@ Se ha considerado:
 
 Estas tecnologías son **opciones consideradas**, no una obligación de utilizar una implementación específica.
 
-_(AG-02: SpeechBrain ECAPA-TDNN, AASIST y Vosk quedaron aprobados; ver §27 y D-011, D-012, D-046.)_
+_(AG-13: SpeechBrain ECAPA-TDNN, AASIST y Vosk quedaron aprobados; ver §27 y D-011, D-012, D-046.)_
 
 La selección definitiva debe registrarse en:
 
@@ -481,7 +481,7 @@ Claude debe aplicar las siguientes reglas al trabajar con biometría:
 
 Antes de implementar definitivamente el componente biométrico deben definirse:
 
-> **Estado AG-02 (2026-09-27):** resueltos modelo, framework, anti-spoofing, extracción de características, representación, método de comparación, estrategia de almacenamiento (sin audio: no hay retención de audio), protocolo con Java, reconocimiento del contenido del desafío y generación del desafío (estructura). El responsable de aplicar los umbrales técnicos también quedó aprobado (servicio Python, D-056). Siguen pendientes: **valores** de umbral (D-055), dataset y procedimiento de evaluación (D-060), detalle de reintentos (D-044), herramienta de VAD (D-058), lista de palabras y vida del desafío (D-054) y el resto del reconocimiento del habla (D-046).
+> **Estado AG-13 (2026-09-27; protocolo con Java y D-056 en AG-12):** resueltos modelo, framework, anti-spoofing, extracción de características, representación, método de comparación, estrategia de almacenamiento (sin audio: no hay retención de audio), protocolo con Java, reconocimiento del contenido del desafío y generación del desafío (estructura). El responsable de aplicar los umbrales técnicos también quedó aprobado (servicio Python, D-056). Siguen pendientes: **valores** de umbral (D-055), dataset y procedimiento de evaluación (D-060), detalle de reintentos (D-044), herramienta de VAD (D-058), lista de palabras y vida del desafío (D-054) y el resto del reconocimiento del habla (D-046).
 
 - modelo de reconocimiento/verificación;
 - framework definitivo;
@@ -543,7 +543,7 @@ Registradas en `07_DECISIONES_TECNICAS_NAYRA.md` (D-036 a D-040, D-044, D-052). 
 ## 26.2 Verificación en el inicio de sesión
 
 - La biometría es una **verificación 1:1** contra la referencia de la cuenta determinada por el **dispositivo vinculado**. **No** se utiliza identificación 1:N (D-037).
-- La verificación biométrica ocurre **después** de validar la contraseña. _(AG-02: la contraseña se concreta como **PIN de 6 dígitos**, D-061.)_
+- La verificación biométrica ocurre **después** de validar la contraseña. _(2026-09-27: la contraseña se concreta como **PIN de 6 dígitos**, D-061; origen AG-01; aprobada el 2026-09-27.)_
 - La muestra biométrica es la respuesta a una **frase de desafío variable** propuesta en cada autenticación. Se debe **comprobar que el contenido** de la respuesta corresponde al desafío; sin esa comprobación, una grabación de la voz del usuario podría superar la verificación.
 - Orden conceptual (se mantiene §10): respuesta al desafío → comprobación del contenido → **anti-spoofing** → **verificación 1:1** → resultado → el backend aplica las reglas (3 intentos, D-044).
 - **No** son muestras biométricas: el comando de activación "Iniciar sesión Nayra" ni la contraseña dictada. La contraseña dictada se descarta tras calcular su hash y nunca se almacena como audio.
@@ -568,11 +568,11 @@ No se asume ninguna solución fiable para validar voces alteradas por enfermedad
 
 El prototipo necesita reconocimiento del habla (distinto de la verificación del locutor) para el comando de activación, el DNI (si se dicta; forma de ingreso pendiente, D-052), la contraseña dictada y la comprobación del contenido del desafío. Su tecnología y ubicación (dispositivo o servidor) están **pendientes (D-046)**. Si procesa la contraseña dictada, no debe almacenar ni registrar el audio ni la transcripción.
 
-_(AG-02: el contenido del desafío se reconoce con Vosk en el servidor (D-046, parcial); la contraseña se concreta como PIN de 6 dígitos (D-061) y si puede dictarse sigue pendiente; el comando y el DNI siguen pendientes.)_
+_(2026-09-27: el contenido del desafío se reconoce con Vosk en el servidor (D-046, parcial; AG-13); la contraseña se concreta como PIN de 6 dígitos (D-061; origen AG-01; aprobada el 2026-09-27) y si puede dictarse sigue pendiente; el comando y el DNI siguen pendientes.)_
 
 ---
 
-# 27. Diseño técnico aprobado del módulo de voz — AG-02 (2026-09-27)
+# 27. Diseño técnico aprobado del módulo de voz — AG-13 (2026-09-27)
 
 Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-010 a D-013, D-046 (parcial), D-048, D-054 a D-061. Ningún valor numérico de umbral está aprobado; ver §27.7.
 

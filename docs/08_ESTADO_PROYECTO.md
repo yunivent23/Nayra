@@ -37,9 +37,9 @@ El short paper contempla hasta el Objetivo 2, incluyendo el diseño de la soluci
 | Requisitos | DOCUMENTADO — depurado por AG-00 y actualizado por AG-01 (HU-117 a HU-125; alcance del primer entregable; D1–D6 pendientes) |
 | Arquitectura | EN DEFINICIÓN CONTROLADA — componentes y flujos lógicos del primer entregable documentados (AG-01) |
 | Base de datos | MODELO LÓGICO DOCUMENTADO — AG-00 y AG-01 (`03_BASE_DE_DATOS_NAYRA.md` §16); esquema físico y migraciones PENDIENTES (D-051) |
-| Biometría de voz | DISEÑO TÉCNICO APROBADO (AG-02, `05_BIOMETRIA_NAYRA.md` §27): modelo, anti-spoofing, reconocimiento del desafío, almacenamiento y comunicación decididos; **valores de umbral PENDIENTES DE VALIDACIÓN**; implementación NO INICIADA |
+| Biometría de voz | DISEÑO TÉCNICO APROBADO (AG-13, `05_BIOMETRIA_NAYRA.md` §27): modelo, anti-spoofing, reconocimiento del desafío, almacenamiento y comunicación decididos; **valores de umbral PENDIENTES DE VALIDACIÓN**; implementación NO INICIADA |
 | Seguridad | PRINCIPIOS Y CONTROLES DOCUMENTADOS — controles AG-01 en `06_SEGURIDAD_NAYRA.md` §36 |
-| Decisiones técnicas | REGISTRADAS hasta D-061 (AG-02); siguen PENDIENTES, entre otras, D-014, D-016, D-018 (mecanismo), D-044 (detalle), D-045, D-046 (resto), D-047, D-055 (valores de umbral), D-060 |
+| Decisiones técnicas | REGISTRADAS hasta D-061 (revisión del 2026-09-27; trazabilidad temática AG en `07_DECISIONES_TECNICAS_NAYRA.md`); siguen PENDIENTES, entre otras, D-014, D-016, D-018 (mecanismo), D-044 (detalle), D-045, D-046 (resto), D-047, D-055 (valores de umbral), D-060 |
 | API | PENDIENTE DE DEFINICIÓN FINAL |
 | Estado de implementación | ESTE DOCUMENTO |
 | Reglas de desarrollo | DOCUMENTADAS EN `09_REGLAS_DESARROLLO_NAYRA.md` |
@@ -92,7 +92,7 @@ Responsabilidad:
 - mecanismos de detección de intentos de suplantación, cuando hayan sido implementados.
 
 **Estado:** DISEÑO TÉCNICO APROBADO / IMPLEMENTACIÓN NO INICIADA. **No existe código Python en el repositorio** (verificado 2026-09-26).  
-AG-02 (2026-09-27): decididos FastAPI (D-010), SpeechBrain ECAPA-TDNN (D-011), AASIST (D-012), almacenamiento del embedding cifrado sin audio (D-013) y Vosk para el contenido del desafío (D-046, parcial). El servicio Python aplica los umbrales técnicos y Spring Boot decide la autenticación (D-056). Pendientes: contrato en `04_API.md` (D-014), valores de umbral (D-055) y despliegue (D-016).
+Revisión del 2026-09-27 (AG-13; D-010 y D-056 en AG-12): decididos FastAPI (D-010), SpeechBrain ECAPA-TDNN (D-011), AASIST (D-012), almacenamiento del embedding cifrado sin audio (D-013) y Vosk para el contenido del desafío (D-046, parcial). El servicio Python aplica los umbrales técnicos y Spring Boot decide la autenticación (D-056). Pendientes: contrato en `04_API.md` (D-014), valores de umbral (D-055) y despliegue (D-016).
 
 ---
 
@@ -100,7 +100,7 @@ AG-02 (2026-09-27): decididos FastAPI (D-010), SpeechBrain ECAPA-TDNN (D-011), A
 
 La tecnología definitiva del frontend todavía debe considerarse una decisión técnica pendiente si no ha sido aprobada formalmente.
 
-**Estado:** POR DEFINIR. **No existe código de aplicación móvil ni de panel web en el repositorio** (verificado 2026-09-26). AG-02: la aplicación móvil será **Flutter** (D-007), con canal Kotlin para el almacén de claves (D-048); implementación no iniciada. El panel web sigue pendiente (D-045).
+**Estado:** POR DEFINIR. **No existe código de aplicación móvil ni de panel web en el repositorio** (verificado 2026-09-26). 2026-09-27: la aplicación móvil será **Flutter** (D-007), con canal Kotlin para el almacén de claves (D-048); implementación no iniciada. El panel web sigue pendiente (D-045).
 
 Claude no debe asumir un framework de frontend sin consultar `07_DECISIONES_TECNICAS_NAYRA.md` y el repositorio.
 
@@ -142,7 +142,7 @@ El detalle oficial del modelo se encuentra en:
 **Modelo documentado:** SÍ.  
 **Implementación física:** POR VERIFICAR EN EL REPOSITORIO. Las decisiones de AG-00 (D-024 a D-033) son solo documentales: **no se han implementado** en el código.
 
-No deben agregarse tablas biométricas como `VOICE_BIOMETRICS`, `VOICE_EMBEDDINGS` o `ANTI_SPOOFING` sin una decisión explícita. _(AG-02: la única estructura biométrica aprobada es `biometria.PERFILES_VOZ`, D-013, `03_BASE_DE_DATOS_NAYRA.md` §16.11; su tabla física depende de D-051.)_
+No deben agregarse tablas biométricas como `VOICE_BIOMETRICS`, `VOICE_EMBEDDINGS` o `ANTI_SPOOFING` sin una decisión explícita. _(AG-13: la única estructura biométrica aprobada es `biometria.PERFILES_VOZ`, D-013, `03_BASE_DE_DATOS_NAYRA.md` §16.11; su tabla física depende de D-051.)_
 
 ---
 
@@ -154,14 +154,14 @@ La biometría de voz constituye uno de los componentes centrales de Nayra.
 
 - Se utilizarán modelos preentrenados.
 - Python será utilizado para el procesamiento especializado.
-- SpeechBrain ECAPA-TDNN aprobado para la verificación 1:1 (AG-02, D-011).
+- SpeechBrain ECAPA-TDNN aprobado para la verificación 1:1 (AG-13, D-011).
 - El objetivo conceptual es realizar **verificación de voz**, no identificación abierta.
 - Se considera protección frente a intentos de suplantación mediante reproducción o voz sintética/manipulada.
 - AG-01: enrolamiento durante el registro con anti-spoofing; verificación 1:1 tras la contraseña; desafío variable con comprobación de contenido; referencia biométrica persistente en el backend (D-036 a D-038, `05_BIOMETRIA_NAYRA.md` §26).
 
 ### Decisiones todavía pendientes
 
-- ~~modelo definitivo~~ (D-011), ~~algoritmo de comparación~~ (coseno 1:1, D-011), ~~estrategia de almacenamiento~~ (D-013), ~~retención de audio~~ (no se guarda audio, D-013), ~~anti-spoofing~~ (D-012), ~~integración con Java~~ (D-010), ~~responsable de aplicar los umbrales técnicos~~ (servicio Python, D-056) — resueltos en AG-02;
+- ~~modelo definitivo~~ (D-011), ~~algoritmo de comparación~~ (coseno 1:1, D-011), ~~estrategia de almacenamiento~~ (D-013), ~~retención de audio~~ (no se guarda audio, D-013), ~~anti-spoofing~~ (D-012), ~~integración con Java~~ (D-010), ~~responsable de aplicar los umbrales técnicos~~ (servicio Python, D-056) — resueltos el 2026-09-27 (AG-13; D-010 y D-056 en AG-12);
 - valores de umbral (D-055; primero un umbral provisional por piloto);
 - dataset de calibración y consentimiento (D-060);
 - herramienta de VAD (D-058), lista de palabras y vida del desafío (D-054);

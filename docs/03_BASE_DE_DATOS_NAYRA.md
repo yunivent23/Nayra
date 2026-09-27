@@ -8,7 +8,7 @@
 >
 > **Actualización AG-01 (2026-09-26):** se incorporó el registro de identidad simulado (`REGISTRO_IDENTIDAD_SIMULADO`, D-035) y se actualizó el modelo lógico de `USUARIOS`, `ROLES`, `CUENTAS`, `DISPOSITIVOS`, `SESIONES`, `OPERACIONES`, `SOLICITUDES_ATENCION` y `AUDITORÍA` según D-035 a D-043. **La sección 16 es la referencia vigente** de esas tablas; las tablas de la sección 3 conservan la propuesta original del Excel. No se crean tablas físicas ni migraciones hasta decidir D-051.
 >
-> **Actualización AG-02 (2026-09-27):** se documenta el modelo lógico de la referencia biométrica (`biometria.PERFILES_VOZ`, D-013, §16.11) y se actualizan `USUARIOS` (hash del PIN, D-061), `DISPOSITIVOS` (clave pública, D-048), `SESIONES` (5 minutos de inactividad, D-018) y los eventos de `AUDITORÍA`. Siguen sin crearse tablas físicas hasta decidir D-051.
+> **Actualización del 2026-09-27:** se documenta el modelo lógico de la referencia biométrica (`biometria.PERFILES_VOZ`, D-013, AG-13, §16.11) y se actualizan `USUARIOS` (hash del PIN, D-061; origen AG-01; aprobada el 2026-09-27), `DISPOSITIVOS` (clave pública, D-048; origen AG-01; aprobada el 2026-09-27), `SESIONES` (5 minutos de inactividad, D-018, AG-02) y los eventos de `AUDITORÍA`. Siguen sin crearse tablas físicas hasta decidir D-051.
 
 ## 1. Propósito
 
@@ -224,7 +224,7 @@ Por tanto:
 
 La estrategia definitiva debe documentarse en `05_BIOMETRIA_NAYRA.md` y `06_SEGURIDAD_NAYRA.md`.
 
-_(AG-02: estrategia aprobada en D-013 — solo embedding cifrado, sin audio, en el esquema `biometria`; modelo lógico en §16.11.)_
+_(AG-13: estrategia aprobada en D-013 — solo embedding cifrado, sin audio, en el esquema `biometria`; modelo lógico en §16.11.)_
 
 ## 9. Relación con el backend
 
@@ -357,7 +357,7 @@ Decisiones registradas en `07_DECISIONES_TECNICAS_NAYRA.md`:
 
 ## 16. Modelo lógico actualizado — AG-01 (2026-09-26)
 
-Esta sección es la **referencia vigente** del modelo lógico para las tablas indicadas. Describe **atributos lógicos y reglas**, no el esquema físico: los tipos de dato, nombres definitivos de columnas, índices, obligatoriedad fina y comportamiento ante eliminación siguen pendientes (§13), así como la estrategia de identificadores y de migraciones (**D-051**). **No se crean tablas físicas** hasta cerrar esas decisiones. **No se crean tablas biométricas** hasta decidir D-013. _(AG-02: D-013 decidida; su modelo lógico está en §16.11, pero la tabla física se crea solo con la estrategia de migraciones, D-051.)_
+Esta sección es la **referencia vigente** del modelo lógico para las tablas indicadas. Describe **atributos lógicos y reglas**, no el esquema físico: los tipos de dato, nombres definitivos de columnas, índices, obligatoriedad fina y comportamiento ante eliminación siguen pendientes (§13), así como la estrategia de identificadores y de migraciones (**D-051**). **No se crean tablas físicas** hasta cerrar esas decisiones. **No se crean tablas biométricas** hasta decidir D-013. _(AG-13: D-013 decidida; su modelo lógico está en §16.11, pero la tabla física se crea solo con la estrategia de migraciones, D-051.)_
 
 ### 16.1 `USUARIOS` (cuenta de acceso)
 
@@ -460,7 +460,7 @@ Además de los campos originales, para cumplir D-041:
 | Usuario afectado | Usuario sobre el que recae la acción, cuando difiere del actor |
 | Tipo de acción, resultado, fecha, IP, dispositivo | Según propuesta original |
 
-Eventos mínimos a registrar (AG-02: los intentos de autenticación registran el **motivo** del fallo — PIN incorrecto, calidad insuficiente, contenido incorrecto, posible spoofing, no coincide, servicio no disponible — sin PIN, audio, embeddings ni puntajes biométricos; esto sirve a HU-80 y, luego, a HU-51/HU-52): registro, validación asistida de identidad por el representante autorizado (D-052; qué datos del representante se registran queda pendiente, sin crear un rol nuevo), rechazo por DNI existente, intentos de autenticación (con tipo de fallo, sin contraseña, audio ni representación biométrica), bloqueos y desbloqueos, vinculación y revocación de dispositivos, solicitudes y su atención, y toda acción administrativa. El catálogo definitivo de eventos y campos sigue pendiente (D-019).
+Eventos mínimos a registrar (revisión del 2026-09-27: los intentos de autenticación registran el **motivo** del fallo — PIN incorrecto, calidad insuficiente, contenido incorrecto, posible spoofing, no coincide, servicio no disponible — sin PIN, audio, embeddings ni puntajes biométricos; esto sirve a HU-80 y, luego, a HU-51/HU-52): registro, validación asistida de identidad por el representante autorizado (D-052; qué datos del representante se registran queda pendiente, sin crear un rol nuevo), rechazo por DNI existente, intentos de autenticación (con tipo de fallo, sin contraseña, audio ni representación biométrica), bloqueos y desbloqueos, vinculación y revocación de dispositivos, solicitudes y su atención, y toda acción administrativa. El catálogo definitivo de eventos y campos sigue pendiente (D-019).
 
 ### 16.10 Identificador del QR (pendiente — siguiente entregable)
 
@@ -473,7 +473,7 @@ El QR solo debe identificar la cuenta/destinatario dentro del entorno simulado (
 
 La segunda evita exponer identificadores internos o datos financieros innecesarios. No se agrega el campo hasta decidirlo.
 
-### 16.11 `biometria.PERFILES_VOZ` (nueva — AG-02, D-013)
+### 16.11 `biometria.PERFILES_VOZ` (nueva — AG-13, D-013)
 
 Referencia biométrica de voz. Vive en un **esquema propio (`biometria`) del mismo PostgreSQL**, con usuario de base de datos exclusivo del servicio Python. Spring Boot y el administrador **no** acceden a ella. Modelo lógico (tipos físicos y nombres definitivos pendientes, §13 y D-051):
 
