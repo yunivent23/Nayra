@@ -9,6 +9,8 @@
 > **Actualización AG-01 v5 (2026-09-26):** el registro pasa a ser **asistido** por un representante autorizado que valida el DNI y la identidad (D-052, regla de negocio, sin nuevo rol); el QR (HU-123, HU-124) queda como funcionalidad secundaria para un siguiente entregable. Ver sección 12.
 >
 > **Actualización AG-01 v6 (2026-09-26):** flujo de registro asistido definitivo en 13 pasos (D-052) y separación explícita entre registro inicial, inicio de sesión y cambio/recuperación de dispositivo; el DNI **no** forma parte del inicio de sesión habitual (D-053).
+>
+> **Actualización AG-02 (2026-09-27):** decisiones técnicas del módulo de voz (D-010 a D-013, D-046 parcial, D-054 a D-060) y cuatro decisiones que afectan la interpretación de las HUs: **PIN de 6 dígitos** como credencial (D-061, modifica D-037), **par de claves del dispositivo** (D-048), **cierre de sesión tras 5 minutos de inactividad** (D-018, parcial) y **Flutter** para la aplicación móvil (D-007). No se agregan HUs ni se modifica la redacción de las existentes; las interpretaciones están en la sección 13.
 
 ## 1. Propósito
 
@@ -41,10 +43,11 @@ Este documento constituye la referencia de requisitos para el desarrollo de Nayr
 | **Billetera** | Término usado en las HUs sin definición formal. Su relación exacta con la cuenta financiera queda **pendiente de confirmación** (ver sección 11.5). |
 | **Registro de identidad simulado** | Fuente de identidad del entorno controlado que relaciona DNI, nombres y apellidos; se consulta durante el registro (D-035). No es una API real. Consultarlo **no** prueba la titularidad ni la identidad (D-052). |
 | **Representante autorizado** | Administrador u otra persona autorizada de la organización que, en el registro asistido, asiste a la persona y valida su identidad (D-052). Es parte de una **regla de negocio**, no un rol de la aplicación. |
-| **Dispositivo vinculado** | Único dispositivo activo asociado a una cuenta de acceso; determina qué cuenta intenta iniciar sesión (D-039). |
+| **Dispositivo vinculado** | Único dispositivo activo asociado a una cuenta de acceso; determina qué cuenta intenta iniciar sesión (D-039). Se identifica mediante un par de claves cuya clave privada no sale del teléfono (D-048). |
+| **PIN** | Credencial de conocimiento de 6 dígitos que concreta la "contraseña" de D-037 y de HU-118 (D-061). |
 | **Contacto** (para transferencias) | Otro usuario registrado en Nayra. No incluye la agenda del teléfono (D-042). |
 | **QR de la cuenta** | Código asociado a una cuenta financiera simulada que solo identifica al destinatario dentro del entorno simulado; no es un mecanismo de autenticación (D-042). |
-| **Frase de desafío** | Frase variable que Nayra propone en cada autenticación; la respuesta del usuario es la muestra biométrica (D-037). |
+| **Frase de desafío** | Frase variable que Nayra propone en cada autenticación; la respuesta del usuario es la muestra biométrica (D-037). Su estructura es palabra + 3 dígitos + palabra (D-054). |
 
 Regla: el término "cuenta" en una HU debe interpretarse según su contexto como **cuenta de acceso** o **cuenta financiera**. Interpretación aplicada a las HUs vigentes que usan el término:
 
@@ -699,3 +702,21 @@ Funcionalidades **fuera del primer entregable sin HU**: retiro asistido por admi
 - Confirmación de la prioridad de las HUs nuevas y de la clasificación de alcance de la sección 12.4.
 - Canal por el que un usuario que perdió su celular solicita asistencia (HU-121), sin chatbot.
 - Registro asistido (D-052): cómo se registra técnicamente quién realizó la validación asistida (sobre todo si el representante no es `ADMIN`) y cómo se refleja en la auditoría. _(Resueltos en AG-01 v6: momento del celular y posición del DNI.)_
+
+## 13. Interpretación de HUs por las decisiones de AG-02 (2026-09-27)
+
+Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-007, D-018, D-048, D-054 a D-061. No se agregan HUs ni se cambia su redacción.
+
+| HU | Interpretación | Decisión |
+|---|---|---|
+| HU-118 | La "contraseña de acceso" se concreta como **PIN de 6 dígitos**, ingresado con un teclado accesible que anuncia solo el avance. **Pendiente:** si además puede dictarse por voz, como menciona la HU (dictarlo en voz alta lo expone a terceros) | D-061, D-046 |
+| HU-12, HU-40 | El acceso sigue el flujo de D-037 con PIN en lugar de contraseña; el dispositivo vinculado se comprueba mediante la firma de un nonce con la clave del dispositivo | D-037, D-048, D-061 |
+| HU-13 | Además del cierre manual, la sesión se cierra automáticamente tras 5 minutos de inactividad | D-018 |
+| HU-119 | La vinculación registra la clave pública del par de claves generado en el teléfono | D-048 |
+| HU-120 | En el cambio de celular, el nuevo dispositivo genera su propio par de claves; se valida con PIN + voz 1:1 + anti-spoofing y se revoca la clave del dispositivo anterior | D-040, D-048, D-061 |
+| HU-29, HU-43 | La frase de desafío tiene la estructura palabra + 3 dígitos + palabra, de un solo uso; su contenido se comprueba en el servidor | D-054, D-046 |
+| HU-31, HU-32 | La calidad de la grabación se evalúa en el servicio de voz (voz neta, ruido, saturación) y se informa con un motivo accesible | D-058 |
+| HU-26, HU-48 | El enrolamiento aplica calidad, contenido y anti-spoofing a cada muestra; se guarda solo un embedding cifrado | D-012, D-013, D-059 |
+| HU-36 | La eliminación borra físicamente la referencia biométrica; no existe audio que eliminar | D-013 |
+
+**Clasificación técnica (sección 5):** las filas de HU-117 a HU-124 que indican "Por definir (D-007)" deben leerse como **Flutter** tras AG-02; las referencias del Excel a "almacenamiento de audio" (HU-26, HU-28, HU-30, HU-35, HU-36) **no** aplican, porque D-013 prohíbe guardar audio. La clasificación del Excel se conserva sin modificar como referencia del archivo fuente.

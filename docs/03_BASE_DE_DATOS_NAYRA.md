@@ -7,6 +7,8 @@
 > **Actualización AG-00 (2026-09-25):** por decisión aprobada se incorporó la tabla de referencia `ENTIDADES_BANCARIAS` (D-026). También se definieron la relación 1:1 entre `USUARIOS` y `CUENTAS` (D-025, D-028), la relación entre `CUENTAS` y `ENTIDADES_BANCARIAS` (D-026) y las referencias de `OPERACIONES` a las cuentas de origen y destino (D-029). Ver sección 15.
 >
 > **Actualización AG-01 (2026-09-26):** se incorporó el registro de identidad simulado (`REGISTRO_IDENTIDAD_SIMULADO`, D-035) y se actualizó el modelo lógico de `USUARIOS`, `ROLES`, `CUENTAS`, `DISPOSITIVOS`, `SESIONES`, `OPERACIONES`, `SOLICITUDES_ATENCION` y `AUDITORÍA` según D-035 a D-043. **La sección 16 es la referencia vigente** de esas tablas; las tablas de la sección 3 conservan la propuesta original del Excel. No se crean tablas físicas ni migraciones hasta decidir D-051.
+>
+> **Actualización AG-02 (2026-09-27):** se documenta el modelo lógico de la referencia biométrica (`biometria.PERFILES_VOZ`, D-013, §16.11) y se actualizan `USUARIOS` (hash del PIN, D-061), `DISPOSITIVOS` (clave pública, D-048), `SESIONES` (5 minutos de inactividad, D-018) y los eventos de `AUDITORÍA`. Siguen sin crearse tablas físicas hasta decidir D-051.
 
 ## 1. Propósito
 
@@ -222,6 +224,8 @@ Por tanto:
 
 La estrategia definitiva debe documentarse en `05_BIOMETRIA_NAYRA.md` y `06_SEGURIDAD_NAYRA.md`.
 
+_(AG-02: estrategia aprobada en D-013 — solo embedding cifrado, sin audio, en el esquema `biometria`; modelo lógico en §16.11.)_
+
 ## 9. Relación con el backend
 
 La implementación del backend deberá mantener correspondencia entre:
@@ -353,7 +357,7 @@ Decisiones registradas en `07_DECISIONES_TECNICAS_NAYRA.md`:
 
 ## 16. Modelo lógico actualizado — AG-01 (2026-09-26)
 
-Esta sección es la **referencia vigente** del modelo lógico para las tablas indicadas. Describe **atributos lógicos y reglas**, no el esquema físico: los tipos de dato, nombres definitivos de columnas, índices, obligatoriedad fina y comportamiento ante eliminación siguen pendientes (§13), así como la estrategia de identificadores y de migraciones (**D-051**). **No se crean tablas físicas** hasta cerrar esas decisiones. **No se crean tablas biométricas** hasta decidir D-013.
+Esta sección es la **referencia vigente** del modelo lógico para las tablas indicadas. Describe **atributos lógicos y reglas**, no el esquema físico: los tipos de dato, nombres definitivos de columnas, índices, obligatoriedad fina y comportamiento ante eliminación siguen pendientes (§13), así como la estrategia de identificadores y de migraciones (**D-051**). **No se crean tablas físicas** hasta cerrar esas decisiones. **No se crean tablas biométricas** hasta decidir D-013. _(AG-02: D-013 decidida; su modelo lógico está en §16.11, pero la tabla física se crea solo con la estrategia de migraciones, D-051.)_
 
 ### 16.1 `USUARIOS` (cuenta de acceso)
 
@@ -363,14 +367,14 @@ Esta sección es la **referencia vigente** del modelo lógico para las tablas in
 | DNI | Obligatorio y **único**: un DNI no puede tener dos cuentas de acceso | D-036 |
 | Nombres, apellidos | Obtenidos del registro de identidad simulado una vez que el representante autorizado confirma la validación de identidad | D-035, D-052 |
 | Número de celular | Dato de contacto; sin validación OTP en el primer entregable | D-043 |
-| Hash de contraseña | Solo el hash; nunca texto plano ni audio. Algoritmo pendiente | D-037, D-047 |
+| Hash del PIN | PIN de 6 dígitos (D-061). Solo el hash (con *pepper* fuera de la BD); nunca texto plano ni audio. Algoritmo y parámetros pendientes | D-037, D-061, D-047 |
 | Rol | `USER` o `ADMIN` (ver `ROLES`) | D-041 |
 | Estado de la cuenta de acceso | Al menos `ACTIVA` y `BLOQUEADA` (bloqueo por 3 intentos, por pérdida o por el administrador). Otros estados pendientes (AG-05) | D-040, D-044 |
 | Fechas de creación/actualización | Pendiente de definir | — |
 
 **No forman parte del modelo aprobado:** `username`, `email`, `direccion`, `fecha_nacimiento`, `foto_usuario`. Existen en el código actual (`Users.java`) sin respaldo en HU ni decisión.
 
-**Referencia biométrica:** permanece asociada a la cuenta de acceso en el backend (D-038), pero su estructura y ubicación siguen pendientes (D-013). No se agrega a `USUARIOS` ni se crea una tabla para ella todavía.
+**Referencia biométrica:** permanece asociada a la cuenta de acceso en el backend (D-038). **No** se agrega a `USUARIOS`: por D-013 vive en `biometria.PERFILES_VOZ` (§16.11), gestionada solo por el servicio Python.
 
 ### 16.2 `ROLES`
 
@@ -407,7 +411,7 @@ Localización durante el registro: DNI → `REGISTRO_IDENTIDAD_SIMULADO` → cue
 | Atributo lógico | Regla | Decisión |
 |---|---|---|
 | Propietario | FK a `USUARIOS` | D-039 |
-| Identificación técnica del dispositivo | Pendiente | D-048 |
+| Identificación técnica del dispositivo | Identificador del dispositivo + **clave pública** del par de claves generado en el almacén de hardware del teléfono y su algoritmo (ECDSA P-256). La clave privada **nunca** se almacena en el backend | D-048 |
 | Plataforma | Según propuesta original (ANDROID / IOS) | Excel |
 | Estado | Al menos `ACTIVO` y `REVOCADO` | D-039, D-040 |
 | Fechas de vinculación y revocación | Para trazabilidad | D-040 |
@@ -422,7 +426,11 @@ Regla de integridad: **como máximo un dispositivo `ACTIVO` por usuario**. Al au
 | Dispositivo | FK a `DISPOSITIVOS` | D-039 |
 | Creación / expiración / revocación | La sesión se crea solo tras contraseña + desafío + anti-spoofing + verificación 1:1. Se revoca al bloquear la cuenta o revocar el dispositivo | D-037, D-040 |
 
-Duración, renovación, formato de sesión o token (incluido si se usa JWT) siguen **pendientes** (D-018).
+| Último acceso | Necesario para cerrar la sesión tras **5 minutos de inactividad**, controlado en el servidor | D-018 (parcial) |
+
+Duración máxima absoluta, renovación, formato de sesión o token (incluido si se usa JWT) siguen **pendientes** (D-018).
+
+**Desafíos y nonces (D-048, D-054):** son de un solo uso y vida corta. Dónde se guardan (tabla, caché o memoria compartida entre las 2 instancias de D-023) queda **pendiente**; no se crea tabla para ellos todavía.
 
 ### 16.7 `OPERACIONES`
 
@@ -452,7 +460,7 @@ Además de los campos originales, para cumplir D-041:
 | Usuario afectado | Usuario sobre el que recae la acción, cuando difiere del actor |
 | Tipo de acción, resultado, fecha, IP, dispositivo | Según propuesta original |
 
-Eventos mínimos a registrar: registro, validación asistida de identidad por el representante autorizado (D-052; qué datos del representante se registran queda pendiente, sin crear un rol nuevo), rechazo por DNI existente, intentos de autenticación (con tipo de fallo, sin contraseña, audio ni representación biométrica), bloqueos y desbloqueos, vinculación y revocación de dispositivos, solicitudes y su atención, y toda acción administrativa. El catálogo definitivo de eventos y campos sigue pendiente (D-019).
+Eventos mínimos a registrar (AG-02: los intentos de autenticación registran el **motivo** del fallo — PIN incorrecto, calidad insuficiente, contenido incorrecto, posible spoofing, no coincide, servicio no disponible — sin PIN, audio, embeddings ni puntajes biométricos; esto sirve a HU-80 y, luego, a HU-51/HU-52): registro, validación asistida de identidad por el representante autorizado (D-052; qué datos del representante se registran queda pendiente, sin crear un rol nuevo), rechazo por DNI existente, intentos de autenticación (con tipo de fallo, sin contraseña, audio ni representación biométrica), bloqueos y desbloqueos, vinculación y revocación de dispositivos, solicitudes y su atención, y toda acción administrativa. El catálogo definitivo de eventos y campos sigue pendiente (D-019).
 
 ### 16.10 Identificador del QR (pendiente — siguiente entregable)
 
@@ -464,3 +472,21 @@ El QR solo debe identificar la cuenta/destinatario dentro del entorno simulado (
 - un identificador público no secuencial propio del QR.
 
 La segunda evita exponer identificadores internos o datos financieros innecesarios. No se agrega el campo hasta decidirlo.
+
+### 16.11 `biometria.PERFILES_VOZ` (nueva — AG-02, D-013)
+
+Referencia biométrica de voz. Vive en un **esquema propio (`biometria`) del mismo PostgreSQL**, con usuario de base de datos exclusivo del servicio Python. Spring Boot y el administrador **no** acceden a ella. Modelo lógico (tipos físicos y nombres definitivos pendientes, §13 y D-051):
+
+| Atributo lógico | Regla | Decisión |
+|---|---|---|
+| Identificador | PK | §13 |
+| Usuario | Referencia lógica al identificador de `USUARIOS`; **único** (un perfil por cuenta de acceso). Si será FK física entre esquemas queda pendiente (D-051) | D-038, D-013 |
+| Embedding cifrado | Centroide normalizado de 192 valores, cifrado con AES-256-GCM | D-011, D-013 |
+| Vector de inicialización | Propio de cada cifrado | D-013 |
+| Modelo | Nombre del modelo (p. ej. `speechbrain/spkrec-ecapa-voxceleb`) | D-011, D-013 |
+| Versión del modelo | Si cambia, la referencia no es comparable y se requiere re-enrolamiento | D-013 |
+| Número de muestras | Muestras válidas usadas en el centroide | D-059 |
+| Estado | Al menos `ACTIVO` y `REVOCADO` | D-013 |
+| Fechas de creación y actualización | Trazabilidad | — |
+
+Reglas: **no se guarda audio** en ninguna tabla; la clave de cifrado vive fuera del código y de la base de datos (D-017); eliminación física según HU-36 con evento de auditoría sin el embedding; actualización solo por re-enrolamiento tras validar al titular (D-040).

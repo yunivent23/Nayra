@@ -506,17 +506,17 @@ Antes de considerar este documento como arquitectura definitiva, deberán defini
 
 - arquitectura lógica final;
 - arquitectura física final;
-- tecnología del frontend móvil (D-007) y del panel web (D-045);
+- tecnología del frontend móvil (D-007, _resuelta en AG-02: Flutter_) y del panel web (D-045);
 - estructura definitiva del backend;
-- división exacta de responsabilidades Java/Python;
-- protocolo de comunicación Java-Python;
-- reconocimiento del habla: tecnología y ubicación (D-046);
+- división exacta de responsabilidades Java/Python (_AG-02: definida en la arquitectura lógica del módulo de voz y en D-056_);
+- protocolo de comunicación Java-Python (_AG-02: REST interno, D-010_);
+- reconocimiento del habla: tecnología y ubicación (D-046) — _AG-02: contenido del desafío resuelto; resto pendiente_;
 - mecanismo técnico de autenticación (el flujo funcional del usuario está aprobado en D-037; siguen pendientes hash D-047, dispositivo D-048 y autenticación del administrador D-050);
 - mecanismo técnico de autorización (roles aprobados en D-041);
 - estrategia de sesiones;
 - estructura definitiva de APIs;
-- estrategia de almacenamiento biométrico;
-- estrategia anti-spoofing;
+- estrategia de almacenamiento biométrico (_AG-02: D-013_);
+- estrategia anti-spoofing (_AG-02: D-012_);
 - servicios concretos de GCP;
 - red y segmentación;
 - estrategia de disponibilidad;
@@ -581,10 +581,10 @@ El primer entregable es un **prototipo funcional**. Su arquitectura lógica cont
 
 | Componente | Responsabilidad en el prototipo | Tecnología |
 |---|---|---|
-| **Aplicación móvil** | Interfaz principal del usuario: interacción por voz, registro, autenticación, tutorial, saldo, movimientos, transferencias a otros usuarios (el QR queda para un siguiente entregable, D-042) | PENDIENTE (D-007) |
-| **Backend principal** | Lógica de negocio, cuentas de acceso, contraseña (hash), dispositivos, sesiones, autorización, operaciones simuladas, solicitudes, auditoría y coordinación con el componente biométrico | Java + Spring Boot (D-001) |
-| **Procesamiento biométrico de voz** | Enrolamiento, anti-spoofing y verificación 1:1 | Python (D-002); modelo y anti-spoofing PENDIENTES (D-011, D-012) |
-| **Reconocimiento del habla** | Comando de activación, contraseña dictada, DNI si se dicta (pendiente, D-052), contenido del desafío | PENDIENTE: tecnología y ubicación (D-046) |
+| **Aplicación móvil** | Interfaz principal del usuario: interacción por voz, registro, autenticación, tutorial, saldo, movimientos, transferencias a otros usuarios (el QR queda para un siguiente entregable, D-042). Genera y custodia el par de claves del dispositivo (D-048) | **Flutter** (D-007, AG-02) + canal de plataforma Kotlin para el almacén de claves |
+| **Backend principal** | Lógica de negocio, cuentas de acceso, PIN (hash, D-061), dispositivos (clave pública y verificación de firma, D-048), desafíos y nonces, sesiones (5 min de inactividad, D-018), autorización, operaciones simuladas, solicitudes, auditoría, decisión de autenticación y coordinación con el componente biométrico | Java + Spring Boot (D-001) |
+| **Procesamiento biométrico de voz** | Calidad de audio, contenido del desafío, anti-spoofing, enrolamiento, verificación 1:1 y custodia de la referencia biométrica cifrada | Python (D-002) + FastAPI (D-010) + SpeechBrain ECAPA-TDNN (D-011) + AASIST (D-012) + Vosk (D-046, parcial); referencia en esquema `biometria` (D-013) |
+| **Reconocimiento del habla** | Contenido del desafío (APROBADO: Vosk en el servicio Python); comando de activación, PIN dictado si se permite y DNI en recuperación (PENDIENTES) | D-046 (parcial) |
 | **Base de datos** | Persistencia estructurada | PostgreSQL (D-003) |
 | **Entorno financiero simulado** | Entidades bancarias, cuentas financieras, operaciones y registro de identidad simulado | Dentro del modelo de datos (D-021, D-035) |
 | **Panel web del administrador** | Usuarios, estado, bloqueo/desbloqueo, dispositivo, solicitudes, auditoría, métricas básicas | PENDIENTE (D-045) |
@@ -619,4 +619,45 @@ Nuevo dispositivo → DNI → cuenta existente → contraseña + verificación 1
 Prohibido: DNI → cuenta → nueva voz → acceso
 ```
 
-La referencia biométrica permanece asociada a la cuenta en el backend (D-038); su almacenamiento concreto sigue pendiente (D-013). La jerarquía **Servicio → Función → Componente** y su representación en ArchiMate se aplicarán a estos componentes cuando se modele la arquitectura lógica.
+La referencia biométrica permanece asociada a la cuenta en el backend (D-038); su almacenamiento concreto sigue pendiente (D-013). _(AG-02: resuelto por D-013, ver abajo.)_
+
+### Arquitectura lógica del módulo de voz (AG-02, 2026-09-27)
+
+Decisiones: D-007, D-010 a D-013, D-018, D-046 (parcial), D-048, D-054 a D-061. Este flujo es **lógico**: no define URL, puertos, rutas de endpoints ni infraestructura física (§8, §16). El contrato se documentará en `04_API.md` (D-014) cuando se decida D-056.
+
+```text
+INICIO DE SESIÓN
+APP (Flutter)                         SPRING BOOT                                SERVICIO DE VOZ (Python, FastAPI)
+1. "Iniciar sesión Nayra" (activa)
+2. Solicita inicio ───────────────►  Emite nonce de un solo uso
+3. Firma el nonce con la clave   ──►  Verifica firma con la clave pública del
+   privada del dispositivo           dispositivo ACTIVO → determina la cuenta
+4. PIN (teclado accesible)       ──►  Verifica PIN (hash, D-047) → si falla: intento (D-044)
+                                 ◄──  Emite desafío (D-054), un solo uso, ligado a cuenta
+5. Lee el desafío (TTS), permite      + dispositivo
+   repetir, graba WAV 16 kHz
+6. Envía audio + id del desafío  ──►  Verifica y consume el desafío
+                                      Reenvía audio + texto esperado ─────────►  calidad → contenido → anti-spoofing
+                                                                                 → embedding + coseno 1:1 contra la
+                                                                                 referencia cifrada (esquema biometria)
+                                      ◄──────────── resultado por etapa ───────  (audio descartado)
+                                      Decide: intentos, bloqueo, sesión
+                                 ◄──  (cierre automático tras 5 min de inactividad), auditoría
+7. Resultado accesible
+```
+
+| Decisión | Responsable |
+|---|---|
+| Activar el flujo | App (sin valor de seguridad) |
+| Determinar la cuenta (firma del dispositivo) | Spring Boot (D-048) |
+| Validar el PIN | Spring Boot (D-061, D-047) |
+| Generar, guardar e invalidar desafío y nonce | Spring Boot (D-054, D-048) |
+| Calidad, contenido, anti-spoofing, similitud 1:1 | Servicio Python (D-011, D-012, D-046, D-058, D-059) |
+| Aplicar los umbrales técnicos y devolver veredictos por etapa | Servicio Python/FastAPI (D-056); valores pendientes de calibración (D-055) |
+| Aceptar o rechazar la autenticación, intentos, bloqueo, sesión | Spring Boot (D-044, D-018) |
+| Guardar y leer la referencia biométrica | Servicio Python (D-013) |
+| Auditoría (sin audio, embeddings ni PIN) | Spring Boot |
+
+**Enrolamiento (registro asistido, D-052 paso 11):** App → Spring Boot (emite un desafío por muestra) → servicio Python (calidad, contenido, anti-spoofing, embedding; guarda el centroide cifrado) → Spring Boot recibe solo el resultado.
+
+**Cambio de dispositivo (D-040):** mismo pipeline; la cuenta se localiza por DNI y el desafío se liga a la solicitud de cambio y al dispositivo nuevo; la verificación es contra la referencia existente; si todo pasa, Spring Boot registra la nueva clave pública y revoca el dispositivo anterior. La jerarquía **Servicio → Función → Componente** y su representación en ArchiMate se aplicarán a estos componentes cuando se modele la arquitectura lógica.

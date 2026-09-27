@@ -104,7 +104,9 @@ La solución elegida no debe ser innecesariamente compleja para el alcance del p
 
 ## D-005 — Framework para biometría de voz
 
-**Estado:** EN EVALUACIÓN
+**Estado:** APROBADA — concretada en **D-011** (AG-02, 2026-09-27)
+
+**Actualización AG-02:** SpeechBrain queda seleccionado mediante el modelo concreto definido en D-011. El texto original se conserva para trazabilidad.
 
 **Tecnología considerada:** SpeechBrain.
 
@@ -146,7 +148,9 @@ No asumir automáticamente:
 
 ## D-007 — Tecnología del frontend
 
-**Estado:** PENDIENTE
+**Estado:** APROBADA para la aplicación móvil: **Flutter** (AG-02, 2026-09-27). El panel web del administrador sigue PENDIENTE (D-045).
+
+**Actualización AG-02:** la aplicación móvil se desarrolla con **Flutter**. El código nativo necesario para el almacén de claves del dispositivo (D-048) se implementa mediante un canal de plataforma en Kotlin. Las librerías concretas de accesibilidad, audio y TTS no quedan aprobadas por esta decisión y deben cumplir los criterios de D-057 (formato de audio) y de las HUs de accesibilidad. Texto original:
 
 Debe seleccionarse la tecnología definitiva para la aplicación móvil.
 
@@ -168,6 +172,8 @@ La selección deberá considerar:
 **Estado:** APROBADA FUNCIONALMENTE PARA EL USUARIO (ver D-037) / PENDIENTE EN LO TÉCNICO
 
 La autenticación del usuario queda definida funcionalmente en **D-037** (contraseña + desafío de voz variable + anti-spoofing + verificación biométrica 1:1). Siguen **pendientes**: la autenticación del administrador (D-050), el hash y la política de contraseña (D-047), el reconocimiento del habla (D-046), la estrategia de sesiones (D-018) y los mecanismos técnicos concretos.
+
+**Actualización AG-02 (2026-09-27):** la credencial de conocimiento es un **PIN de 6 dígitos** (D-061, modifica D-037); el dispositivo se vincula con un **par de claves** (D-048); la sesión se cierra tras **5 minutos de inactividad** (D-018, parcial); el contenido del desafío se reconoce en el servidor (D-046, parcial). Siguen pendientes: hash del PIN (D-047), mecanismo técnico de sesión (D-018), resto del reconocimiento del habla (D-046) y autenticación del administrador (D-050).
 
 Texto original de esta decisión (se mantiene para lo que sigue pendiente):
 
@@ -204,7 +210,9 @@ Debe mantener correspondencia con:
 
 ## D-010 — Comunicación Java ↔ Python
 
-**Estado:** PENDIENTE
+**Estado:** APROBADA (AG-02, 2026-09-27) — ver detalle en la sección AG-02. Autenticación entre servicios en la nube PENDIENTE (D-016).
+
+**Actualización AG-02:** API REST interna con FastAPI en el servicio Python, accesible solo desde la red interna y únicamente por el backend principal. Texto original:
 
 Debe definirse cómo se comunicará el backend principal con el componente especializado de voz.
 
@@ -220,7 +228,9 @@ No implementar una alternativa como definitiva sin documentarla aquí.
 
 ## D-011 — Modelo biométrico
 
-**Estado:** PENDIENTE
+**Estado:** APROBADA (selección) / desempeño PENDIENTE DE VALIDACIÓN (AG-02, 2026-09-27) — ver sección AG-02.
+
+Texto original:
 
 Debe definirse:
 
@@ -236,7 +246,9 @@ La selección debe basarse en la investigación realizada y en la capacidad de v
 
 ## D-012 — Modelo anti-spoofing
 
-**Estado:** PENDIENTE
+**Estado:** APROBADA (estrategia) / tasa de detección PENDIENTE DE VALIDACIÓN (AG-02, 2026-09-27) — ver sección AG-02.
+
+Texto original:
 
 Debe definirse la estrategia concreta para detectar intentos de spoofing.
 
@@ -246,7 +258,9 @@ Se deben considerar las amenazas identificadas en `05_BIOMETRIA_NAYRA.md`.
 
 ## D-013 — Almacenamiento de información biométrica
 
-**Estado:** PENDIENTE
+**Estado:** APROBADA (AG-02, 2026-09-27) — ver sección AG-02. Gestión de la clave de cifrado vinculada a D-017.
+
+Texto original:
 
 Debe definirse si el sistema conservará:
 
@@ -332,7 +346,9 @@ Nunca deberán incluirse directamente en el código fuente.
 
 ## D-018 — Estrategia de sesiones
 
-**Estado:** PENDIENTE
+**Estado:** PARCIAL — regla de **cierre tras 5 minutos de inactividad** APROBADA (AG-02, 2026-09-27); mecanismo técnico (formato de sesión o token, almacenamiento, duración máxima absoluta, renovación) PENDIENTE.
+
+**Actualización AG-02:** la sesión se **cierra automáticamente** tras **5 minutos sin actividad**. El control de la inactividad se realiza en el servidor. **No** hay aviso por voz previo al cierre ni opción de continuar, y el tiempo no es ajustable por el usuario. No se aprueba todavía JWT, token opaco ni otro mecanismo; el análisis A-K (punto I) queda como insumo. Texto original:
 
 Debe definirse:
 
@@ -438,6 +454,21 @@ Registro:
 | D-053 | Flujos diferenciados y usos del DNI | — (nueva) | APROBADA | AG-01 v6: el DNI no forma parte del inicio de sesión habitual | 2026-09-26 |
 | D-017 | Gestión de secretos | PENDIENTE | DEUDA TÉCNICA (categoría C) | AG-01 v5: no bloquea el primer entregable; se aborda antes de producción | 2026-09-26 |
 | D-042 | QR (HU-123, HU-124) | APROBADA | APROBADA — fuera de la implementación del primer entregable | AG-01 v5: siguiente entregable | 2026-09-26 |
+| D-005 | Framework para biometría de voz | EN EVALUACIÓN | APROBADA — concretada en D-011 | AG-02: revisión del módulo de voz | 2026-09-27 |
+| D-007 | Tecnología de la aplicación móvil | PENDIENTE | APROBADA (Flutter); panel web sigue en D-045 | AG-02 | 2026-09-27 |
+| D-010 | Comunicación Java ↔ Python | PENDIENTE | APROBADA (REST interno, FastAPI) | AG-02 | 2026-09-27 |
+| D-011 | Modelo biométrico | PENDIENTE | APROBADA (SpeechBrain ECAPA-TDNN); desempeño por validar | AG-02 | 2026-09-27 |
+| D-012 | Anti-spoofing | PENDIENTE | APROBADA (defensa en capas con AASIST); detección por validar | AG-02 | 2026-09-27 |
+| D-013 | Almacenamiento biométrico | PENDIENTE | APROBADA (solo embedding cifrado, sin audio) | AG-02 | 2026-09-27 |
+| D-018 | Estrategia de sesiones | PENDIENTE | PARCIAL (5 minutos de inactividad aprobados; mecanismo pendiente) | AG-02 | 2026-09-27 |
+| D-046 | Reconocimiento del habla | PENDIENTE | PARCIAL (contenido del desafío aprobado) | AG-02 | 2026-09-27 |
+| D-048 | Vinculación del dispositivo | PENDIENTE | APROBADA (par de claves del dispositivo) | AG-02 | 2026-09-27 |
+| D-037 | Autenticación del usuario | APROBADA FUNCIONALMENTE | APROBADA FUNCIONALMENTE — MODIFICADA POR D-061 (PIN de 6 dígitos) | AG-02 | 2026-09-27 |
+| D-054, D-057 a D-059, D-061 | Decisiones nuevas del módulo de voz y PIN | — (nuevas) | APROBADAS (con valores pendientes de validación donde se indica) | AG-02 | 2026-09-27 |
+| D-055 | Umbrales y calibración | — (nueva) | Estrategia y proceso de calibración APROBADOS; **valores PENDIENTES** de calibración | AG-02 | 2026-09-27 |
+| D-060 | Dataset y consentimiento | — (nueva) | PENDIENTE | AG-02 | 2026-09-27 |
+| D-056 | Responsable de aplicar los umbrales técnicos | — (nueva) | APROBADA (servicio Python/FastAPI aplica los umbrales técnicos; Spring Boot decide la autenticación; valores en D-055) | AG-02: aprobación final | 2026-09-27 |
+| D-018 | Estrategia de sesiones | PARCIAL | PARCIAL — cierre automático tras 5 min de inactividad, sin aviso previo ni opción de continuar; mecanismo pendiente | AG-02: aprobación final | 2026-09-27 |
 
 Esto permitirá mantener trazabilidad de las decisiones de diseño.
 
@@ -660,7 +691,7 @@ Flujo original:
 **Si el DNI ya pertenece a una cuenta de acceso:** no se crea una segunda cuenta; se deriva al proceso de recuperación/cambio de dispositivo (D-040).
 
 ### D-037 — Autenticación del usuario
-**Estado:** APROBADA FUNCIONALMENTE
+**Estado:** APROBADA FUNCIONALMENTE — **MODIFICADA POR D-061** (AG-02, 2026-09-27): la "contraseña" se concreta como **PIN de 6 dígitos**. El resto del flujo se mantiene.
 
 La autenticación del usuario se compone de **contraseña + verificación biométrica de voz 1:1 + anti-spoofing**. Flujo de inicio de sesión:
 
@@ -683,6 +714,8 @@ La referencia biométrica permanece **asociada a la cuenta de acceso en el backe
 
 **No aprobado:** dónde se almacena, su formato, el modelo que la genera ni si se guarda como embedding u otra representación (D-011, D-013 siguen PENDIENTES). No se almacena audio de voz innecesariamente.
 
+**Actualización AG-02 (2026-09-27):** resuelto por D-011 y D-013. "Backend" en esta decisión comprende el **servicio Python de voz**, que es el único componente que guarda y lee la referencia (embedding cifrado) en un esquema propio del PostgreSQL del proyecto.
+
 ### D-039 — Un único dispositivo activo por cuenta de acceso
 **Estado:** APROBADA
 
@@ -690,7 +723,7 @@ La referencia biométrica permanece **asociada a la cuenta de acceso en el backe
 - El dispositivo se vincula al final del registro y determina la cuenta al iniciar sesión.
 - **Reinstalación:** no se asume que la aplicación reconozca siempre el dispositivo tras reinstalarse. Si el vínculo puede verificarse, se continúa; si no, se usa el flujo de cambio de dispositivo/recuperación (D-040). No se desarrolla una solución compleja de identificación de dispositivos solo para la reinstalación.
 
-**Pendiente:** mecanismo técnico de vinculación del dispositivo (D-048).
+**Pendiente:** mecanismo técnico de vinculación del dispositivo (D-048). _(AG-02: resuelto por D-048 — par de claves del dispositivo.)_
 
 ### D-040 — Cambio de dispositivo, pérdida y recuperación
 **Estado:** APROBADA (procedimiento de recuperación asistida PENDIENTE, D-049)
@@ -733,6 +766,8 @@ El número de celular forma parte del registro y se almacena como **dato de cont
 Tras **3 intentos fallidos** de autenticación la cuenta de acceso se bloquea.
 
 **Pendiente** antes de implementar: qué resultados cuentan como intento fallido (contraseña incorrecta, voz no coincidente, spoofing, mala calidad de audio); si hay un contador único o separado; ventana y reinicio del contador. Los **errores técnicos del servicio no se consideran intentos fallidos del usuario** salvo decisión expresa en contrario.
+
+**Propuesta AG-02 (PENDIENTE DE DECISIÓN, no aprobada):** cuentan como intento fallido el PIN incorrecto, el contenido del desafío incorrecto, el posible spoofing y la voz no coincidente; la calidad de audio insuficiente permite repetir la captura sin contar (HU-44); los errores técnicos no cuentan; contador único por cuenta de acceso.
 
 ### D-052 — Registro asistido con validación de identidad por un representante autorizado
 **Estado:** APROBADA (regla de negocio — AG-01 v5, 2026-09-26; flujo actualizado en AG-01 v6, 2026-09-26). **Modifica D-036.**
@@ -783,14 +818,16 @@ _Resueltos en AG-01 v6:_ momento del registro del celular (paso 8) y posición d
 | ID | Decisión | Estado |
 |---|---|---|
 | D-045 | Tecnología del panel web del administrador | PENDIENTE |
-| D-046 | Reconocimiento del habla (comando, DNI, contraseña dictada, contenido del desafío): tecnología y ubicación (dispositivo o servidor) | PENDIENTE |
-| D-047 | Algoritmo de hash, política de contraseña compatible con dictado y normalización de la contraseña dictada | PENDIENTE |
-| D-048 | Mecanismo técnico de vinculación del dispositivo | PENDIENTE |
+| D-046 | Reconocimiento del habla (comando, DNI, contraseña dictada, contenido del desafío): tecnología y ubicación (dispositivo o servidor) | **PARCIAL (AG-02):** contenido del desafío APROBADO (Vosk en servidor); comando, PIN dictado (si se permite) y DNI PENDIENTES |
+| D-047 | Algoritmo de hash, política de contraseña compatible con dictado y normalización de la contraseña dictada | PENDIENTE — **AG-02:** se aplica al **PIN de 6 dígitos** (D-061); el análisis A-K (Argon2id + pepper + límite de intentos) queda como insumo, no aprobado |
+| D-048 | Mecanismo técnico de vinculación del dispositivo | **APROBADA (AG-02):** par de claves del dispositivo (ver sección AG-02) |
 | D-049 | Procedimiento de recuperación asistida | PENDIENTE |
 | D-050 | Autenticación del administrador | PENDIENTE |
 | D-051 | Estrategia de migraciones de base de datos | PENDIENTE |
 
 Siguen también **PENDIENTES**: D-007 (frontend móvil), D-010 (Java ↔ Python), D-011 (modelo biométrico), D-012 (anti-spoofing), D-013 (almacenamiento biométrico), umbral biométrico, D-014 (API), D-018 (sesiones) y D-019 (auditoría detallada). D-017 (secretos) pasa a **deuda técnica** (categoría C).
+
+_(AG-02, 2026-09-27: D-007 (móvil), D-010, D-011, D-012, D-013, D-048 y D-056 quedan aprobadas; D-018 y D-046 pasan a parciales; el umbral biométrico se rige por D-055 (estrategia aprobada, valores pendientes de calibración). Ver sección AG-02.)_
 
 ### Clasificación de lo pendiente (AG-01 v5)
 
@@ -802,8 +839,183 @@ Una deuda técnica pendiente **no** se convierte automáticamente en un bloqueo 
 
 | Categoría | Decisiones | Estado de la clasificación |
 |---|---|---|
-| **A** | D-007 (app móvil), D-045 (panel web), D-046 (reconocimiento del habla), D-010 (Java ↔ Python), D-011 (modelo biométrico), D-012 (anti-spoofing), umbral biométrico, D-013 (almacenamiento de la referencia) | Propuesta para revisión |
-| **B** | D-047 (hash y política de contraseña), D-018 (sesiones), D-048 (vinculación del dispositivo), D-051 (migraciones e identificadores), D-044 (detalle de intentos), D-050 (autenticación del administrador), D-049 (recuperación asistida), D-052 (registro técnico y auditoría de quién realizó la validación asistida), D-014 (API), D-019 (auditoría detallada) | Propuesta para revisión |
+| **A** | D-045 (panel web), D-046 (resto del reconocimiento del habla: comando y, si se permite, PIN dictado) | Propuesta para revisión (actualizada AG-02) |
+| **B** | D-047 (hash del PIN), D-018 (mecanismo técnico de sesión), D-051 (migraciones e identificadores), D-044 (detalle de intentos), D-050 (autenticación del administrador), D-049 (recuperación asistida), D-052 (registro técnico y auditoría de quién realizó la validación asistida), D-014 (API; incluye el contrato interno del servicio de voz), D-019 (auditoría detallada), D-058 (herramienta de VAD), D-054 (lista de palabras y TTL del desafío), D-060 (dataset y consentimiento), D-016 (despliegue del servicio de voz) | Propuesta para revisión (actualizada AG-02) |
+| **Cerradas por AG-02** | D-007 (app móvil), D-010, D-011, D-012, D-013, D-048, D-056 (responsable de aplicar los umbrales técnicos), umbral biométrico (solo la estrategia, en D-055; los valores siguen pendientes de calibración) | APROBADAS (2026-09-27) |
 | **C** | **D-017** (secretos y credenciales) | **Aprobada** (AG-01 v5) |
 
 Cada decisión A afecta solo a las funcionalidades que dependen de ella; las demás pueden avanzar en paralelo.
+
+## Decisiones aprobadas de AG-02 — Módulo de autenticación por voz, anti-spoofing, dispositivo, PIN y sesiones (2026-09-27)
+
+Origen: revisión cruzada entre el análisis técnico A–K (2026-09-26) y la documentación de la rama `yuniv` (commit `e16cb45`), aprobada por el equipo el 2026-09-27 junto con cuatro puntos que no estaban sincronizados en el repositorio: **PIN de 6 dígitos** (D-061), **par de claves del dispositivo** (D-048), **cierre de sesión tras 5 minutos de inactividad** (D-018) y **Flutter** para la aplicación móvil (D-007).
+
+Reglas comunes a todo este bloque:
+
+- **Ningún valor numérico** (umbrales, duraciones, vida del desafío, número de muestras, recursos) queda aprobado salvo que se indique expresamente. Cada valor definitivo se registrará aquí junto con el experimento que lo respalde.
+- Las cifras de desempeño publicadas por los autores de los modelos **no** son resultados de Nayra (`05_BIOMETRIA_NAYRA.md` §13, §23).
+- Las licencias indicadas provienen del análisis A–K (verificadas el 2026-09-26) y deben reconfirmarse al fijar versiones.
+- El diseño técnico detallado del módulo está en `05_BIOMETRIA_NAYRA.md` §27; la arquitectura lógica en `02_ARQUITECTURA_NAYRA.md`.
+
+### D-011 — Modelo biométrico (detalle)
+**Estado:** APROBADA (selección) / PENDIENTE DE VALIDACIÓN (desempeño)
+
+- **Modelo:** SpeechBrain ECAPA-TDNN preentrenado `speechbrain/spkrec-ecapa-voxceleb` (código y pesos Apache 2.0).
+- **Representación:** embedding de 192 dimensiones, normalizado (L2).
+- **Comparación:** similitud coseno, **verificación 1:1** contra la referencia de la cuenta de acceso. Nunca 1:N (D-037).
+- **Ejecución:** en el servicio Python (D-002), en CPU.
+- **Motivo:** continuidad con D-005; D-004 (preentrenado); licencia sin restricciones; integración directa en Python; D-034 excluye proveedores con costo.
+- **Comparación experimental opcional:** WeSpeaker (VoxBlink2 o ResNet34) solo como experimento de validación (Objetivo 3), no desplegado en el prototipo.
+- **Pendiente de validación:** FAR, FRR y EER con voces en español y celulares del proyecto (ver D-055).
+- **Descartadas:** NVIDIA NeMo TitaNet (dependencias pesadas), Resemblyzer/GE2E (menor precisión), pyannote embedding (acceso restringido), APIs comerciales de voz (costo y datos biométricos a terceros, D-034).
+
+### D-012 — Anti-spoofing (detalle)
+**Estado:** APROBADA (estrategia) / PENDIENTE DE VALIDACIÓN (tasa de detección)
+
+Defensa en capas:
+
+1. **Desafío variable de un solo uso con comprobación de contenido** (D-054, D-046): defensa principal contra la reproducción de grabaciones antiguas.
+2. **Firma del dispositivo vinculado** sobre un nonce de un solo uso (D-048): impide enviar la solicitud desde otro equipo.
+3. **AASIST** preentrenado (MIT) para detectar voz sintética (TTS) y conversión de voz, aplicado **en el enrolamiento y en la autenticación** (`05_BIOMETRIA_NAYRA.md` §26.1, §26.2).
+4. **SSL-AASIST** (wav2vec 2.0 XLS-R + AASIST) solo como **extensión** si la evaluación muestra que AASIST no basta y se dispone de GPU. No forma parte del primer entregable.
+
+**Riesgos aceptados y documentados:** replay en tiempo real (grabar y reproducir el desafío al instante) y deepfakes modernos no vistos en el entrenamiento de AASIST (ASVspoof 2019, inglés). No se afirma que la solución detecte todos los ataques (`06_SEGURIDAD_NAYRA.md` §15).
+
+**Descartadas como principal:** RawNet2 (inferior a AASIST en los mismos datos) y modelos de "detección de deepfake" de terceros sin procedencia académica clara.
+
+### D-013 — Almacenamiento biométrico (detalle)
+**Estado:** APROBADA
+
+- Se guarda **solo el embedding de referencia** y sus metadatos. **El audio no se guarda**: se procesa en memoria y se descarta (`05_BIOMETRIA_NAYRA.md` §16).
+- Referencia = **centroide** (promedio renormalizado) de las muestras válidas del enrolamiento; número inicial de muestras en D-059.
+- Cifrado **AES-256-GCM** en reposo; la clave vive fuera del código y de la base de datos (vinculado a D-017).
+- Ubicación: **esquema propio (`biometria`) dentro del PostgreSQL del proyecto**, con usuario de base de datos exclusivo del servicio Python. El backend principal (Java) **no** lee ni recibe embeddings; solo conoce el identificador del usuario y el resultado. No es una base de datos adicional (`02_ARQUITECTURA_NAYRA.md` §19).
+- Se registran el **nombre y la versión del modelo**; si cambia el modelo, la referencia no es comparable y se requiere re-enrolamiento.
+- **Actualización:** solo por re-enrolamiento explícito tras validar al titular (D-040; HU-34/HU-35). Sin adaptación automática de la plantilla.
+- **Eliminación (HU-36):** borrado físico de la referencia y registro en auditoría, sin el embedding.
+- El administrador **no** accede a la referencia (`06_SEGURIDAD_NAYRA.md` §36.5).
+- Modelo lógico en `03_BASE_DE_DATOS_NAYRA.md` §16.11. La tabla física se crea con la estrategia de migraciones (D-051).
+
+### D-010 — Comunicación Java ↔ Python (detalle)
+**Estado:** APROBADA / autenticación entre servicios en la nube PENDIENTE (D-016)
+
+- **API REST interna** con **FastAPI** + Uvicorn en el servicio Python; modelos cargados una vez al iniciar.
+- Solo red interna; nunca expuesta a internet ni a la aplicación móvil. La app habla únicamente con Spring Boot.
+- Audio enviado como `multipart/form-data` en el formato de D-057.
+- **Autenticación entre servicios** en el prototipo: token de servicio en la cabecera `Authorization`, leído de variable de entorno (no se agregan secretos al código, D-017), comparado en tiempo constante. En la nube: identidad de servicio o mTLS, a decidir en D-016.
+- Timeouts de conexión y lectura configurables; **sin reintentos automáticos** que dupliquen un intento del usuario.
+- Error 5xx o timeout → "servicio de voz no disponible"; **no cuenta como intento fallido** (D-044).
+- El audio no se escribe en disco ni en logs; los logs solo llevan un identificador de solicitud y motivos.
+- El contrato se documentará en `04_API.md` (D-014, PENDIENTE); debe reflejar que el servicio Python devuelve veredictos técnicos por etapa (D-056).
+- **Descartadas:** gRPC (complejidad sin beneficio a este volumen), colas de mensajes (la autenticación es síncrona), ejecutar los modelos en Java con ONNX (contradice D-002).
+
+### D-046 — Reconocimiento del habla (actualización parcial)
+**Estado:** PARCIAL
+
+- **Contenido del desafío — APROBADO:** **Vosk** (Apache 2.0) con **gramática restringida** al vocabulario del desafío, ejecutado **en el servidor** (servicio Python). Modelo inicial `vosk-model-small-es-0.42`; `vosk-model-es-0.42` si la precisión no alcanza; `faster-whisper` (`small`) como respaldo si la evaluación muestra fallas con acentos o ruido. Criterio: coincidencia exacta de la secuencia más confianza por palabra (umbral en D-055). Motivo de la ubicación en servidor: `06_SEGURIDAD_NAYRA.md` §3.4 (no confiar en el cliente).
+- **Descartado para verificar el desafío:** reconocedor del sistema operativo del teléfono (no controlable por el backend y el audio puede salir a servidores de terceros).
+- **PENDIENTE:** reconocimiento del comando "Iniciar sesión Nayra", del PIN dictado (si se permite el dictado, ver D-061) y del DNI en recuperación/cambio de dispositivo. Si se procesa el PIN dictado, no se almacena ni registra el audio ni la transcripción (`05_BIOMETRIA_NAYRA.md` §26.6), y ese audio **nunca** entra al pipeline biométrico.
+
+### D-048 — Vinculación del dispositivo mediante par de claves
+**Estado:** APROBADA
+
+- La app genera un **par de claves dentro del almacén de claves de hardware del teléfono** (Android Keystore; StrongBox cuando exista). La clave privada es **no exportable** y nunca sale del dispositivo.
+- Algoritmo: **ECDSA P-256 (secp256r1) con SHA-256**.
+- Implementación: **canal de plataforma propio en Kotlin** expuesto a Flutter (D-007). No se usa un plugin que exija huella o rostro del sistema (agregaría otra credencial) ni una clave generada en Dart (sería exportable).
+- La clave pública se envía al vincular el dispositivo (D-052, paso 10) y el backend guarda **solo la clave pública** en `DISPOSITIVOS`.
+- En cada autenticación, Spring Boot emite un **nonce aleatorio de un solo uso y vida corta** (`SecureRandom`); la app firma nonce + identificador del dispositivo + propósito; el backend verifica la firma con la clave pública y rechaza nonces usados o vencidos.
+- Revocación: el dispositivo pasa a `REVOCADO` y toda firma posterior se rechaza; se revocan sus sesiones (D-040).
+- Reinstalación o borrado de datos: la clave se pierde; se trata como dispositivo nuevo (flujo D-040), coherente con D-039.
+- **No aprobado:** Key Attestation (extensión opcional); soporte de iOS (no definido); vida exacta del nonce.
+
+### D-054 — Generación del desafío de voz
+**Estado:** APROBADA (estructura) / lista de palabras y vida del desafío PENDIENTES DE DECISIÓN / comprensión PENDIENTE DE VALIDACIÓN con usuarios
+
+- Estructura: **5 elementos: palabra + 3 dígitos + palabra** (ej.: "sol, cuatro, siete, dos, mesa").
+- Lista cerrada de ~40 palabras comunes, bisílabas, fonéticamente distintas y sin homófonos (la lista se aprueba aparte). Dígitos del 0 al 9 dichos uno por uno.
+- **Nunca 6 dígitos seguidos**, para que el desafío no se confunda con el PIN (D-061) ni induzca a decir el PIN en voz alta.
+- Generado en **Spring Boot** con `SecureRandom`; **un solo uso**; vida corta (valor pendiente, debe contemplar el tiempo que una persona ciega necesita para escuchar, repetir y grabar).
+- Se emite **después** de validar el dispositivo y el PIN (D-037) y queda ligado a la cuenta y al contexto: dispositivo vinculado (inicio de sesión) o solicitud de cambio de dispositivo (D-040).
+- Repetir la lectura (HU-58) **no** genera un desafío nuevo; enviar un audio **consume** el desafío.
+- En el enrolamiento se usan desafíos distintos por muestra (D-059).
+- El vocabulario es un archivo de configuración versionado, compartido por Spring Boot (generación) y Python (gramática de Vosk).
+- Esta estructura se considera una "frase de desafío" en el sentido de HU-29, HU-43 y del glosario de `01_REQUISITOS_NAYRA.md`.
+
+### D-055 — Umbrales y calibración
+**Estado:** APROBADA (estrategia) / valores PENDIENTES DE VALIDACIÓN
+
+- Umbrales de similitud, anti-spoofing, calidad de audio y confianza del reconocimiento en **configuración versionada junto con el modelo**; **nunca en el código** (`05_BIOMETRIA_NAYRA.md` §12).
+- **Umbral provisional:** para que el prototipo funcione (D-034), se fija un valor provisional a partir de un piloto pequeño con consentimiento, registrado aquí como PROVISIONAL con el piloto que lo respalda.
+- **Valor definitivo:** calibración con voluntarios (D-060), conjuntos de desarrollo y prueba separados, curvas DET/ROC, FAR, FRR y EER; punto de operación orientado a **baja FAR** (contexto de billetera).
+- No se reduce el umbral para aceptar voces alteradas (`05_BIOMETRIA_NAYRA.md` §26.5).
+- Normalización de puntajes (AS-norm) solo si la calibración la justifica.
+
+### D-056 — Responsable de aplicar los umbrales técnicos
+**Estado:** APROBADA (AG-02, 2026-09-27). Los valores numéricos de los umbrales **no** quedan aprobados: siguen pendientes de calibración (D-055).
+
+- El **servicio Python/FastAPI** aplica los umbrales técnicos (calidad, confianza del reconocimiento, anti-spoofing y similitud) dentro del pipeline biométrico, con los valores versionados junto con el modelo.
+- Python realiza las evaluaciones técnicas y devuelve el **veredicto técnico de cada etapa** junto con sus puntajes.
+- **Spring Boot** toma la **decisión final de autenticación** y mantiene el control de intentos (D-044), bloqueo, sesión (D-018) y auditoría (`05_BIOMETRIA_NAYRA.md` §5).
+- Motivo: el umbral cambia con el modelo; mantenerlo junto al modelo evita desincronizar dos servicios (y dos instancias, D-023).
+- **Descartada:** que Python devuelva solo puntajes y Spring Boot aplique todos los umbrales.
+
+### D-057 — Formato y captura de audio
+**Estado:** APROBADA (formato) / duraciones PENDIENTES DE VALIDACIÓN
+
+- **WAV PCM, 16 kHz, mono, 16 bits, sin compresión con pérdida** (AAC/Opus eliminan artefactos que usa el anti-spoofing).
+- Duración mínima y máxima de la muestra: a calibrar (D-055).
+- Captura controlada manualmente por el usuario (HU-28, HU-42, HU-62).
+
+### D-058 — Control de calidad de audio
+**Estado:** APROBADA (etapa) / herramienta de VAD PENDIENTE DE DECISIÓN / valores PENDIENTES DE VALIDACIÓN
+
+- Etapa previa en el servicio Python: voz neta (detección de actividad de voz), relación señal/ruido estimada y saturación.
+- Devuelve un motivo que la app convierte en instrucción accesible (HU-31, HU-32, HU-44).
+- Opción sin dependencia nueva para la VAD: el modelo de VAD de SpeechBrain (a evaluar).
+
+### D-059 — Orden del pipeline y enrolamiento
+**Estado:** APROBADA / número de muestras PENDIENTE DE VALIDACIÓN
+
+- Orden en el servicio Python: **calidad → contenido del desafío → anti-spoofing → verificación 1:1**. En operación se detiene en la primera etapa fallida (ahorra cómputo y no ofrece un "oráculo" biométrico a un atacante). En modo de evaluación se registran todos los puntajes de forma anonimizada.
+- Enrolamiento (D-052, paso 11): **3 muestras válidas** como valor inicial (hasta 5 si alguna falla), cada una con calidad, contenido y anti-spoofing; se descartan muestras muy alejadas del resto; se guarda el centroide (D-013).
+
+### D-060 — Dataset de calibración y consentimiento
+**Estado:** PENDIENTE DE DECISIÓN
+
+Debe definirse: número de voluntarios (incluidas personas con discapacidad visual), protocolo de consentimiento informado, almacenamiento de las grabaciones de investigación **separado del sistema**, uso de ataques generados (TTS/VC) solo con voluntarios que consientan, y borrado al terminar la tesis.
+
+### D-061 — PIN de 6 dígitos como credencial de conocimiento
+**Estado:** APROBADA — **modifica D-037** (la "contraseña" se concreta como PIN)
+
+- La credencial que el usuario conoce es un **PIN numérico de 6 dígitos**, creado en el registro (D-052, paso 9). No se agrega otra credencial.
+- Se aplican todas las reglas de D-037 sobre la contraseña: no identifica la cuenta; solo hash seguro; nunca texto plano, audio ni logs; no es muestra biométrica.
+- Validación **solo en el servidor**; el PIN nunca se guarda en el teléfono.
+- El espacio de 10⁶ combinaciones exige, además del hash, un secreto del servidor (*pepper*) y límite estricto de intentos; algoritmo y parámetros siguen en **D-047 (PENDIENTE)**.
+- Ingreso accesible: teclado numérico propio con distribución fija, cada tecla etiquetada y anuncio solo del avance ("3 de 6 dígitos"), nunca de los dígitos; sin aleatorizar teclas.
+- **PENDIENTE:** si además se permite dictar el PIN por voz (HU-118 menciona el dictado de la credencial; dictarlo en voz alta lo expone a terceros) y el rechazo de PIN triviales (000000, 123456…).
+- El texto de HU-118 se conserva sin cambios; su interpretación bajo esta decisión consta en `01_REQUISITOS_NAYRA.md` §13.
+
+### D-018 — Sesiones (actualización parcial)
+Ver la actualización en la sección D-018: **cierre automático tras 5 minutos de inactividad**, controlado en el servidor, sin aviso por voz previo, sin opción de continuar y con tiempo no ajustable por el usuario. Mecanismo técnico pendiente.
+
+### D-016 — Despliegue del servicio de voz (sin cambio de estado)
+**Estado:** PENDIENTE. Estimación del análisis A–K, a medir: contenedor o VM solo CPU (2–4 vCPU, 4 GB RAM). Falta decidir si el servicio Python se replica en las 2 instancias de D-023.
+
+### Alternativas descartadas por AG-02
+
+| Alternativa | Decisión | Motivo |
+|---|---|---|
+| NVIDIA NeMo TitaNet-Large | D-011 | Dependencias pesadas para un servicio pequeño; entrenado solo con inglés |
+| Resemblyzer / GE2E | D-011 | Menor precisión |
+| pyannote embedding | D-011 | Modelo con acceso restringido |
+| APIs comerciales de voz | D-011, D-046 | Costo y datos biométricos a terceros (D-034) |
+| RawNet2 como detector principal | D-012 | Inferior a AASIST en los mismos datos |
+| Detectores de deepfake de terceros sin procedencia clara | D-012 | Calidad, licencia y datos de entrenamiento difíciles de justificar |
+| Reconocedor del sistema operativo para verificar el desafío | D-046 | No controlable desde el backend (`06` §3.4) |
+| gRPC / colas de mensajes | D-010 | Complejidad sin beneficio (`02` §19) |
+| Modelos en Java con ONNX | D-010 | Contradice D-002 |
+| Plugin de firma con huella/rostro del sistema | D-048 | Agrega otra credencial |
+| Clave del dispositivo generada en Dart | D-048 | Clave privada exportable |
+| RSA / Ed25519 para la clave del dispositivo | D-048 | Firmas grandes (RSA) / compatibilidad de dispositivos (Ed25519) |
+| Adaptación automática de la plantilla de voz | D-013 | Riesgo de envenenamiento de la plantilla |
+| Guardar audio de enrolamiento o autenticación | D-013 | Minimización (`05` §16) |

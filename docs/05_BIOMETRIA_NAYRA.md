@@ -8,6 +8,8 @@ La biometría de voz es uno de los elementos centrales de la solución, debido a
 
 Este documento **no fija todavía un modelo biométrico, algoritmo, umbral o arquitectura definitiva de procesamiento**. Esos elementos deberán seleccionarse y documentarse mediante decisiones técnicas aprobadas.
 
+> **Actualización AG-02 (2026-09-27):** el modelo biométrico, la estrategia anti-spoofing, el reconocimiento del contenido del desafío, el almacenamiento biométrico y la comunicación con Java quedaron aprobados (D-010 a D-013, D-046 parcial, D-054 a D-059). El diseño técnico vigente está en la **sección 27**. Los **valores** de umbrales siguen sin definir hasta la calibración (D-055).
+
 ---
 
 # 2. Objetivo del componente biométrico
@@ -63,6 +65,8 @@ Se ha considerado:
 - modelos preentrenados para procesamiento de voz.
 
 Estas tecnologías son **opciones consideradas**, no una obligación de utilizar una implementación específica.
+
+_(AG-02: SpeechBrain ECAPA-TDNN, AASIST y Vosk quedaron aprobados; ver §27 y D-011, D-012, D-046.)_
 
 La selección definitiva debe registrarse en:
 
@@ -477,6 +481,8 @@ Claude debe aplicar las siguientes reglas al trabajar con biometría:
 
 Antes de implementar definitivamente el componente biométrico deben definirse:
 
+> **Estado AG-02 (2026-09-27):** resueltos modelo, framework, anti-spoofing, extracción de características, representación, método de comparación, estrategia de almacenamiento (sin audio: no hay retención de audio), protocolo con Java, reconocimiento del contenido del desafío y generación del desafío (estructura). El responsable de aplicar los umbrales técnicos también quedó aprobado (servicio Python, D-056). Siguen pendientes: **valores** de umbral (D-055), dataset y procedimiento de evaluación (D-060), detalle de reintentos (D-044), herramienta de VAD (D-058), lista de palabras y vida del desafío (D-054) y el resto del reconocimiento del habla (D-046).
+
 - modelo de reconocimiento/verificación;
 - framework definitivo;
 - modelo anti-spoofing;
@@ -537,7 +543,7 @@ Registradas en `07_DECISIONES_TECNICAS_NAYRA.md` (D-036 a D-040, D-044, D-052). 
 ## 26.2 Verificación en el inicio de sesión
 
 - La biometría es una **verificación 1:1** contra la referencia de la cuenta determinada por el **dispositivo vinculado**. **No** se utiliza identificación 1:N (D-037).
-- La verificación biométrica ocurre **después** de validar la contraseña.
+- La verificación biométrica ocurre **después** de validar la contraseña. _(AG-02: la contraseña se concreta como **PIN de 6 dígitos**, D-061.)_
 - La muestra biométrica es la respuesta a una **frase de desafío variable** propuesta en cada autenticación. Se debe **comprobar que el contenido** de la respuesta corresponde al desafío; sin esa comprobación, una grabación de la voz del usuario podría superar la verificación.
 - Orden conceptual (se mantiene §10): respuesta al desafío → comprobación del contenido → **anti-spoofing** → **verificación 1:1** → resultado → el backend aplica las reglas (3 intentos, D-044).
 - **No** son muestras biométricas: el comando de activación "Iniciar sesión Nayra" ni la contraseña dictada. La contraseña dictada se descarta tras calcular su hash y nunca se almacena como audio.
@@ -561,3 +567,83 @@ No se asume ninguna solución fiable para validar voces alteradas por enfermedad
 ## 26.6 Reconocimiento del habla
 
 El prototipo necesita reconocimiento del habla (distinto de la verificación del locutor) para el comando de activación, el DNI (si se dicta; forma de ingreso pendiente, D-052), la contraseña dictada y la comprobación del contenido del desafío. Su tecnología y ubicación (dispositivo o servidor) están **pendientes (D-046)**. Si procesa la contraseña dictada, no debe almacenar ni registrar el audio ni la transcripción.
+
+_(AG-02: el contenido del desafío se reconoce con Vosk en el servidor (D-046, parcial); la contraseña se concreta como PIN de 6 dígitos (D-061) y si puede dictarse sigue pendiente; el comando y el DNI siguen pendientes.)_
+
+---
+
+# 27. Diseño técnico aprobado del módulo de voz — AG-02 (2026-09-27)
+
+Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-010 a D-013, D-046 (parcial), D-048, D-054 a D-061. Ningún valor numérico de umbral está aprobado; ver §27.7.
+
+## 27.1 Modelos y herramientas
+
+| Etapa | Herramienta / modelo | Licencia (según análisis A–K, reconfirmar al fijar versión) | Entrada | Salida | Decisión |
+|---|---|---|---|---|---|
+| Calidad de audio | VAD + SNR + saturación (herramienta de VAD pendiente; opción: VAD de SpeechBrain) | — | WAV 16 kHz mono | Aprobado / motivo | D-058 |
+| Contenido del desafío | Vosk `vosk-model-small-es-0.42` con gramática cerrada (respaldo: `vosk-model-es-0.42`, `faster-whisper small`) | Apache 2.0 | WAV + vocabulario | Secuencia reconocida + confianza por palabra | D-046 |
+| Anti-spoofing | AASIST preentrenado (extensión: SSL-AASIST) | MIT | WAV (~4 s, recorte/relleno) | Puntaje bona fide / spoof | D-012 |
+| Verificación 1:1 | SpeechBrain ECAPA-TDNN `speechbrain/spkrec-ecapa-voxceleb` | Apache 2.0 | WAV | Embedding 192-d → similitud coseno | D-011 |
+
+Todas corren en el **servicio Python** (D-002), en CPU, expuesto solo al backend principal mediante REST interno con FastAPI (D-010).
+
+## 27.2 Formato de audio
+
+WAV PCM 16 kHz, mono, 16 bits, sin compresión con pérdida (D-057). Captura manual por el usuario (HU-28, HU-42, HU-62). Duraciones mínima y máxima: a calibrar.
+
+## 27.3 Desafío
+
+Estructura **palabra + 3 dígitos + palabra**, generado por Spring Boot con `SecureRandom`, de un solo uso, ligado a la cuenta y al contexto, emitido después de validar dispositivo y PIN, nunca 6 dígitos seguidos (D-054). Repetir la lectura no lo cambia; enviar un audio lo consume. El vocabulario es un archivo versionado compartido por Spring Boot y Python. Lista de palabras y vida del desafío: pendientes.
+
+## 27.4 Pipeline de verificación (inicio de sesión y cambio de dispositivo)
+
+```text
+Audio de la respuesta al desafío (en memoria)
+   ↓
+a) Calidad (voz neta, SNR, saturación) ── falla → CALIDAD_INSUFICIENTE
+   ↓
+b) Contenido (Vosk, gramática cerrada) ── falla → CONTENIDO_INCORRECTO
+   ↓
+c) Anti-spoofing (AASIST) ────────────── falla → POSIBLE_SPOOFING
+   ↓
+d) Embedding ECAPA + coseno 1:1 contra la referencia cifrada ── falla → NO_COINCIDE
+   ↓
+Resultado por etapa → Spring Boot aplica las reglas de autenticación (D-044) → audio descartado
+```
+
+- Se mantiene el orden de §10 y §26.2 (contenido → anti-spoofing → verificación), con la calidad como etapa previa.
+- En operación, el pipeline se detiene en la primera etapa fallida; en modo de evaluación se registran todos los puntajes anonimizados (D-059).
+- El servicio Python/FastAPI **aplica los umbrales técnicos** en cada etapa y devuelve el veredicto técnico de cada una junto con sus puntajes (D-056). Los **valores** de esos umbrales siguen pendientes de calibración (D-055). La decisión final de autenticar, los intentos, el bloqueo, la sesión y la auditoría son de Spring Boot (§5).
+- En el **cambio de dispositivo** (D-040), el desafío se liga a la solicitud de cambio y al dispositivo nuevo, y la verificación es contra la **referencia existente**.
+
+## 27.5 Enrolamiento
+
+Dentro del registro asistido (D-052, paso 11), con dispositivo ya vinculado y PIN creado:
+
+1. Spring Boot emite un desafío distinto por muestra.
+2. Por cada muestra: calidad → contenido → **anti-spoofing** (obligatorio en el enrolamiento, §26.1) → embedding.
+3. **3 muestras válidas** como valor inicial (hasta 5 si alguna falla); se descartan muestras muy alejadas del resto (HU-30).
+4. Se guarda el **centroide** cifrado con nombre y versión del modelo (D-013). El audio se descarta.
+5. Spring Boot recibe solo "enrolamiento correcto" o el motivo del fallo; confirmación accesible (HU-33).
+
+## 27.6 Referencia biométrica
+
+Solo embedding cifrado (AES-256-GCM), en el esquema `biometria` del PostgreSQL del proyecto, accesible únicamente por el servicio Python (D-013, `03_BASE_DE_DATOS_NAYRA.md` §16.11). Sin audio, sin adaptación automática, actualización solo por re-enrolamiento tras validar al titular (§26.4), borrado físico según HU-36. Java y el administrador no acceden a la referencia.
+
+## 27.7 Umbrales y calibración (D-055)
+
+- Umbrales en configuración versionada con el modelo, nunca en el código.
+- **Umbral provisional** para el prototipo, obtenido en un piloto pequeño y registrado como provisional en `07`.
+- Valores definitivos por calibración con voluntarios (dataset y consentimiento pendientes, D-060), desarrollo y prueba separados, FAR/FRR/EER, punto de operación de baja FAR.
+- No reducir el umbral para voces alteradas (§26.5).
+
+## 27.8 Aspectos que solo se confirman con pruebas
+
+Precisión biométrica en español y con celulares; umbral provisional y definitivo; rechazo de grabaciones reproducidas (antiguas y en tiempo real); detección de TTS y conversión de voz; falsos rechazos del anti-spoofing con micrófonos de celular; precisión del reconocimiento del desafío con acentos y ruido; valores de calidad de audio; duración útil de la muestra; comprensión y memoria del desafío con personas con discapacidad visual; número de muestras de enrolamiento; latencia y consumo de recursos. **No existen resultados todavía** (§13, §23).
+
+## 27.9 Limitaciones conocidas
+
+- No hay cifras públicas validadas de ECAPA, AASIST ni Vosk con español peruano grabado en celulares.
+- AASIST se entrenó con ataques de 2019 en inglés; su generalización a voces clonadas modernas es limitada.
+- El replay en tiempo real no queda cubierto por el desafío ni por AASIST; es un riesgo aceptado del prototipo.
+- Un cambio de modelo invalida las referencias existentes y exige re-enrolamiento.

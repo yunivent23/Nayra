@@ -169,9 +169,10 @@ Decisiones en `docs/07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-053. Reglas oper
 - **Identidad (D-035):** registro de identidad simulado (DNI, nombres, apellidos); sin APIs reales de terceros.
 - **Registro inicial asistido (D-052, modifica D-036):** la persona solicita registrarse → un representante autorizado (administrador u otra persona autorizada) la asiste → se proporciona el DNI → consulta al registro de identidad simulado → se muestran los datos → el representante valida la identidad → la persona confirma sus datos → celular → contraseña → vinculación del dispositivo → enrolamiento de voz con anti-spoofing → tutorial → fin. La consulta del DNI no prueba la identidad; la biometría no valida la identidad en el registro. El representante **no** es un rol del sistema. DNI existente → recuperación/cambio de dispositivo.
 - **Flujos diferenciados (D-053):** registro inicial ≠ inicio de sesión ≠ cambio/recuperación de dispositivo. El DNI se usa en el registro, la recuperación y el cambio o pérdida del dispositivo; **no** forma parte del inicio de sesión habitual.
-- **Autenticación (D-037):** "Iniciar sesión Nayra" → dispositivo vinculado → contraseña (solo hash) → desafío variable → comprobación del contenido → anti-spoofing → verificación 1:1 → sesión. Nunca 1:N; el DNI no se pide al iniciar sesión.
+- **Autenticación (D-037, modificada por D-061):** "Iniciar sesión Nayra" → dispositivo vinculado (firma con par de claves, D-048) → **PIN de 6 dígitos** (solo hash, D-061) → desafío variable → comprobación del contenido → anti-spoofing → verificación 1:1 → sesión (cierre automático tras 5 min de inactividad, sin aviso previo, D-018). Nunca 1:N; el DNI no se pide al iniciar sesión.
 - **Dispositivo (D-039, D-040):** un único dispositivo activo. Prohibido `DNI → cuenta → nueva voz → acceso`.
 - **Excluido del primer entregable:** chatbot, OTP/SMS, contacto de confianza, retiro asistido, eliminación de cuenta, múltiples dispositivos. El QR (HU-123, HU-124) queda documentado para un siguiente entregable.
+- **Módulo de voz (AG-02, 2026-09-27):** SpeechBrain ECAPA-TDNN (D-011), AASIST (D-012), Vosk con gramática cerrada para el desafío (D-046, parcial), solo embedding cifrado sin audio (D-013), REST interno con FastAPI (D-010), desafío palabra + 3 dígitos + palabra (D-054). El servicio Python aplica los umbrales técnicos y Spring Boot decide la autenticación (D-056); los valores de los umbrales siguen pendientes de calibración (D-055). Diseño en `docs/05_BIOMETRIA_NAYRA.md` §27; reglas en `docs/09_REGLAS_DESARROLLO_NAYRA.md` §27.
 - **Pendientes (AG-01 v5):** distinguir A (bloqueantes funcionales), B (decisiones técnicas que se resuelven durante el desarrollo) y C (deudas técnicas); ver `docs/07_DECISIONES_TECNICAS_NAYRA.md`. D-017 (secretos) es deuda técnica y no bloquea el desarrollo.
 
 ---
@@ -221,7 +222,7 @@ No entrenar modelos desde cero salvo decisión explícita.
 
 ### Biometría
 
-SpeechBrain está bajo evaluación. No tratarlo como decisión definitiva si el registro técnico no ha sido actualizado.
+SpeechBrain ECAPA-TDNN está aprobado (D-011, AG-02) junto con AASIST (D-012) y Vosk (D-046, parcial). Los umbrales no tienen valores aprobados (D-055).
 
 ### Cloud
 
@@ -231,9 +232,7 @@ No asumir servicios específicos de GCP sin aprobación.
 
 ### Frontend
 
-La tecnología definitiva debe verificarse en `07_DECISIONES_TECNICAS_NAYRA.md` y en el repositorio. La aplicación móvil (D-007) y el panel web del administrador (D-045) siguen PENDIENTES.
-
-No asumir Flutter únicamente por aparecer en la clasificación técnica del Excel si la decisión final no está registrada.
+La aplicación móvil se desarrolla con **Flutter** (D-007, aprobada en AG-02), con un canal de plataforma Kotlin para el almacén de claves del dispositivo (D-048). El panel web del administrador (D-045) sigue PENDIENTE.
 
 ---
 
@@ -267,9 +266,7 @@ Debe concentrar el procesamiento especializado de voz y modelos biométricos.
 
 No trasladar lógica general de negocio a Python innecesariamente.
 
-La comunicación Java ↔ Python todavía debe verificarse según las decisiones técnicas vigentes.
-
-No inventar un contrato definitivo de comunicación si todavía está pendiente.
+La comunicación Java ↔ Python es REST interno con FastAPI (D-010, AG-02). El servicio Python aplica los umbrales técnicos y devuelve veredictos por etapa; Spring Boot toma la decisión final de autenticación (D-056). El contrato todavía no está documentado (`04_API.md`, D-014); no inventarlo.
 
 ---
 
@@ -365,7 +362,7 @@ Nunca incluir en el código:
 - credenciales de base de datos;
 - secretos cloud.
 
-No asumir JWT, OAuth, refresh tokens u otro mecanismo específico si todavía aparece como pendiente en las decisiones técnicas. El flujo funcional de autenticación del usuario está aprobado (D-037), pero su implementación técnica (sesiones D-018, hash D-047, dispositivo D-048) sigue pendiente. Antes de nuevas funcionalidades, corregir los problemas de seguridad del código actual (`docs/06_SEGURIDAD_NAYRA.md` §36.7). Las credenciales ya existentes en la configuración y el historial son **deuda técnica** (D-017, `docs/06_SEGURIDAD_NAYRA.md` §36.8): no eliminarlas, rotarlas ni limpiar el historial en el primer entregable, y no agregar secretos nuevos.
+No asumir JWT, OAuth, refresh tokens u otro mecanismo específico si todavía aparece como pendiente en las decisiones técnicas. El flujo funcional de autenticación del usuario está aprobado (D-037, con PIN por D-061) y el dispositivo usa par de claves (D-048); siguen pendientes el mecanismo técnico de sesión (D-018; solo la regla de 5 min está aprobada) y el hash del PIN (D-047). Antes de nuevas funcionalidades, corregir los problemas de seguridad del código actual (`docs/06_SEGURIDAD_NAYRA.md` §36.7). Las credenciales ya existentes en la configuración y el historial son **deuda técnica** (D-017, `docs/06_SEGURIDAD_NAYRA.md` §36.8): no eliminarlas, rotarlas ni limpiar el historial en el primer entregable, y no agregar secretos nuevos.
 
 ---
 

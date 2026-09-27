@@ -37,9 +37,9 @@ El short paper contempla hasta el Objetivo 2, incluyendo el diseño de la soluci
 | Requisitos | DOCUMENTADO — depurado por AG-00 y actualizado por AG-01 (HU-117 a HU-125; alcance del primer entregable; D1–D6 pendientes) |
 | Arquitectura | EN DEFINICIÓN CONTROLADA — componentes y flujos lógicos del primer entregable documentados (AG-01) |
 | Base de datos | MODELO LÓGICO DOCUMENTADO — AG-00 y AG-01 (`03_BASE_DE_DATOS_NAYRA.md` §16); esquema físico y migraciones PENDIENTES (D-051) |
-| Biometría de voz | REQUISITOS FUNCIONALES DEFINIDOS (AG-01); modelo, anti-spoofing, umbral y almacenamiento PENDIENTES |
+| Biometría de voz | DISEÑO TÉCNICO APROBADO (AG-02, `05_BIOMETRIA_NAYRA.md` §27): modelo, anti-spoofing, reconocimiento del desafío, almacenamiento y comunicación decididos; **valores de umbral PENDIENTES DE VALIDACIÓN**; implementación NO INICIADA |
 | Seguridad | PRINCIPIOS Y CONTROLES DOCUMENTADOS — controles AG-01 en `06_SEGURIDAD_NAYRA.md` §36 |
-| Decisiones técnicas | REGISTRADAS hasta D-051 (varias técnicas siguen PENDIENTES) |
+| Decisiones técnicas | REGISTRADAS hasta D-061 (AG-02); siguen PENDIENTES, entre otras, D-014, D-016, D-018 (mecanismo), D-044 (detalle), D-045, D-046 (resto), D-047, D-055 (valores de umbral), D-060 |
 | API | PENDIENTE DE DEFINICIÓN FINAL |
 | Estado de implementación | ESTE DOCUMENTO |
 | Reglas de desarrollo | DOCUMENTADAS EN `09_REGLAS_DESARROLLO_NAYRA.md` |
@@ -91,8 +91,8 @@ Responsabilidad:
 - biometría de voz;
 - mecanismos de detección de intentos de suplantación, cuando hayan sido implementados.
 
-**Estado:** EN DISEÑO. **No existe código Python en el repositorio** (verificado 2026-09-26).  
-La implementación concreta de modelos, librerías, endpoints y mecanismo de comunicación está pendiente (D-010, D-011, D-012, D-013, D-046).
+**Estado:** DISEÑO TÉCNICO APROBADO / IMPLEMENTACIÓN NO INICIADA. **No existe código Python en el repositorio** (verificado 2026-09-26).  
+AG-02 (2026-09-27): decididos FastAPI (D-010), SpeechBrain ECAPA-TDNN (D-011), AASIST (D-012), almacenamiento del embedding cifrado sin audio (D-013) y Vosk para el contenido del desafío (D-046, parcial). El servicio Python aplica los umbrales técnicos y Spring Boot decide la autenticación (D-056). Pendientes: contrato en `04_API.md` (D-014), valores de umbral (D-055) y despliegue (D-016).
 
 ---
 
@@ -100,7 +100,7 @@ La implementación concreta de modelos, librerías, endpoints y mecanismo de com
 
 La tecnología definitiva del frontend todavía debe considerarse una decisión técnica pendiente si no ha sido aprobada formalmente.
 
-**Estado:** POR DEFINIR. **No existe código de aplicación móvil ni de panel web en el repositorio** (verificado 2026-09-26). Tecnologías pendientes: D-007 (móvil) y D-045 (panel web).
+**Estado:** POR DEFINIR. **No existe código de aplicación móvil ni de panel web en el repositorio** (verificado 2026-09-26). AG-02: la aplicación móvil será **Flutter** (D-007), con canal Kotlin para el almacén de claves (D-048); implementación no iniciada. El panel web sigue pendiente (D-045).
 
 Claude no debe asumir un framework de frontend sin consultar `07_DECISIONES_TECNICAS_NAYRA.md` y el repositorio.
 
@@ -142,7 +142,7 @@ El detalle oficial del modelo se encuentra en:
 **Modelo documentado:** SÍ.  
 **Implementación física:** POR VERIFICAR EN EL REPOSITORIO. Las decisiones de AG-00 (D-024 a D-033) son solo documentales: **no se han implementado** en el código.
 
-No deben agregarse tablas biométricas como `VOICE_BIOMETRICS`, `VOICE_EMBEDDINGS` o `ANTI_SPOOFING` sin una decisión explícita.
+No deben agregarse tablas biométricas como `VOICE_BIOMETRICS`, `VOICE_EMBEDDINGS` o `ANTI_SPOOFING` sin una decisión explícita. _(AG-02: la única estructura biométrica aprobada es `biometria.PERFILES_VOZ`, D-013, `03_BASE_DE_DATOS_NAYRA.md` §16.11; su tabla física depende de D-051.)_
 
 ---
 
@@ -154,23 +154,20 @@ La biometría de voz constituye uno de los componentes centrales de Nayra.
 
 - Se utilizarán modelos preentrenados.
 - Python será utilizado para el procesamiento especializado.
-- SpeechBrain se encuentra bajo evaluación.
+- SpeechBrain ECAPA-TDNN aprobado para la verificación 1:1 (AG-02, D-011).
 - El objetivo conceptual es realizar **verificación de voz**, no identificación abierta.
 - Se considera protección frente a intentos de suplantación mediante reproducción o voz sintética/manipulada.
 - AG-01: enrolamiento durante el registro con anti-spoofing; verificación 1:1 tras la contraseña; desafío variable con comprobación de contenido; referencia biométrica persistente en el backend (D-036 a D-038, `05_BIOMETRIA_NAYRA.md` §26).
 
 ### Decisiones todavía pendientes
 
-- modelo definitivo;
-- algoritmo de comparación;
-- umbral de aceptación;
-- estrategia de almacenamiento de datos biométricos;
-- estrategia de retención de audio;
-- modelo definitivo de anti-spoofing;
-- mecanismo de integración con el backend Java;
-- reconocimiento del habla (D-046).
+- ~~modelo definitivo~~ (D-011), ~~algoritmo de comparación~~ (coseno 1:1, D-011), ~~estrategia de almacenamiento~~ (D-013), ~~retención de audio~~ (no se guarda audio, D-013), ~~anti-spoofing~~ (D-012), ~~integración con Java~~ (D-010), ~~responsable de aplicar los umbrales técnicos~~ (servicio Python, D-056) — resueltos en AG-02;
+- valores de umbral (D-055; primero un umbral provisional por piloto);
+- dataset de calibración y consentimiento (D-060);
+- herramienta de VAD (D-058), lista de palabras y vida del desafío (D-054);
+- resto del reconocimiento del habla: comando y PIN dictado (D-046).
 
-**Estado:** DISEÑO / EVALUACIÓN.
+**Estado:** DISEÑO TÉCNICO APROBADO / IMPLEMENTACIÓN NO INICIADA / VALIDACIÓN PENDIENTE.
 
 ---
 
@@ -318,7 +315,7 @@ Formato recomendado:
 | P-001 | Credenciales de PostgreSQL en texto plano en `application.properties`; secretos (`jwt.secret`, clave de API) presentes en el historial de Git | Seguridad — **deuda técnica** (D-017, categoría C) | ABIERTO — no bloquea el primer entregable; se corrige antes de producción (segundo entregable) | Equipo |
 | P-002 | `POST /usuarios` guarda contraseñas en texto plano y permite que el cliente elija su rol | Seguridad crítica | ABIERTO | — |
 | P-003 | `GET /usuarios` es público y expone datos personales y el campo contraseña | Seguridad crítica | ABIERTO | — |
-| P-004 | Mecanismo JWT implementado sin aprobación (D-018 pendiente), sin endpoint de inicio de sesión | Alto | ABIERTO | — |
+| P-004 | Mecanismo JWT implementado sin aprobación (D-018 pendiente), sin endpoint de inicio de sesión | Alto | ABIERTO (AG-02: D-018 solo aprobó el cierre automático tras 5 min de inactividad, sin aviso previo; el mecanismo sigue pendiente) | — |
 | P-005 | Código heredado ajeno a Nayra (reglas `/bicicletas`, `/alquileres`, comentarios de plantilla) y CORS abierto | Medio | ABIERTO | — |
 | P-006 | `ddl-auto=update` crea el esquema sin estrategia de migraciones (D-051) | Alto | ABIERTO | — |
 | P-007 | Posible incompatibilidad de versiones en `pom.xml` (Spring Boot 4.1.1 con `spring-boot-starter-security` 3.5.5); compilación sin verificar | Alto | POR VERIFICAR | — |

@@ -193,6 +193,8 @@ Las siguientes tecnologías forman parte del contexto técnico de trabajo, pero 
 - SpeechBrain
 - modelos preentrenados relacionados con procesamiento de voz
 
+_(AG-02, 2026-09-27: aprobados SpeechBrain ECAPA-TDNN para la verificación 1:1, AASIST para anti-spoofing, Vosk para el contenido del desafío y FastAPI para el servicio interno; ver `07_DECISIONES_TECNICAS_NAYRA.md` D-010 a D-013, D-046 y `05_BIOMETRIA_NAYRA.md` §27.)_
+
 ### Base de datos
 
 - PostgreSQL
@@ -213,6 +215,8 @@ Las siguientes tecnologías forman parte del contexto técnico de trabajo, pero 
 ### Frontend
 
 La tecnología definitiva del frontend debe documentarse en `07_DECISIONES_TECNICAS_NAYRA.md`.
+
+_(AG-02: aplicación móvil en **Flutter**, D-007. El panel web del administrador sigue pendiente, D-045.)_
 
 ---
 
