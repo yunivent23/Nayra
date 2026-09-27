@@ -25,7 +25,7 @@ class ContratoServicioVozTest {
     @Test
     void enrolamientoVerificacionYPinContraElServicioReal() throws Exception {
         VozProperties props = new VozProperties(System.getenv("NAYRA_VOZ_URL_PRUEBA"), System.getenv("NAYRA_VOZ_TOKEN_PRUEBA"),
-                Duration.ofSeconds(2), Duration.ofSeconds(60), null, null, null, 3, 3);
+                Duration.ofSeconds(2), Duration.ofSeconds(60), null, null, null, 3);
         var cliente = new ServicioVozClienteImplement(new VozConfiguracion().servicioVozRestClient(props));
         byte[] wav = Files.readAllBytes(Path.of(System.getenv("NAYRA_VOZ_WAV_PRUEBA")));
         String usuario = UUID.randomUUID().toString();

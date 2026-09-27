@@ -6,8 +6,11 @@ public final class RegistroDTOs {
     private RegistroDTOs() {
     }
 
-    /** Paso 3: DNI proporcionado durante la asistencia. */
-    public record SolicitudInicioRegistro(String dni) {
+    /**
+     * Paso 3: documento de identidad proporcionado durante la asistencia (DNI o CE, modelo de datos v4 §2.1).
+     * Si no se indica el tipo, se asume DNI (PROVISIONAL, D-014).
+     */
+    public record SolicitudInicioRegistro(String tipoDocumentoIdentidad, String numeroDocumento) {
     }
 
     /**

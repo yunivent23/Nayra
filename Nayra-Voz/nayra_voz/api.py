@@ -75,7 +75,7 @@ def crear_app(componentes: Componentes | None, token_servicio: str | None = None
 
     @app.post("/prototipo/v1/verificaciones")
     async def verificar(
-        usuario_id: str = Form(..., alias="usuarioId", max_length=64),
+        usuario_id: uuid.UUID = Form(..., alias="usuarioId"),
         desafio: str = Form(..., max_length=200),
         audio: UploadFile = File(...),
         _: None = Depends(autorizar),
@@ -86,13 +86,13 @@ def crear_app(componentes: Componentes | None, token_servicio: str | None = None
         if muestra is None:
             log.info("verificacion solicitud=%s motivo=%s", solicitud, Motivo.FORMATO_INVALIDO.value)
             return formato_invalido(c)
-        resultado = c.pipeline.verificar(usuario_id, muestra, desafio)
+        resultado = c.pipeline.verificar(str(usuario_id), muestra, desafio)
         log.info("verificacion solicitud=%s motivo=%s", solicitud, resultado.motivo.value if resultado.motivo else "OK")
         return resultado.como_dict()
 
     @app.post("/prototipo/v1/enrolamientos/{usuario_id}/muestras")
     async def agregar_muestra(
-        usuario_id: str,
+        usuario_id: uuid.UUID,
         desafio: str = Form(..., max_length=200),
         audio: UploadFile = File(...),
         _: None = Depends(autorizar),
@@ -101,20 +101,20 @@ def crear_app(componentes: Componentes | None, token_servicio: str | None = None
         muestra = await leer_audio(audio, c)
         if muestra is None:
             return {**formato_invalido(c), "muestrasValidas": None}
-        resultado, validas = c.pipeline.agregar_muestra(usuario_id, muestra, desafio)
+        resultado, validas = c.pipeline.agregar_muestra(str(usuario_id), muestra, desafio)
         log.info("enrolamiento muestra motivo=%s", resultado.motivo.value if resultado.motivo else "OK")
         return {**resultado.como_dict(), "muestrasValidas": validas}
 
     @app.post("/prototipo/v1/enrolamientos/{usuario_id}/finalizacion")
-    def finalizar(usuario_id: str, _: None = Depends(autorizar)) -> dict:
+    def finalizar(usuario_id: uuid.UUID, _: None = Depends(autorizar)) -> dict:
         c = listos()
-        correcto, motivo, validas = c.pipeline.finalizar_enrolamiento(usuario_id)
+        correcto, motivo, validas = c.pipeline.finalizar_enrolamiento(str(usuario_id))
         log.info("enrolamiento finalizado correcto=%s motivo=%s", correcto, motivo or "OK")
         return {"correcto": correcto, "motivo": motivo, "muestrasValidas": validas}
 
     @app.delete("/prototipo/v1/enrolamientos/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)
-    def cancelar(usuario_id: str, _: None = Depends(autorizar)) -> None:
-        listos().pipeline.cancelar_enrolamiento(usuario_id)
+    def cancelar(usuario_id: uuid.UUID, _: None = Depends(autorizar)) -> None:
+        listos().pipeline.cancelar_enrolamiento(str(usuario_id))
 
     @app.post("/prototipo/v1/transcripciones-pin")
     async def transcribir_pin(audio: UploadFile = File(...), _: None = Depends(autorizar)) -> dict:

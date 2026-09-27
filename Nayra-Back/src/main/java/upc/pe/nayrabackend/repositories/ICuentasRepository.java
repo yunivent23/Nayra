@@ -4,9 +4,10 @@ import upc.pe.nayrabackend.entities.Cuentas;
 
 import java.util.Optional;
 
-/** Puerto de persistencia de CUENTAS (cuenta financiera simulada). Adaptador actual: en memoria (PROVISIONAL, D-051). */
+/** Puerto de persistencia de CUENTAS (cuenta financiera simulada). Adaptador: PostgreSQL (D-051). */
 public interface ICuentasRepository {
     void guardar(Cuentas cuenta);
-    Optional<Cuentas> porTitularDni(String dni);
+    /** Cuenta cuyo titular es ese registro de identidad simulado (FK única, 03 §16.4). */
+    Optional<Cuentas> porTitular(String titularId);
     Optional<Cuentas> porPropietario(String usuarioId);
 }

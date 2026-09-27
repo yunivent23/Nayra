@@ -12,7 +12,7 @@ public final class AdministracionDTOs {
     }
 
     /** HU-20, HU-21. */
-    public record UsuarioResumen(String id, String dni, String nombres, String apellidos, String rol, String estado) {
+    public record UsuarioResumen(String id, String tipoDocumentoIdentidad, String numeroDocumento, String nombres, String apellidos, String rol, String estado) {
     }
 
     /** HU-125. */
@@ -21,7 +21,7 @@ public final class AdministracionDTOs {
     }
 
     /** HU-22, HU-101. */
-    public record UsuarioDetalle(String id, String dni, String nombres, String apellidos, String celular, String rol,
+    public record UsuarioDetalle(String id, String tipoDocumentoIdentidad, String numeroDocumento, String nombres, String apellidos, String celular, String rol,
                                  String estado, Instant fechaCreacion, DispositivoResumen dispositivoActivo) {
     }
 

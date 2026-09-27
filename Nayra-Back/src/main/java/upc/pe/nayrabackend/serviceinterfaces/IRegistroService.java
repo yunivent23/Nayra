@@ -7,17 +7,18 @@ import upc.pe.nayrabackend.dtos.RegistroDTOs.RegistroIniciado;
 import upc.pe.nayrabackend.dtos.RegistroDTOs.SolicitudDatosRegistro;
 
 /**
- * Registro inicial asistido (D-052, modifica D-036). Usa el DNI solo para consultar el registro de
+ * Registro inicial asistido (D-052, modifica D-036). Usa el documento de identidad (DNI o CE, modelo de datos v4)
+ * solo para consultar el registro de
  * identidad simulado (D-053); la consulta no prueba la identidad: la valida el representante.
  * La biometría no valida la identidad en el registro.
  */
 public interface IRegistroService {
 
     /**
-     * Pasos 3–5: el representante proporciona el DNI y ve los datos del registro simulado.
+     * Pasos 3–5: el representante proporciona el documento y ve los datos del registro simulado.
      * PROVISIONAL: solo un ADMIN actúa como representante; D-052 admite también otra persona autorizada (pendiente).
      */
-    RegistroIniciado iniciar(String representanteId, String dni);
+    RegistroIniciado iniciar(String representanteId, String tipoDocumento, String numeroDocumento);
 
     /** Paso 6: el representante confirma que validó la identidad de la persona. */
     void validarIdentidad(String representanteId, String codigoRegistro);
@@ -27,7 +28,7 @@ public interface IRegistroService {
      * administrador cuando todavía no existe ninguno. Separado de D-052 y sin cumplirlo: no hay representante
      * que valide la identidad. D-050 sigue pendiente.
      */
-    RegistroIniciado iniciarAdministradorInicial(String dni);
+    RegistroIniciado iniciarAdministradorInicial(String tipoDocumento, String numeroDocumento);
 
     /** Paso 7: datos que la persona ve en su celular para confirmarlos. */
     DatosParaConfirmar datosParaConfirmar(String codigoRegistro);

@@ -8,6 +8,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -15,6 +16,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import upc.pe.nayrabackend.serviceinterfaces.IServicioVozCliente;
+import upc.pe.nayrabackend.soporte.BaseDeDatosDePrueba;
 import upc.pe.nayrabackend.soporte.Soporte;
 
 import java.security.KeyPair;
@@ -27,14 +29,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 /**
  * Recorrido HTTP completo con la cadena de seguridad real, el perfil "prototipo" y un servicio de voz falso:
  * arranque del administrador → registro asistido → enrolamiento → inicio de sesión → API con sesión → bloqueo.
- * No usa PostgreSQL: la persistencia es en memoria (D-051) y se excluye la autoconfiguración JPA.
+ * Usa PostgreSQL real (D-051): todo el recorrido se persiste en el esquema nayra.
  */
-@SpringBootTest(properties = {
-        "spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,"
-                + "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration,"
-                + "org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration"})
+@SpringBootTest
+@BaseDeDatosDePrueba
 @AutoConfigureMockMvc
-@ActiveProfiles("prototipo")
+@ActiveProfiles({"prototipo", "pruebasbd"})
 class ApiHttpTest {
 
     @TestConfiguration
@@ -50,6 +50,8 @@ class ApiHttpTest {
     MockMvc mvc;
     @Autowired
     Soporte.VozFalsa voz;
+    @Autowired
+    JdbcTemplate jdbc;
 
     private final JsonMapper json = JsonMapper.builder().build();
     private final MockMultipartFile audio = new MockMultipartFile("audio", "m.wav", "audio/wav", new byte[]{1, 2});
@@ -119,14 +121,14 @@ class ApiHttpTest {
         assertEquals(401, llamar(get("/usuarios"), null, null).estado());
 
         // Primer administrador (arranque del prototipo) y su registro en el celular.
-        Resp arranque = llamar(post("/prototipo/arranque/administrador"), null, Map.of("dni", Soporte.DNI_ADMIN));
+        Resp arranque = llamar(post("/prototipo/arranque/administrador"), null, Map.of("tipoDocumentoIdentidad", "DNI", "numeroDocumento", Soporte.DNI_ADMIN));
         assertEquals(200, arranque.estado());
         Persona admin = completarRegistro(arranque.cuerpo().get("codigoRegistro").asString());
-        assertEquals(409, llamar(post("/prototipo/arranque/administrador"), null, Map.of("dni", Soporte.DNI_USUARIO)).estado());
+        assertEquals(409, llamar(post("/prototipo/arranque/administrador"), null, Map.of("tipoDocumentoIdentidad", "DNI", "numeroDocumento", Soporte.DNI_USUARIO)).estado());
         String tokenAdmin = iniciarSesion(admin);
 
         // Registro asistido de un USER.
-        Resp inicio = llamar(post("/api/v1/admin/registros"), tokenAdmin, Map.of("dni", Soporte.DNI_USUARIO));
+        Resp inicio = llamar(post("/api/v1/admin/registros"), tokenAdmin, Map.of("tipoDocumentoIdentidad", "DNI", "numeroDocumento", Soporte.DNI_USUARIO));
         assertEquals(200, inicio.estado());
         String codigo = inicio.cuerpo().get("codigoRegistro").asString();
         assertEquals(409, llamar(get("/api/v1/registros/" + codigo), null, null).estado());
@@ -152,9 +154,25 @@ class ApiHttpTest {
         Resp acciones = llamar(get("/api/v1/admin/auditoria/acciones-administrativas"), tokenAdmin, null);
         assertTrue(acciones.cuerpo().toString().contains("ADMIN_BLOQUEO_CUENTA"));
 
-        // Cierre de sesión del administrador.
+        // Todo quedó en PostgreSQL: dos cuentas de acceso, la cuenta financiera vinculada y la auditoría EXITOSO/FALLIDO.
+        assertEquals(2, jdbc.queryForObject("SELECT count(*) FROM nayra.usuarios", Integer.class));
+        assertEquals(usuario.usuarioId(), jdbc.queryForObject(
+                "SELECT c.propietario_id::text FROM nayra.cuentas c JOIN nayra.registro_identidad_simulado r ON r.id = c.titular_id"
+                        + " WHERE r.tipo_documento_identidad = 'DNI' AND r.numero_documento = ?", String.class, Soporte.DNI_USUARIO));
+        assertEquals("BLOQUEADO", jdbc.queryForObject("SELECT estado FROM nayra.usuarios WHERE id = ?::uuid", String.class,
+                usuario.usuarioId()));
+        assertEquals(List.of("EXITOSO"), jdbc.queryForList("SELECT DISTINCT resultado FROM nayra.auditoria WHERE accion = 'ADMIN_BLOQUEO_CUENTA'",
+                String.class));
+
+        // Una credencial por usuario (v4 §2.2) y sesiones en nayra.sesiones: la del usuario bloqueado quedó revocada.
+        assertEquals(2, jdbc.queryForObject("SELECT count(*) FROM nayra.credenciales", Integer.class));
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM nayra.sesiones WHERE usuario_id = ?::uuid AND fecha_revocacion IS NULL",
+                Integer.class, usuario.usuarioId()));
+
+        // Cierre de sesión del administrador: la fila queda revocada y el JWT deja de valer.
         assertEquals(204, llamar(delete("/api/v1/sesiones/actual"), tokenAdmin, null).estado());
         assertEquals(401, llamar(get("/api/v1/usuarios/me"), tokenAdmin, null).estado());
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM nayra.sesiones WHERE fecha_revocacion IS NULL", Integer.class));
     }
 
     @Test

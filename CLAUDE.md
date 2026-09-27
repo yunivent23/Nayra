@@ -292,7 +292,7 @@ Tablas de referencia del entorno simulado:
 - ENTIDADES_BANCARIAS (AG-00, D-026: catálogo con `id` y `nombre`; sin gestión por el administrador)
 - REGISTRO_IDENTIDAD_SIMULADO (AG-01, D-035: DNI, nombres, apellidos)
 
-El modelo lógico vigente tras AG-01 está en `docs/03_BASE_DE_DATOS_NAYRA.md` §16. No crear tablas físicas ni migraciones hasta decidir D-051.
+El modelo lógico vigente tras AG-01 está en `docs/03_BASE_DE_DATOS_NAYRA.md` §16. El modelo físico aprobado (D-051, D-009) está en §17: migraciones Flyway en `Nayra-Back/src/main/resources/db/migration/nayra/`, `ddl-auto=validate`. No crear tablas fuera de §17 (sesiones, operaciones, `biometria.perfiles_voz`) sin decisión explícita.
 
 Reglas:
 

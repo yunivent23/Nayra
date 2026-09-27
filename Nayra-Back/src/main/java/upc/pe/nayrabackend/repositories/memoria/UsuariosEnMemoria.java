@@ -1,7 +1,7 @@
 package upc.pe.nayrabackend.repositories.memoria;
 
-import org.springframework.stereotype.Repository;
 import upc.pe.nayrabackend.entities.Rol;
+import upc.pe.nayrabackend.entities.TipoDocumentoIdentidad;
 import upc.pe.nayrabackend.entities.Usuario;
 import upc.pe.nayrabackend.repositories.IUsuariosRepository;
 
@@ -10,8 +10,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** PROVISIONAL (D-051): los datos se pierden al reiniciar y no se comparten entre instancias (D-023). */
-@Repository
+/**
+ * Adaptador en memoria para pruebas sin base de datos. No es un bean: la aplicación usa PostgreSQL (D-051).
+ * No aplica las restricciones de la base de datos.
+ */
 public class UsuariosEnMemoria implements IUsuariosRepository {
 
     private final Map<String, Usuario> usuarios = new ConcurrentHashMap<>();
@@ -23,8 +25,9 @@ public class UsuariosEnMemoria implements IUsuariosRepository {
     public Optional<Usuario> porId(String id) { return Optional.ofNullable(id == null ? null : usuarios.get(id)); }
 
     @Override
-    public Optional<Usuario> porDni(String dni) {
-        return usuarios.values().stream().filter(u -> u.getDni().equals(dni)).findFirst();
+    public Optional<Usuario> porDocumento(TipoDocumentoIdentidad tipo, String numero) {
+        return usuarios.values().stream()
+                .filter(u -> u.getTipoDocumentoIdentidad() == tipo && u.getNumeroDocumento().equals(numero)).findFirst();
     }
 
     @Override

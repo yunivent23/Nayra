@@ -1,4 +1,5 @@
 import base64
+import dataclasses
 import os
 
 import numpy as np
@@ -21,6 +22,8 @@ from tests.utilidades import a_wav, grabacion, silencio
 P = cargar_parametros()
 V = cargar_vocabulario()
 DESAFIO = "llave, cuatro, siete, dos, mesa"
+U1 = "0f6c5a1e-1111-4a2b-8c3d-000000000001"
+U2 = "0f6c5a1e-1111-4a2b-8c3d-000000000002"
 PALABRAS_OK = [(w, 0.9) for w in ["llave", "cuatro", "siete", "dos", "mesa"]]
 VOZ = decodificar_wav(a_wav(grabacion()), P.audio)
 SILENCIO = decodificar_wav(a_wav(silencio(3)), P.audio)
@@ -41,7 +44,7 @@ def construir(palabras=PALABRAS_OK, bona_fide=0.9, embeddings=None):
     return pipeline, almacen, extractor
 
 
-def enrolar(pipeline, usuario="u1"):
+def enrolar(pipeline, usuario=U1):
     for _ in range(3):
         resultado, _ = pipeline.agregar_muestra(usuario, VOZ, DESAFIO)
         assert resultado.aprobado, resultado.como_dict()
@@ -53,10 +56,10 @@ def enrolar(pipeline, usuario="u1"):
 def test_cifrado_ida_y_vuelta_y_ligado_al_usuario():
     cifrador = CifradorEmbeddings(os.urandom(32))
     e = vector(3)
-    perfil = cifrador.cifrar("u1", e, "modelo", "v")
-    assert e.tobytes() not in perfil.cifrado
+    perfil = cifrador.cifrar(U1, e, "modelo", "v", 3)
+    assert e.tobytes() not in perfil.embedding_cifrado
     np.testing.assert_allclose(cifrador.descifrar(perfil), e)
-    movido = type(perfil)("u2", perfil.nonce, perfil.cifrado, perfil.modelo, perfil.version_parametros, perfil.creado_en)
+    movido = dataclasses.replace(perfil, usuario_id=U2)
     with pytest.raises(InvalidTag):
         cifrador.descifrar(movido)
 
@@ -100,24 +103,28 @@ def test_enrolamiento_guarda_solo_embedding_cifrado():
     pipeline, almacen, _ = construir()
     correcto, motivo, validas = enrolar(pipeline)
     assert correcto and motivo is None and validas == 3
-    perfil = almacen.obtener("u1")
+    perfil = almacen.obtener(U1)
     assert perfil.modelo == "speechbrain/spkrec-ecapa-voxceleb"
-    assert perfil.version_parametros == P.version
+    assert perfil.version_modelo == "falso-1"
+    assert perfil.numero_muestras == 3
+    assert perfil.estado == "ACTIVO"
+    # B-9: la versión de los parámetros (umbrales) no se guarda en el perfil.
+    assert not hasattr(perfil, "version_parametros")
 
 
 def test_enrolamiento_no_finaliza_con_menos_de_tres_muestras():
     pipeline, almacen, _ = construir()
-    pipeline.agregar_muestra("u1", VOZ, DESAFIO)
-    assert pipeline.finalizar_enrolamiento("u1") == (False, "MUESTRAS_INSUFICIENTES", 1)
-    assert almacen.obtener("u1") is None
+    pipeline.agregar_muestra(U1, VOZ, DESAFIO)
+    assert pipeline.finalizar_enrolamiento(U1) == (False, "MUESTRAS_INSUFICIENTES", 1)
+    assert almacen.obtener(U1) is None
 
 
 def test_enrolamiento_aplica_antispoofing_y_limite_de_muestras():
     pipeline, _, extractor = construir(bona_fide=0.1)
     for _ in range(P.enrolamiento.muestras_maximas):
-        resultado, validas = pipeline.agregar_muestra("u1", VOZ, DESAFIO)
+        resultado, validas = pipeline.agregar_muestra(U1, VOZ, DESAFIO)
         assert resultado.motivo == Motivo.POSIBLE_SPOOFING and validas == 0
-    resultado, _ = pipeline.agregar_muestra("u1", VOZ, DESAFIO)
+    resultado, _ = pipeline.agregar_muestra(U1, VOZ, DESAFIO)
     assert resultado.motivo == Motivo.LIMITE_MUESTRAS
     assert extractor.llamadas == 0  # no se extrae embedding de muestras rechazadas
 
@@ -127,7 +134,7 @@ def test_enrolamiento_aplica_antispoofing_y_limite_de_muestras():
 def test_verificacion_exitosa_devuelve_todas_las_etapas():
     pipeline, _, _ = construir()
     enrolar(pipeline)
-    r = pipeline.verificar("u1", VOZ, DESAFIO)
+    r = pipeline.verificar(U1, VOZ, DESAFIO)
     assert r.aprobado and r.motivo is None
     assert [e.etapa for e in r.etapas] == [Etapa.CALIDAD, Etapa.CONTENIDO, Etapa.ANTISPOOFING, Etapa.VERIFICACION]
     assert r.etapas[-1].umbral == P.verificacion.similitud_coseno_minima
@@ -135,14 +142,14 @@ def test_verificacion_exitosa_devuelve_todas_las_etapas():
 
 def test_verificacion_sin_referencia():
     pipeline, _, _ = construir()
-    assert pipeline.verificar("desconocido", VOZ, DESAFIO).motivo == Motivo.SIN_REFERENCIA
+    assert pipeline.verificar(U2, VOZ, DESAFIO).motivo == Motivo.SIN_REFERENCIA
 
 
 def test_verificacion_se_detiene_en_la_primera_etapa_fallida():
     pipeline, _, extractor = construir()
     enrolar(pipeline)
     llamadas = extractor.llamadas
-    r = pipeline.verificar("u1", SILENCIO, DESAFIO)
+    r = pipeline.verificar(U1, SILENCIO, DESAFIO)
     assert r.motivo == Motivo.CALIDAD_INSUFICIENTE and len(r.etapas) == 1
     assert extractor.llamadas == llamadas
 
@@ -151,9 +158,9 @@ def test_verificacion_contenido_incorrecto():
     pipeline, almacen, _ = construir(palabras=[("luna", 0.9)])
     pipeline_ok, almacen_ok, _ = construir()
     enrolar(pipeline_ok)
-    almacen.guardar(almacen_ok.obtener("u1"))
+    almacen.guardar(almacen_ok.obtener(U1))
     pipeline._cifrador = pipeline_ok._cifrador
-    r = pipeline.verificar("u1", VOZ, DESAFIO)
+    r = pipeline.verificar(U1, VOZ, DESAFIO)
     assert r.motivo == Motivo.CONTENIDO_INCORRECTO and len(r.etapas) == 2
 
 
@@ -161,7 +168,7 @@ def test_verificacion_posible_spoofing():
     pipeline, _, _ = construir()
     enrolar(pipeline)
     pipeline._spoofing = EvaluadorSpoofing(DetectorFalso(0.2), P.antispoofing)
-    r = pipeline.verificar("u1", VOZ, DESAFIO)
+    r = pipeline.verificar(U1, VOZ, DESAFIO)
     assert r.motivo == Motivo.POSIBLE_SPOOFING and len(r.etapas) == 3
 
 
@@ -170,7 +177,7 @@ def test_verificacion_no_coincide():
     pipeline, _, extractor = construir(embeddings=[titular])
     enrolar(pipeline)
     extractor.embeddings = [impostor]
-    r = pipeline.verificar("u1", VOZ, DESAFIO)
+    r = pipeline.verificar(U1, VOZ, DESAFIO)
     assert r.motivo == Motivo.NO_COINCIDE and not r.etapas[-1].aprobada
 
 
@@ -178,4 +185,4 @@ def test_cambio_de_modelo_exige_reenrolar():
     pipeline, _, extractor = construir()
     enrolar(pipeline)
     extractor.nombre_modelo = "otro-modelo"
-    assert pipeline.verificar("u1", VOZ, DESAFIO).motivo == Motivo.SIN_REFERENCIA
+    assert pipeline.verificar(U1, VOZ, DESAFIO).motivo == Motivo.SIN_REFERENCIA

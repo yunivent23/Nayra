@@ -2,15 +2,16 @@ package upc.pe.nayrabackend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import upc.pe.nayrabackend.soporte.BaseDeDatosDePrueba;
 
 /**
- * El contexto sin perfil arranca sin PostgreSQL: todavía no hay tablas físicas (D-051) y la persistencia es
- * en memoria, así que se excluye la autoconfiguración JPA solo en esta prueba.
+ * El contexto completo arranca contra PostgreSQL: Flyway aplica las migraciones del esquema nayra y Hibernate
+ * valida que las entidades coinciden con las tablas (ddl-auto=validate, D-051).
  */
-@SpringBootTest(properties = {
-        "spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,"
-                + "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration,"
-                + "org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration"})
+@SpringBootTest
+@BaseDeDatosDePrueba
+@ActiveProfiles("pruebasbd")
 class NayraBackendApplicationTests {
 
     @Test

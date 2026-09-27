@@ -10,7 +10,6 @@ import upc.pe.nayrabackend.serviceinterfaces.IAuditoriaService;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -25,7 +24,7 @@ import java.util.regex.Pattern;
 public class AuditoriaServiceImplement implements IAuditoriaService {
 
     static final String MOTIVO_NO_RECONOCIDO = "MOTIVO_NO_RECONOCIDO";
-    private static final Pattern CODIGO = Pattern.compile("[A-Z][A-Z_]{0,63}");
+    private static final Pattern CODIGO = Pattern.compile("[A-Z][A-Z_]{0,49}");
     private static final Logger log = LoggerFactory.getLogger(AuditoriaServiceImplement.class);
 
     private final IAuditoriaRepository repositorio;
@@ -52,11 +51,6 @@ public class AuditoriaServiceImplement implements IAuditoriaService {
 
     @Override
     public List<Auditoria> consultar(Filtro f) {
-        return repositorio.todos().stream()
-                .filter(e -> f.usuarioId() == null || f.usuarioId().equals(e.usuarioAfectadoId()) || f.usuarioId().equals(e.actorId()))
-                .filter(e -> f.accionPrefijo() == null || e.accion().startsWith(f.accionPrefijo()))
-                .filter(e -> f.resultado() == null || f.resultado() == e.resultado())
-                .sorted(Comparator.comparing(Auditoria::fecha).reversed())
-                .toList();
+        return repositorio.consultar(f.usuarioId(), f.accionPrefijo(), f.resultado());
     }
 }

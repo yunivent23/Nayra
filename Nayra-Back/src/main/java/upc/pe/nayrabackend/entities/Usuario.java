@@ -1,70 +1,98 @@
 package upc.pe.nayrabackend.entities;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.time.Instant;
+import java.util.UUID;
 
 /**
- * Cuenta de acceso (USUARIOS, 03 §16.1).
+ * Cuenta de acceso (nayra.usuarios; modelo de datos v4 §2.1), del servicio de negocio. Tabla física según D-051 y
+ * rol como valor fijo según D-009 (opción A).
  *
- * PROVISIONAL (D-051): objeto de dominio sin mapeo JPA; nombres físicos, tipos e identificadores
- * se fijarán con la estrategia de migraciones. El contador de intentos vive aquí mientras el
- * detalle de D-044 (contador, ventana, reinicio) siga pendiente.
- * La referencia biométrica NO forma parte de esta entidad (D-013, 03 §16.11).
+ * El hash del PIN y el contador de intentos NO están aquí: pertenecen a {@link Credenciales} (servicio de
+ * autenticación, v4 §2.2). La referencia biométrica tampoco (D-013).
  */
+@Entity
+@Table(name = "usuarios", schema = "nayra")
 public class Usuario {
 
-    /** Estados aprobados (D-040, D-044). Otros estados siguen pendientes (AG-05). */
-    public enum Estado { ACTIVA, BLOQUEADA }
+    /** Estados de la cuenta de acceso (v4 §2.1). Negocio los posee aunque el bloqueo lo origine Autenticación. */
+    public enum Estado { ACTIVO, BLOQUEADO, INACTIVO }
 
-    private final String id;
-    private final String dni;
-    private final String nombres;
-    private final String apellidos;
-    private final String celular;
-    private final String pinHash;
-    private final Rol rol;
-    private final Instant fechaCreacion;
-    private Estado estado = Estado.ACTIVA;
-    private int intentosFallidos;
+    @Id
+    @Column(name = "id", nullable = false)
+    private UUID id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_documento_identidad", nullable = false, length = 20)
+    private TipoDocumentoIdentidad tipoDocumentoIdentidad;
+
+    @Column(name = "numero_documento", nullable = false, length = 30)
+    private String numeroDocumento;
+
+    @Column(name = "nombres", nullable = false, length = 100)
+    private String nombres;
+
+    @Column(name = "apellidos", nullable = false, length = 100)
+    private String apellidos;
+
+    @Column(name = "numero_celular", nullable = false, length = 20)
+    private String celular;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "rol", nullable = false, length = 10)
+    private Rol rol;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false, length = 20)
+    private Estado estado = Estado.ACTIVO;
+
+    @Column(name = "fecha_creacion", nullable = false)
+    private Instant fechaCreacion;
+
+    @Column(name = "fecha_actualizacion", nullable = false)
     private Instant fechaActualizacion;
 
-    public Usuario(String id, String dni, String nombres, String apellidos, String celular, String pinHash,
-                   Rol rol, Instant fechaCreacion) {
-        this.id = id;
-        this.dni = dni;
+    protected Usuario() {
+    }
+
+    public Usuario(String id, TipoDocumentoIdentidad tipoDocumentoIdentidad, String numeroDocumento, String nombres,
+                   String apellidos, String celular, Rol rol, Instant fechaCreacion) {
+        this.id = Identificadores.uuid(id);
+        this.tipoDocumentoIdentidad = tipoDocumentoIdentidad;
+        this.numeroDocumento = numeroDocumento;
         this.nombres = nombres;
         this.apellidos = apellidos;
         this.celular = celular;
-        this.pinHash = pinHash;
         this.rol = rol;
         this.fechaCreacion = fechaCreacion;
         this.fechaActualizacion = fechaCreacion;
     }
 
-    public String getId() { return id; }
-    public String getDni() { return dni; }
+    public String getId() { return Identificadores.texto(id); }
+    public TipoDocumentoIdentidad getTipoDocumentoIdentidad() { return tipoDocumentoIdentidad; }
+    public String getNumeroDocumento() { return numeroDocumento; }
     public String getNombres() { return nombres; }
     public String getApellidos() { return apellidos; }
     public String getCelular() { return celular; }
-    public String getPinHash() { return pinHash; }
     public Rol getRol() { return rol; }
     public Instant getFechaCreacion() { return fechaCreacion; }
     public synchronized Estado getEstado() { return estado; }
-    public synchronized int getIntentosFallidos() { return intentosFallidos; }
     public synchronized Instant getFechaActualizacion() { return fechaActualizacion; }
 
-    public synchronized int registrarFallo() { return ++intentosFallidos; }
-
-    public synchronized void reiniciarIntentos() { intentosFallidos = 0; }
-
     public synchronized void bloquear(Instant ahora) {
-        estado = Estado.BLOQUEADA;
+        estado = Estado.BLOQUEADO;
         fechaActualizacion = ahora;
     }
 
-    /** Desbloqueo por el administrador (HU-19): reinicia el contador de intentos. */
+    /** Desbloqueo por el administrador (HU-19). El contador de intentos lo posee Autenticación (v4 §2.2, P-11). */
     public synchronized void desbloquear(Instant ahora) {
-        estado = Estado.ACTIVA;
-        intentosFallidos = 0;
+        estado = Estado.ACTIVO;
         fechaActualizacion = ahora;
     }
 }

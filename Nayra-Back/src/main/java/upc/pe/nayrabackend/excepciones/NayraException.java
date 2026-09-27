@@ -3,7 +3,7 @@ package upc.pe.nayrabackend.excepciones;
 import org.springframework.http.HttpStatus;
 
 /**
- * Error de negocio con un código estable y genérico ("DNI_REGISTRADO", "NO_ENCONTRADO"...).
+ * Error de negocio con un código estable y genérico ("DOCUMENTO_REGISTRADO", "NO_ENCONTRADO"...).
  * El código es lo único que llega al cliente: nunca datos personales, PIN ni detalles internos (06 §21).
  */
 public class NayraException extends RuntimeException {

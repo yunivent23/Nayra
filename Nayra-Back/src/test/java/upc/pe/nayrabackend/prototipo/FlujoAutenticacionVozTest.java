@@ -9,6 +9,7 @@ import upc.pe.nayrabackend.soporte.Soporte;
 import upc.pe.nayrabackend.soporte.Soporte.Persona;
 
 import java.time.Duration;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static upc.pe.nayrabackend.soporte.Soporte.AUDIO;
@@ -64,7 +65,7 @@ class FlujoAutenticacionVozTest {
         assertEquals(2, s.autenticacion.verificarPin(t, "000000").intentosRestantes());
         assertEquals(1, s.autenticacion.verificarPin(t, "111111").intentosRestantes());
         assertEquals("BLOQUEADA", s.autenticacion.verificarPin(t, "222222").estado());
-        assertEquals(Usuario.Estado.BLOQUEADA, s.usuarios.obtener(usuario.usuarioId()).getEstado());
+        assertEquals(Usuario.Estado.BLOQUEADO, s.usuarios.obtener(usuario.usuarioId()).getEstado());
         assertTrue(s.sesiones.validar(token).isEmpty());
         assertEquals("CUENTA_BLOQUEADA", assertThrows(NayraException.class, () -> s.abrirTransaccion(usuario)).getCodigo());
         assertTrue(s.auditoriaRepo.todos().stream().anyMatch(e -> e.accion().equals("CUENTA_BLOQUEADA")
@@ -88,31 +89,54 @@ class FlujoAutenticacionVozTest {
     }
 
     @Test
-    void fallosDeVozCuentanYBloqueanAlTercero() throws Exception {
+    void fallosDeVozContenidoOSpoofingNoCuentanComoIntentosDePin() throws Exception {
+        // v4 §2.2 y §4.3: solo el PIN incorrecto cuenta; el límite propio de la biometría es P-8 (pendiente).
         String t = s.abrirTransaccion(usuario);
         s.autenticacion.verificarPin(t, Soporte.PIN);
         s.voz.encolar(false, "CONTENIDO_INCORRECTO");
         s.voz.encolar(false, "POSIBLE_SPOOFING");
         s.voz.encolar(false, "NO_COINCIDE");
+        s.voz.encolar(false, "NO_COINCIDE");
         ResultadoPaso r1 = s.autenticacion.verificarVoz(t, AUDIO);
         ResultadoPaso r2 = s.autenticacion.verificarVoz(t, AUDIO);
         ResultadoPaso r3 = s.autenticacion.verificarVoz(t, AUDIO);
-        assertEquals(2, r1.intentosRestantes());
-        assertEquals(1, r2.intentosRestantes());
+        ResultadoPaso r4 = s.autenticacion.verificarVoz(t, AUDIO);
+        for (ResultadoPaso r : List.of(r1, r2, r3, r4)) {
+            assertEquals("REINTENTAR", r.estado());
+            assertEquals(3, r.intentosRestantes());
+            assertNull(r.sesion());
+        }
         assertNotEquals(r1.desafio().desafioId(), r2.desafio().desafioId());
-        assertEquals("BLOQUEADA", r3.estado());
-        assertNull(r3.sesion());
+        assertEquals(Usuario.Estado.ACTIVO, s.usuarios.obtener(usuario.usuarioId()).getEstado());
+        assertEquals(0, s.credencialesRepo.deUsuario(usuario.usuarioId()).orElseThrow().getIntentosFallidos());
     }
 
     @Test
-    void exitoReiniciaElContador() throws Exception {
+    void unPinCorrectoReiniciaElContadorAunqueLaVozFalle() throws Exception {
+        String t = s.abrirTransaccion(usuario);
+        assertEquals(2, s.autenticacion.verificarPin(t, "000000").intentosRestantes());
+        assertEquals(1, s.autenticacion.verificarPin(t, "111111").intentosRestantes());
+        assertEquals(2, s.credencialesRepo.deUsuario(usuario.usuarioId()).orElseThrow().getIntentosFallidos());
+        // El contador vuelve a 0 con el PIN correcto, antes de la voz (v4 §2.2).
+        assertEquals(3, s.autenticacion.verificarPin(t, Soporte.PIN).intentosRestantes());
+        assertEquals(0, s.credencialesRepo.deUsuario(usuario.usuarioId()).orElseThrow().getIntentosFallidos());
+        s.voz.encolar(false, "NO_COINCIDE");
+        assertEquals(3, s.autenticacion.verificarVoz(t, AUDIO).intentosRestantes());
+        String t2 = s.abrirTransaccion(usuario);
+        assertEquals(2, s.autenticacion.verificarPin(t2, "000000").intentosRestantes());
+    }
+
+    @Test
+    void elDesbloqueoAdministrativoReiniciaElContadorProvisional() throws Exception {
+        // PROVISIONAL (P-11): el desbloqueo reinicia el contador de la credencial.
         String t = s.abrirTransaccion(usuario);
         s.autenticacion.verificarPin(t, "000000");
-        s.autenticacion.verificarPin(t, Soporte.PIN);
-        s.voz.encolar(true, null);
-        assertEquals("AUTENTICADO", s.autenticacion.verificarVoz(t, AUDIO).estado());
-        String t2 = s.abrirTransaccion(usuario);
-        assertEquals(3, s.autenticacion.verificarPin(t2, Soporte.PIN).intentosRestantes());
+        s.autenticacion.verificarPin(t, "111111");
+        s.autenticacion.verificarPin(t, "222222");
+        assertEquals(3, s.credencialesRepo.deUsuario(usuario.usuarioId()).orElseThrow().getIntentosFallidos());
+        s.admin.desbloquearUsuario(admin.usuarioId(), usuario.usuarioId());
+        assertEquals(0, s.credencialesRepo.deUsuario(usuario.usuarioId()).orElseThrow().getIntentosFallidos());
+        assertEquals(3, s.autenticacion.verificarPin(s.abrirTransaccion(usuario), Soporte.PIN).intentosRestantes());
     }
 
     @Test

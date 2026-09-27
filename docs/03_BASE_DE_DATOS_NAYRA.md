@@ -9,6 +9,8 @@
 > **Actualización AG-01 (2026-09-26):** se incorporó el registro de identidad simulado (`REGISTRO_IDENTIDAD_SIMULADO`, D-035) y se actualizó el modelo lógico de `USUARIOS`, `ROLES`, `CUENTAS`, `DISPOSITIVOS`, `SESIONES`, `OPERACIONES`, `SOLICITUDES_ATENCION` y `AUDITORÍA` según D-035 a D-043. **La sección 16 es la referencia vigente** de esas tablas; las tablas de la sección 3 conservan la propuesta original del Excel. No se crean tablas físicas ni migraciones hasta decidir D-051.
 >
 > **Actualización del 2026-09-27:** se documenta el modelo lógico de la referencia biométrica (`biometria.PERFILES_VOZ`, D-013, AG-13, §16.11) y se actualizan `USUARIOS` (hash del PIN, D-061; origen AG-01; aprobada el 2026-09-27), `DISPOSITIVOS` (clave pública, D-048; origen AG-01; aprobada el 2026-09-27), `SESIONES` (5 minutos de inactividad, D-018, AG-02) y los eventos de `AUDITORÍA`. Siguen sin crearse tablas físicas hasta decidir D-051.
+>
+> **Actualización del 2026-09-27 (modelo físico):** D-051 y D-009 quedan aprobadas. La **sección 17** registra el modelo físico de las seis tablas implementadas con migraciones Flyway en el esquema `nayra`. `SESIONES`, `OPERACIONES`, `SOLICITUDES_ATENCION`, `NOTIFICACIONES` y `biometria.PERFILES_VOZ` siguen sin tabla física.
 
 ## 1. Propósito
 
@@ -357,7 +359,7 @@ Decisiones registradas en `07_DECISIONES_TECNICAS_NAYRA.md`:
 
 ## 16. Modelo lógico actualizado — AG-01 (2026-09-26)
 
-Esta sección es la **referencia vigente** del modelo lógico para las tablas indicadas. Describe **atributos lógicos y reglas**, no el esquema físico: los tipos de dato, nombres definitivos de columnas, índices, obligatoriedad fina y comportamiento ante eliminación siguen pendientes (§13), así como la estrategia de identificadores y de migraciones (**D-051**). **No se crean tablas físicas** hasta cerrar esas decisiones. **No se crean tablas biométricas** hasta decidir D-013. _(AG-13: D-013 decidida; su modelo lógico está en §16.11, pero la tabla física se crea solo con la estrategia de migraciones, D-051.)_
+Esta sección es la **referencia vigente** del modelo lógico para las tablas indicadas. Describe **atributos lógicos y reglas**, no el esquema físico: los tipos de dato, nombres definitivos de columnas, índices, obligatoriedad fina y comportamiento ante eliminación siguen pendientes (§13), así como la estrategia de identificadores y de migraciones (**D-051**). **No se crean tablas físicas** hasta cerrar esas decisiones. **No se crean tablas biométricas** hasta decidir D-013. _(AG-13: D-013 decidida; su modelo lógico está en §16.11, pero la tabla física se crea solo con la estrategia de migraciones, D-051.)_ _(2026-09-27: D-051 aprobada; el modelo físico de `USUARIOS`, `REGISTRO_IDENTIDAD_SIMULADO`, `ENTIDADES_BANCARIAS`, `CUENTAS`, `DISPOSITIVOS` y `AUDITORÍA` está en §17.)_
 
 ### 16.1 `USUARIOS` (cuenta de acceso)
 
@@ -379,6 +381,8 @@ Esta sección es la **referencia vigente** del modelo lógico para las tablas in
 ### 16.2 `ROLES`
 
 Catálogo con dos valores: `USER` y `ADMIN` (D-041). Si un usuario puede tener uno o varios roles, y la representación exacta (catálogo con FK o valor fijo), quedan pendientes dentro de D-009. El rol **nunca** lo elige el cliente al registrarse.
+
+_(2026-09-27: D-009 aprobada, opción A. El rol es un valor fijo en `usuarios.rol`; **no** existe tabla `ROLES` y un usuario tiene un solo rol. Ver §17.)_
 
 ### 16.3 `REGISTRO_IDENTIDAD_SIMULADO` (nueva — entorno simulado)
 
@@ -480,7 +484,7 @@ Referencia biométrica de voz. Vive en un **esquema propio (`biometria`) del mis
 | Atributo lógico | Regla | Decisión |
 |---|---|---|
 | Identificador | PK | §13 |
-| Usuario | Referencia lógica al identificador de `USUARIOS`; **único** (un perfil por cuenta de acceso). Si será FK física entre esquemas queda pendiente (D-051) | D-038, D-013 |
+| Usuario | Referencia lógica al identificador de `USUARIOS`; **único** (un perfil por cuenta de acceso). Si será FK física entre esquemas queda pendiente (D-051). _(2026-09-27: sin FK física por ahora; referencia lógica, D-051)_ | D-038, D-013 |
 | Embedding cifrado | Centroide normalizado de 192 valores, cifrado con AES-256-GCM | D-011, D-013 |
 | Vector de inicialización | Propio de cada cifrado | D-013 |
 | Modelo | Nombre del modelo (p. ej. `speechbrain/spkrec-ecapa-voxceleb`) | D-011, D-013 |
@@ -490,3 +494,101 @@ Referencia biométrica de voz. Vive en un **esquema propio (`biometria`) del mis
 | Fechas de creación y actualización | Trazabilidad | — |
 
 Reglas: **no se guarda audio** en ninguna tabla; la clave de cifrado vive fuera del código y de la base de datos (D-017); eliminación física según HU-36 con evento de auditoría sin el embedding; actualización solo por re-enrolamiento tras validar al titular (D-040).
+
+## 17. Modelo físico — D-051 y D-009 (2026-09-27)
+
+Modelo físico **aprobado** de las seis tablas implementadas. Decisiones en `07_DECISIONES_TECNICAS_NAYRA.md` (D-051, D-009). Migraciones: `Nayra-Back/src/main/resources/db/migration/nayra/V001` a `V004`.
+
+**Reglas comunes:** esquema `nayra`; nombres en `snake_case` sin tildes; PK `id uuid` (UUID v4 generado por la aplicación); FK con `ON DELETE RESTRICT ON UPDATE RESTRICT`; fechas `timestamptz`; estados como `varchar` con `CHECK`.
+
+### 17.1 `nayra.entidades_bancarias` (`ENTIDADES_BANCARIAS`)
+
+| Columna | Tipo | Nulo | Restricción |
+|---|---|---|---|
+| `id` | `uuid` | NOT NULL | PK |
+| `nombre` | `varchar(100)` | NOT NULL | — (sin UNIQUE) |
+
+### 17.2 `nayra.registro_identidad_simulado` (`REGISTRO_IDENTIDAD_SIMULADO`)
+
+| Columna | Tipo | Nulo | Restricción |
+|---|---|---|---|
+| `id` | `uuid` | NOT NULL | PK |
+| `dni` | `varchar(20)` | NOT NULL | `uq_registro_identidad_simulado_dni` (clave alternativa) |
+| `nombres` | `varchar(100)` | NOT NULL | — |
+| `apellidos` | `varchar(100)` | NOT NULL | — |
+
+### 17.3 `nayra.usuarios` (`USUARIOS`)
+
+| Columna | Tipo | Nulo | Restricción |
+|---|---|---|---|
+| `id` | `uuid` | NOT NULL | PK |
+| `dni` | `varchar(20)` | NOT NULL | `uq_usuarios_dni` |
+| `nombres` | `varchar(100)` | NOT NULL | — |
+| `apellidos` | `varchar(100)` | NOT NULL | — |
+| `numero_celular` | `varchar(20)` | NOT NULL | — |
+| `pin_hash` | `text` | NOT NULL | Hash autodescriptivo; algoritmo pendiente (D-047) |
+| `rol` | `varchar(10)` | NOT NULL | `CHECK (rol IN ('USER','ADMIN'))` (D-009) |
+| `estado` | `varchar(20)` | NOT NULL, `DEFAULT 'ACTIVA'` | `CHECK (estado IN ('ACTIVA','BLOQUEADA'))` |
+| `fecha_creacion` | `timestamptz` | NOT NULL | — |
+| `fecha_actualizacion` | `timestamptz` | NOT NULL | — |
+| `intentos_fallidos` | `smallint` | NOT NULL, `DEFAULT 0` | `CHECK (intentos_fallidos >= 0)`. **PROVISIONAL (D-044)** |
+
+Sin tipo de documento (solo DNI) y sin `username`, `email`, `direccion` ni otros atributos no documentados.
+
+### 17.4 `nayra.cuentas` (`CUENTAS`)
+
+| Columna | Tipo | Nulo | Restricción |
+|---|---|---|---|
+| `id` | `uuid` | NOT NULL | PK |
+| `titular_id` | `uuid` | NOT NULL | FK → `registro_identidad_simulado.id`; `uq_cuentas_titular_id` |
+| `propietario_id` | `uuid` | NULL | FK → `usuarios.id`; `uq_cuentas_propietario_id` (admite varios NULL) |
+| `entidad_bancaria_id` | `uuid` | NOT NULL | FK → `entidades_bancarias.id` |
+| `codigo_cuenta` | `varchar(30)` | NOT NULL | `uq_cuentas_codigo_cuenta` |
+| `saldo` | `numeric(15,2)` | NOT NULL | `CHECK (saldo >= 0)` |
+| `moneda` | `char(3)` | NOT NULL | — |
+| `estado` | `varchar(20)` | NOT NULL, `DEFAULT 'ACTIVA'` | `CHECK (estado IN ('ACTIVA','BLOQUEADA','CERRADA'))` |
+| `fecha_creacion` | `timestamptz` | NOT NULL | — |
+| `fecha_actualizacion` | `timestamptz` | NOT NULL | — |
+
+El identificador para QR no se crea todavía (§16.10).
+
+### 17.5 `nayra.dispositivos` (`DISPOSITIVOS`)
+
+| Columna | Tipo | Nulo | Restricción |
+|---|---|---|---|
+| `id` | `uuid` | NOT NULL | PK. También es el identificador que la app firma junto al nonce (D-048) |
+| `usuario_id` | `uuid` | NOT NULL | FK → `usuarios.id` |
+| `clave_publica` | `bytea` | NOT NULL | X.509 SubjectPublicKeyInfo (DER) |
+| `algoritmo_clave` | `varchar(30)` | NOT NULL, `DEFAULT 'ECDSA_P256_SHA256'` | `CHECK (algoritmo_clave = 'ECDSA_P256_SHA256')` |
+| `plataforma` | `varchar(10)` | NOT NULL | `CHECK (plataforma IN ('ANDROID','IOS'))` |
+| `estado` | `varchar(20)` | NOT NULL, `DEFAULT 'ACTIVO'` | `CHECK (estado IN ('ACTIVO','REVOCADO'))` |
+| `fecha_vinculacion` | `timestamptz` | NOT NULL | — |
+| `fecha_revocacion` | `timestamptz` | NULL | — |
+
+Un solo dispositivo `ACTIVO` por usuario: índice único parcial `uq_dispositivos_usuario_activo (usuario_id) WHERE estado = 'ACTIVO'`. No se crea el campo VARCHAR(255) de identificador de hardware del Excel (§3.6) ni se identifica el teléfono por su hardware.
+
+### 17.6 `nayra.auditoria` (`AUDITORÍA`)
+
+| Columna | Tipo | Nulo | Restricción |
+|---|---|---|---|
+| `id` | `uuid` | NOT NULL | PK |
+| `fecha` | `timestamptz` | NOT NULL | — |
+| `actor_id` | `uuid` | NULL | FK → `usuarios.id` |
+| `usuario_afectado_id` | `uuid` | NULL | FK → `usuarios.id` |
+| `accion` | `varchar(50)` | NOT NULL | Catálogo pendiente (D-019) |
+| `resultado` | `varchar(10)` | NOT NULL | `CHECK (resultado IN ('EXITOSO','FALLIDO'))` |
+| `motivo` | `varchar(50)` | NULL | Código, nunca texto libre |
+| `ip` | `inet` | NULL | La aplicación todavía no la captura |
+| `dispositivo_id` | `uuid` | NULL | FK → `dispositivos.id` |
+
+No se crean `detalle` ni `usuario_relacionado`. Solo inserción: el usuario de ejecución no tiene `UPDATE` ni `DELETE` (V004).
+
+### 17.7 Índices
+
+`uq_usuarios_dni`, `uq_registro_identidad_simulado_dni`, `uq_cuentas_titular_id`, `uq_cuentas_propietario_id`, `uq_cuentas_codigo_cuenta`, `uq_dispositivos_usuario_activo` (parcial), `ix_dispositivos_usuario_id`, `ix_cuentas_entidad_bancaria_id`, `ix_auditoria_fecha` (descendente), `ix_auditoria_actor_id` e `ix_auditoria_usuario_afectado_id`.
+
+### 17.8 Pendientes que afectan al modelo físico
+
+- **Auditoría del registro asistido (D-052):** la FK `usuario_afectado_id` no admite el identificador de una cuenta que todavía no existe. Mientras no se decida, los eventos anteriores a la creación de la cuenta (inicio, validación asistida, datos, enrolamiento, cancelación) se registran **sin usuario afectado** (PROVISIONAL).
+- `SESIONES` (D-018), `OPERACIONES`, `SOLICITUDES_ATENCION`, `NOTIFICACIONES`, desafíos y nonces, QR y la estructura física de `biometria.PERFILES_VOZ`: sin tabla hasta sus decisiones.
+

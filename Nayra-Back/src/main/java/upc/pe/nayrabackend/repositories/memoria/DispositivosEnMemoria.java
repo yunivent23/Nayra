@@ -1,6 +1,5 @@
 package upc.pe.nayrabackend.repositories.memoria;
 
-import org.springframework.stereotype.Repository;
 import upc.pe.nayrabackend.entities.Dispositivos;
 import upc.pe.nayrabackend.repositories.IDispositivosRepository;
 
@@ -8,8 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** PROVISIONAL (D-051). */
-@Repository
+/** Adaptador en memoria para pruebas sin base de datos. No es un bean: la aplicación usa PostgreSQL (D-051). */
 public class DispositivosEnMemoria implements IDispositivosRepository {
 
     private final Map<String, Dispositivos> dispositivos = new ConcurrentHashMap<>();

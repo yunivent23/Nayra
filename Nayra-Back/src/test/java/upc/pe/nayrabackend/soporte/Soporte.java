@@ -9,10 +9,12 @@ import upc.pe.nayrabackend.dtos.AutenticacionVozDTOs.ResultadoPaso;
 import upc.pe.nayrabackend.dtos.RegistroDTOs.RegistroFinalizado;
 import upc.pe.nayrabackend.dtos.RegistroDTOs.SolicitudDatosRegistro;
 import upc.pe.nayrabackend.repositories.memoria.AuditoriaEnMemoria;
+import upc.pe.nayrabackend.repositories.memoria.CredencialesEnMemoria;
 import upc.pe.nayrabackend.repositories.memoria.DispositivosEnMemoria;
 import upc.pe.nayrabackend.repositories.memoria.EntornoSimuladoEnMemoria;
 import upc.pe.nayrabackend.repositories.memoria.SesionesEnMemoria;
 import upc.pe.nayrabackend.repositories.memoria.UsuariosEnMemoria;
+import upc.pe.nayrabackend.securities.TokenSesionJwt;
 import upc.pe.nayrabackend.serviceimplements.*;
 import upc.pe.nayrabackend.serviceinterfaces.IServicioVozCliente;
 
@@ -31,7 +33,7 @@ import java.util.Deque;
 import java.util.List;
 
 /**
- * Ensambla el backend general y AG-13 sin Spring ni base de datos, con repositorios en memoria,
+ * Ensambla el backend general y AG-13 sin Spring ni base de datos, con los adaptadores en memoria de prueba,
  * los datos ficticios del entorno simulado y un servicio de voz falso.
  */
 public final class Soporte {
@@ -96,26 +98,30 @@ public final class Soporte {
     public final VozFalsa voz = new VozFalsa();
     public final VozProperties vozProps = new VozProperties("http://localhost:0", "", Duration.ofSeconds(1), Duration.ofSeconds(1),
             Path.of("..", "shared", "desafio", "vocabulario_v2.json").toString(),
-            Duration.ofSeconds(120), Duration.ofMinutes(5), 3, 3);
-    public final NayraProperties props = new NayraProperties(new NayraProperties.Sesion(Duration.ofMinutes(5)),
+            Duration.ofSeconds(120), Duration.ofMinutes(5), 3);
+    public final NayraProperties props = new NayraProperties(new NayraProperties.Sesion(Duration.ofMinutes(5), null),
             new NayraProperties.Dispositivo(Duration.ofSeconds(60)), new NayraProperties.Registro(Duration.ofSeconds(900)));
     private final SecureRandom random = new SecureRandom();
 
     public final UsuariosEnMemoria usuariosRepo = new UsuariosEnMemoria();
     public final DispositivosEnMemoria dispositivosRepo = new DispositivosEnMemoria();
     public final SesionesEnMemoria sesionesRepo = new SesionesEnMemoria();
+    public final CredencialesEnMemoria credencialesRepo = new CredencialesEnMemoria();
     public final AuditoriaEnMemoria auditoriaRepo = new AuditoriaEnMemoria();
     public final EntornoSimuladoEnMemoria entorno = new EntornoSimuladoEnMemoria();
 
     public final AuditoriaServiceImplement auditoria = new AuditoriaServiceImplement(auditoriaRepo, reloj);
     public final PinServiceImplement pines = new PinServiceImplement(new BCryptPasswordEncoder(4));
     public final DispositivoServiceImplement dispositivos = new DispositivoServiceImplement(dispositivosRepo, props, random, reloj);
+    public final TokenSesionJwt jwt = new TokenSesionJwt(props, random);
     public final SesionesServiceImplement sesiones = new SesionesServiceImplement(sesionesRepo, usuariosRepo, dispositivosRepo,
-            auditoria, random, reloj, props);
-    public final UsuarioServiceImplement usuarios = new UsuarioServiceImplement(usuariosRepo, dispositivosRepo, sesiones, auditoria, reloj);
-    public final CuentaServiceImplement cuentas = new CuentaServiceImplement(entorno);
+            auditoria, jwt, reloj, props);
+    public final CredencialesServiceImplement credenciales = new CredencialesServiceImplement(credencialesRepo, pines, reloj);
+    public final UsuarioServiceImplement usuarios = new UsuarioServiceImplement(usuariosRepo, dispositivosRepo, sesiones,
+            credenciales, auditoria, reloj);
+    public final CuentaServiceImplement cuentas = new CuentaServiceImplement(entorno, entorno, reloj);
     public final RegistroServiceImplement registro = new RegistroServiceImplement(usuariosRepo, entorno, cuentas, pines,
-            dispositivos, auditoria, props, random, reloj);
+            credenciales, dispositivos, auditoria, props, random, reloj);
     public final AdministracionServiceImplement admin = new AdministracionServiceImplement(usuariosRepo, dispositivosRepo,
             usuarios, dispositivos, sesiones, auditoria);
     public final DesafioServiceImplement desafios;
@@ -123,9 +129,9 @@ public final class Soporte {
     public final EnrolamientoVozServiceImplement enrolamiento;
 
     public Soporte() throws Exception {
-        new EntornoSimuladoInicial(entorno, entorno, entorno);
+        new EntornoSimuladoInicial(entorno, entorno, entorno, reloj);
         desafios = new DesafioServiceImplement(vozProps, random, reloj);
-        autenticacion = new AutenticacionVozServiceImplement(dispositivos, pines, desafios, voz, auditoria,
+        autenticacion = new AutenticacionVozServiceImplement(dispositivos, credenciales, desafios, voz, auditoria,
                 new PoliticaIntentosProvisional(), usuariosRepo, usuarios, sesiones, vozProps, reloj);
         enrolamiento = new EnrolamientoVozServiceImplement(desafios, voz, auditoria, registro, vozProps);
     }
@@ -152,12 +158,12 @@ public final class Soporte {
 
     /** Primer administrador por la ruta de arranque del prototipo. */
     public Persona crearAdministrador() throws Exception {
-        return completarRegistro(registro.iniciarAdministradorInicial(DNI_ADMIN).codigoRegistro(), PIN);
+        return completarRegistro(registro.iniciarAdministradorInicial("DNI", DNI_ADMIN).codigoRegistro(), PIN);
     }
 
     /** Registro asistido completo de un USER por un administrador. */
     public Persona registrarUsuario(Persona representante, String dni) throws Exception {
-        String codigo = registro.iniciar(representante.usuarioId(), dni).codigoRegistro();
+        String codigo = registro.iniciar(representante.usuarioId(), "DNI", dni).codigoRegistro();
         registro.validarIdentidad(representante.usuarioId(), codigo);
         return completarRegistro(codigo, PIN);
     }

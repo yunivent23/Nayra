@@ -14,8 +14,9 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Resuelve "Authorization: Bearer &lt;token&gt;" a una sesión vigente (PROVISIONAL, D-018).
- * Cada validación aplica la regla aprobada de 5 minutos de inactividad. El token nunca se registra en logs.
+ * Resuelve "Authorization: Bearer &lt;JWT&gt;" a una sesión vigente (v4 §4.1). Es el lado de Negocio: pregunta a
+ * Autenticación ({@link ISesionesService}), única autoridad sobre la sesión, que aplica la regla aprobada de 5 minutos
+ * de inactividad. El token nunca se registra en logs.
  * No es un bean para que Spring Boot no lo registre dos veces como filtro del servlet.
  */
 public class FiltroSesion extends OncePerRequestFilter {

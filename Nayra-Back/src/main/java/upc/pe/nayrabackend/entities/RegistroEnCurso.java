@@ -18,7 +18,8 @@ public class RegistroEnCurso {
 
     private final String codigo;
     private final String usuarioIdPrevisto;
-    private final String dni;
+    private final TipoDocumentoIdentidad tipoDocumentoIdentidad;
+    private final String numeroDocumento;
     private final String nombres;
     private final String apellidos;
     private final Rol rol;
@@ -33,7 +34,8 @@ public class RegistroEnCurso {
                            String representanteId, Instant expira) {
         this.codigo = codigo;
         this.usuarioIdPrevisto = usuarioIdPrevisto;
-        this.dni = identidad.dni();
+        this.tipoDocumentoIdentidad = identidad.tipoDocumentoIdentidad();
+        this.numeroDocumento = identidad.numeroDocumento();
         this.nombres = identidad.nombres();
         this.apellidos = identidad.apellidos();
         this.rol = rol;
@@ -43,7 +45,8 @@ public class RegistroEnCurso {
 
     public String getCodigo() { return codigo; }
     public String getUsuarioIdPrevisto() { return usuarioIdPrevisto; }
-    public String getDni() { return dni; }
+    public TipoDocumentoIdentidad getTipoDocumentoIdentidad() { return tipoDocumentoIdentidad; }
+    public String getNumeroDocumento() { return numeroDocumento; }
     public String getNombres() { return nombres; }
     public String getApellidos() { return apellidos; }
     public Rol getRol() { return rol; }

@@ -1,19 +1,80 @@
 {
-  "nota": "DATOS FICTICIOS del entorno bancario simulado (D-021, D-035). No representan personas, bancos ni cuentas reales.",
+  "nota": "DATOS FICTICIOS del entorno bancario simulado (D-021, D-035). No representan personas, bancos ni cuentas reales. Identificadores UUID v4 fijos para que la carga sea idempotente (D-051).",
   "entidadesBancarias": [
-    { "id": "EBS-01", "nombre": "Entidad Bancaria Simulada 1" }
+    {
+      "id": "4f1c2b7e-8d3a-4c6f-9b21-5e7a0c3d1f01",
+      "nombre": "Entidad Bancaria Simulada 1"
+    }
   ],
   "registroIdentidad": [
-    { "dni": "10000001", "nombres": "Persona Uno", "apellidos": "Ficticia Simulada" },
-    { "dni": "10000002", "nombres": "Persona Dos", "apellidos": "Ficticia Simulada" },
-    { "dni": "10000003", "nombres": "Persona Tres", "apellidos": "Ficticia Simulada" },
-    { "dni": "10000004", "nombres": "Persona Cuatro", "apellidos": "Ficticia Simulada" },
-    { "dni": "10000005", "nombres": "Persona Cinco", "apellidos": "Ficticia Simulada" }
+    {
+      "id": "0b6f2a4c-1d3e-4f5a-8b7c-9d0e1f2a3b01",
+      "tipoDocumentoIdentidad": "DNI",
+      "numeroDocumento": "10000001",
+      "nombres": "Persona Uno",
+      "apellidos": "Ficticia Simulada"
+    },
+    {
+      "id": "0b6f2a4c-1d3e-4f5a-8b7c-9d0e1f2a3b02",
+      "tipoDocumentoIdentidad": "DNI",
+      "numeroDocumento": "10000002",
+      "nombres": "Persona Dos",
+      "apellidos": "Ficticia Simulada"
+    },
+    {
+      "id": "0b6f2a4c-1d3e-4f5a-8b7c-9d0e1f2a3b03",
+      "tipoDocumentoIdentidad": "DNI",
+      "numeroDocumento": "10000003",
+      "nombres": "Persona Tres",
+      "apellidos": "Ficticia Simulada"
+    },
+    {
+      "id": "0b6f2a4c-1d3e-4f5a-8b7c-9d0e1f2a3b04",
+      "tipoDocumentoIdentidad": "DNI",
+      "numeroDocumento": "10000004",
+      "nombres": "Persona Cuatro",
+      "apellidos": "Ficticia Simulada"
+    },
+    {
+      "id": "0b6f2a4c-1d3e-4f5a-8b7c-9d0e1f2a3b05",
+      "tipoDocumentoIdentidad": "DNI",
+      "numeroDocumento": "10000005",
+      "nombres": "Persona Cinco",
+      "apellidos": "Ficticia Simulada"
+    }
   ],
   "cuentas": [
-    { "titularDni": "10000002", "entidadBancariaId": "EBS-01", "identificador": "SIM-0000000002", "saldo": "500.00", "moneda": "PEN" },
-    { "titularDni": "10000003", "entidadBancariaId": "EBS-01", "identificador": "SIM-0000000003", "saldo": "500.00", "moneda": "PEN" },
-    { "titularDni": "10000004", "entidadBancariaId": "EBS-01", "identificador": "SIM-0000000004", "saldo": "500.00", "moneda": "PEN" },
-    { "titularDni": "10000005", "entidadBancariaId": "EBS-01", "identificador": "SIM-0000000005", "saldo": "500.00", "moneda": "PEN" }
+    {
+      "id": "7c3e9a15-2b4d-4e6f-a1c3-5d7f9b1e3a02",
+      "titularId": "0b6f2a4c-1d3e-4f5a-8b7c-9d0e1f2a3b02",
+      "entidadBancariaId": "4f1c2b7e-8d3a-4c6f-9b21-5e7a0c3d1f01",
+      "codigoCuenta": "SIM-0000000002",
+      "saldo": "500.00",
+      "moneda": "PEN"
+    },
+    {
+      "id": "7c3e9a15-2b4d-4e6f-a1c3-5d7f9b1e3a03",
+      "titularId": "0b6f2a4c-1d3e-4f5a-8b7c-9d0e1f2a3b03",
+      "entidadBancariaId": "4f1c2b7e-8d3a-4c6f-9b21-5e7a0c3d1f01",
+      "codigoCuenta": "SIM-0000000003",
+      "saldo": "500.00",
+      "moneda": "PEN"
+    },
+    {
+      "id": "7c3e9a15-2b4d-4e6f-a1c3-5d7f9b1e3a04",
+      "titularId": "0b6f2a4c-1d3e-4f5a-8b7c-9d0e1f2a3b04",
+      "entidadBancariaId": "4f1c2b7e-8d3a-4c6f-9b21-5e7a0c3d1f01",
+      "codigoCuenta": "SIM-0000000004",
+      "saldo": "500.00",
+      "moneda": "PEN"
+    },
+    {
+      "id": "7c3e9a15-2b4d-4e6f-a1c3-5d7f9b1e3a05",
+      "titularId": "0b6f2a4c-1d3e-4f5a-8b7c-9d0e1f2a3b05",
+      "entidadBancariaId": "4f1c2b7e-8d3a-4c6f-9b21-5e7a0c3d1f01",
+      "codigoCuenta": "SIM-0000000005",
+      "saldo": "500.00",
+      "moneda": "PEN"
+    }
   ]
 }

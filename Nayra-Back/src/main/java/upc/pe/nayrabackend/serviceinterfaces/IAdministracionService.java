@@ -14,8 +14,8 @@ import java.util.Optional;
  */
 public interface IAdministracionService {
 
-    /** HU-20 (listar) y HU-21 (buscar por DNI o por texto en nombres y apellidos). */
-    List<UsuarioResumen> buscarUsuarios(String adminId, String dni, String texto);
+    /** HU-20 (listar) y HU-21 (buscar por documento de identidad o por texto en nombres y apellidos). */
+    List<UsuarioResumen> buscarUsuarios(String adminId, String tipoDocumento, String numeroDocumento, String texto);
 
     /** HU-22 (información) y HU-101 (estado). */
     UsuarioDetalle detalleUsuario(String adminId, String usuarioId);

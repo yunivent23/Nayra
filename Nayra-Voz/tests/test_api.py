@@ -18,6 +18,7 @@ V = cargar_vocabulario()
 TOKEN = "token-de-prueba"
 CAB = {"Authorization": f"Bearer {TOKEN}"}
 DESAFIO = "llave, cuatro, siete, dos, mesa"
+U1 = "0f6c5a1e-1111-4a2b-8c3d-000000000001"
 WAV = a_wav(grabacion())
 
 
@@ -44,18 +45,18 @@ def test_exige_token_de_servicio():
 
 def test_sin_modelos_responde_503():
     c = TestClient(crear_app(None, token_servicio=TOKEN))
-    r = c.post("/prototipo/v1/verificaciones", data={"usuarioId": "u1", "desafio": DESAFIO}, files=archivo(), headers=CAB)
+    r = c.post("/prototipo/v1/verificaciones", data={"usuarioId": U1, "desafio": DESAFIO}, files=archivo(), headers=CAB)
     assert r.status_code == 503
 
 
 def test_flujo_enrolamiento_y_verificacion():
     c = cliente()
     for i in range(3):
-        r = c.post("/prototipo/v1/enrolamientos/u1/muestras", data={"desafio": DESAFIO}, files=archivo(), headers=CAB)
+        r = c.post("/prototipo/v1/enrolamientos/" + U1 + "/muestras", data={"desafio": DESAFIO}, files=archivo(), headers=CAB)
         assert r.status_code == 200 and r.json()["aprobado"] and r.json()["muestrasValidas"] == i + 1
-    fin = c.post("/prototipo/v1/enrolamientos/u1/finalizacion", headers=CAB).json()
+    fin = c.post("/prototipo/v1/enrolamientos/" + U1 + "/finalizacion", headers=CAB).json()
     assert fin == {"correcto": True, "motivo": None, "muestrasValidas": 3}
-    r = c.post("/prototipo/v1/verificaciones", data={"usuarioId": "u1", "desafio": DESAFIO}, files=archivo(), headers=CAB)
+    r = c.post("/prototipo/v1/verificaciones", data={"usuarioId": U1, "desafio": DESAFIO}, files=archivo(), headers=CAB)
     cuerpo = r.json()
     assert cuerpo["aprobado"] and [e["etapa"] for e in cuerpo["etapas"]][-1] == "VERIFICACION"
     assert "embedding" not in r.text.lower()
@@ -63,7 +64,7 @@ def test_flujo_enrolamiento_y_verificacion():
 
 def test_formato_invalido_no_llega_al_pipeline():
     c = cliente()
-    r = c.post("/prototipo/v1/verificaciones", data={"usuarioId": "u1", "desafio": DESAFIO},
+    r = c.post("/prototipo/v1/verificaciones", data={"usuarioId": U1, "desafio": DESAFIO},
                files=archivo(b"RIFF basura"), headers=CAB)
     assert r.json()["motivo"] == "FORMATO_INVALIDO"
 

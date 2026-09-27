@@ -28,6 +28,7 @@ public class ArranquePrototipoController {
 
     @PostMapping("/administrador")
     public RegistroIniciado administradorInicial(@RequestBody SolicitudInicioRegistro solicitud) {
-        return registro.iniciarAdministradorInicial(solicitud == null ? null : solicitud.dni());
+        return registro.iniciarAdministradorInicial(solicitud == null ? null : solicitud.tipoDocumentoIdentidad(),
+                solicitud == null ? null : solicitud.numeroDocumento());
     }
 }

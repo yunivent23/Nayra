@@ -37,9 +37,10 @@ public class AdministracionController {
     }
 
     @GetMapping("/usuarios")
-    public List<UsuarioResumen> usuarios(@RequestParam(name = "dni", required = false) String dni,
+    public List<UsuarioResumen> usuarios(@RequestParam(name = "tipoDocumento", required = false) String tipoDocumento,
+                                         @RequestParam(name = "numeroDocumento", required = false) String numeroDocumento,
                                          @RequestParam(name = "texto", required = false) String texto) {
-        return admin.buscarUsuarios(actor(), dni, texto);
+        return admin.buscarUsuarios(actor(), tipoDocumento, numeroDocumento, texto);
     }
 
     @GetMapping("/usuarios/{id}")
@@ -71,12 +72,13 @@ public class AdministracionController {
     }
 
     /**
-     * Registro asistido, pasos 3–5 (D-052): el representante proporciona el DNI.
+     * Registro asistido, pasos 3–5 (D-052): el representante proporciona el documento de identidad (DNI o CE).
      * PROVISIONAL: solo un ADMIN actúa como representante; D-052 admite también otra persona autorizada (pendiente).
      */
     @PostMapping("/registros")
     public RegistroIniciado iniciarRegistro(@RequestBody SolicitudInicioRegistro solicitud) {
-        return registro.iniciar(actor(), solicitud == null ? null : solicitud.dni());
+        return registro.iniciar(actor(), solicitud == null ? null : solicitud.tipoDocumentoIdentidad(),
+                solicitud == null ? null : solicitud.numeroDocumento());
     }
 
     /** Registro asistido, paso 6 (D-052): el representante valida la identidad. */

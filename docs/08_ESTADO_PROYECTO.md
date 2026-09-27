@@ -16,6 +16,14 @@ Este documento **no reemplaza** los requisitos, la arquitectura ni el registro d
 
 > **Regla principal:** el estado de implementación debe basarse en evidencia del repositorio y no en suposiciones.
 
+> **Actualización del 2026-09-27 (modelo de datos v4, sin commit, pendiente de revisión de Yuni):** migraciones Flyway
+> V005–V011 del esquema `nayra` (documento DNI/CE, estados ACTIVO/BLOQUEADO/INACTIVO, `credenciales`, `codigo_qr`
+> PROVISIONAL, solo ANDROID, `sesiones` con JWT `jti`, `operaciones`, `notificaciones`, permisos por servicio) y
+> V001–V003 del esquema `biometria` (`perfiles_voz`, historial propio, en `Nayra-Voz/migraciones/biometria`).
+> Persistencia del perfil de voz con psycopg. Implementado y probado contra PostgreSQL local; el extractor ECAPA real
+> no se ejecutó, así que el CHECK de 784 bytes de `embedding_cifrado` no se aplicó. G-1 sigue sin decidir. Detalle en
+> `/mnt/project-files/analisis/IMPLEMENTACION_MODELO_DATOS_V4_2026-09-27.md`.
+
 ---
 
 ## 2. Estado general
@@ -36,7 +44,7 @@ El short paper contempla hasta el Objetivo 2, incluyendo el diseño de la soluci
 | Contexto del proyecto | COMPLETADO |
 | Requisitos | DOCUMENTADO — depurado por AG-00 y actualizado por AG-01 (HU-117 a HU-125; alcance del primer entregable; D1–D6 pendientes) |
 | Arquitectura | EN DEFINICIÓN CONTROLADA — componentes y flujos lógicos del primer entregable documentados (AG-01) |
-| Base de datos | MODELO LÓGICO DOCUMENTADO — AG-00 y AG-01 (`03_BASE_DE_DATOS_NAYRA.md` §16); esquema físico y migraciones PENDIENTES (D-051) |
+| Base de datos | MODELO LÓGICO DOCUMENTADO — AG-00 y AG-01 (`03_BASE_DE_DATOS_NAYRA.md` §16); esquema físico de las 6 tablas del núcleo IMPLEMENTADO en el árbol de trabajo (2026-09-27, sin commit) con Flyway, esquema `nayra` (D-051, D-009; `03` §17); `biometria` y demás tablas PENDIENTES |
 | Biometría de voz | DISEÑO TÉCNICO APROBADO (AG-13, `05_BIOMETRIA_NAYRA.md` §27): modelo, anti-spoofing, reconocimiento del desafío, almacenamiento y comunicación decididos; **valores de umbral PENDIENTES DE VALIDACIÓN**; prototipo funcional EN DESARROLLO (2026-09-27, ver §3 y §5) |
 | Seguridad | PRINCIPIOS Y CONTROLES DOCUMENTADOS — controles AG-01 en `06_SEGURIDAD_NAYRA.md` §36 |
 | Decisiones técnicas | REGISTRADAS hasta D-061 (revisión del 2026-09-27; trazabilidad temática AG en `07_DECISIONES_TECNICAS_NAYRA.md`); siguen PENDIENTES, entre otras, D-014, D-016, D-018 (mecanismo), D-044 (detalle), D-045, D-046 (resto), D-047, D-055 (valores de umbral), D-060 |
@@ -68,10 +76,10 @@ Responsabilidad general:
 - auditoría;
 - comunicación con servicios especializados cuando corresponda.
 
-**Estado de implementación (verificado en el árbol de trabajo el 2026-09-27, sin commit):** BACKEND GENERAL EN DESARROLLO, con persistencia en memoria.
+**Estado de implementación (verificado en el árbol de trabajo el 2026-09-27, sin commit):** BACKEND GENERAL EN DESARROLLO, con persistencia en PostgreSQL para las 6 tablas del núcleo (sesiones siguen en memoria, D-018).
 
-- **Retirado** por inseguro o no aprobado (`06` §36.7): CRUD de `Users`/`Role` con contraseña en texto plano y rol elegido por el cliente, `GET /usuarios` público, JWT (D-018), CORS abierto y reglas heredadas (`/bicicletas`, `/alquileres`), `ddl-auto=update` (ahora `none`, D-051). Las credenciales existentes **no** se tocaron (D-017).
-- **Dominio según `03` §16**: `Usuario` (estado ACTIVA/BLOQUEADA, rol USER o ADMIN), `Dispositivos`, `Sesiones`, `Auditoria` (actor, usuario afectado, acción, resultado, motivo, dispositivo), `Cuentas`, `EntidadBancaria` y `RegistroIdentidadSimulado`. Sin mapeo JPA: los servicios usan puertos de repositorio con adaptadores **en memoria** hasta decidir D-051. Datos **ficticios** del entorno simulado en `entorno-simulado/datos-ficticios.json`.
+- **Retirado** por inseguro o no aprobado (`06` §36.7): CRUD de `Users`/`Role` con contraseña en texto plano y rol elegido por el cliente, `GET /usuarios` público, JWT (D-018), CORS abierto y reglas heredadas (`/bicicletas`, `/alquileres`), `ddl-auto=update` (ahora `validate` con migraciones Flyway, D-051). Las credenciales existentes **no** se tocaron (D-017).
+- **Dominio según `03` §16**: `Usuario` (estado ACTIVA/BLOQUEADA, rol USER o ADMIN), `Dispositivos`, `Sesiones`, `Auditoria` (actor, usuario afectado, acción, resultado, motivo, dispositivo), `Cuentas`, `EntidadBancaria` y `RegistroIdentidadSimulado`. Mapeo JPA sobre el esquema `nayra` (`03` §17) con adaptadores PostgreSQL detrás de los mismos puertos de repositorio; los adaptadores en memoria quedan solo para pruebas unitarias. `Sesiones` sigue en memoria (PROVISIONAL, D-018). Datos **ficticios** del entorno simulado en `entorno-simulado/datos-ficticios.json`.
 - **Registro inicial asistido (flujo de D-052)**: el representante proporciona el DNI y valida la identidad; la persona confirma sus datos, registra su celular, crea su PIN (solo hash), vincula la clave del dispositivo, enrola su voz (AG-13) y finaliza. Se vincula la cuenta financiera simulada por DNI. DNI ya registrado → rechazo auditado. **Provisional del prototipo** (no son decisiones de D-052): solo un ADMIN actúa como representante; el paso al celular de la persona usa un código de un solo uso (900 s); si la persona no confirma sus datos, el registro se cancela; formatos de DNI y celular.
 - **Sesión**: se crea al autenticar por voz. Cierre tras 5 minutos de inactividad controlado en el servidor (aprobado, D-018), cierre de sesión (HU-13) y revocación al bloquear la cuenta o revocar el dispositivo (D-040). Token opaco aleatorio en `Authorization: Bearer`, del que solo se guarda el hash, sin duración máxima absoluta ni renovación: mecanismo **provisional** del prototipo; D-018 sigue parcial.
 - **Autorización** (roles USER y ADMIN de D-041; mecanismo **provisional** mientras D-009 siga pendiente): `/api/v1/admin/**` solo ADMIN, `/api/v1/**` con sesión, `/prototipo/**` por la excepción del primer entregable, todo lo demás denegado; respuestas 401/403 en JSON.
@@ -87,7 +95,7 @@ Responsabilidad general:
 - Implementado: nonce y firma ECDSA P-256 del dispositivo (D-048), PIN de 6 dígitos con hash y PIN dictado (D-061), desafío palabra + 3 dígitos + palabra con `SecureRandom` y un solo uso (D-054), cliente del servicio de voz (D-010), decisión final, intentos, bloqueo y auditoría (D-056), creación de la sesión al autenticar.
 - AG-13 usa el usuario, el dispositivo, la sesión y la auditoría generales; el backend general no depende de AG-13. Java no accede a embeddings (D-013).
 - Provisional: política de intentos propuesta en D-044, hash del PIN con BCrypt sin pepper (D-047; no cumple el pepper que exige D-061), rutas `/prototipo/...` (D-014), el ADMIN se autentica con el mismo flujo del usuario (D-050 pendiente) y el primer ADMIN se crea con una ruta de arranque del perfil `prototipo`, separada de D-052 y sin validación por representante.
-- Pruebas Java: 52 OK y 1 omitida (contrato, necesita el servicio Python en ejecución; ejecutada aparte: OK).
+- Pruebas Java: 68 ejecutadas, 0 fallos y 1 omitida (contrato, necesita el servicio Python en ejecución). 19 de ellas necesitan PostgreSQL y solo corren con `NAYRA_TEST_DB_URL` definida.
 
 ---
 
@@ -103,7 +111,7 @@ Responsabilidad:
 - biometría de voz;
 - mecanismos de detección de intentos de suplantación, cuando hayan sido implementados.
 
-**Estado (verificado el 2026-09-27):** PROTOTIPO EN DESARROLLO en `Nayra-Voz/` (FastAPI): audio, calidad con WebRTC VAD (candidata provisional), Vosk, AASIST, ECAPA-TDNN, cifrado AES-256-GCM del embedding, enrolamiento con centroide y transcripción del PIN dictado. 40 pruebas OK con modelos simulados y WebRTC VAD real; AASIST cargado y ejecutado con sus pesos publicados. ECAPA-TDNN y Vosk **no se ejecutaron** porque sus modelos no pudieron descargarse en el entorno de desarrollo. Referencias en memoria (D-051) y parámetros PROVISIONALES.
+**Estado (verificado el 2026-09-27):** PROTOTIPO EN DESARROLLO en `Nayra-Voz/` (FastAPI): audio, calidad con WebRTC VAD (candidata provisional), Vosk, AASIST, ECAPA-TDNN, cifrado AES-256-GCM del embedding, enrolamiento con centroide y transcripción del PIN dictado. 40 pruebas OK con modelos simulados y WebRTC VAD real; AASIST cargado y ejecutado con sus pesos publicados. ECAPA-TDNN y Vosk **no se ejecutaron** porque sus modelos no pudieron descargarse en el entorno de desarrollo. Referencias en memoria (estructura física de `biometria.perfiles_voz` pendiente) y parámetros PROVISIONALES.
 
 Antes (2026-09-26): no existía código Python en el repositorio.
 
@@ -157,9 +165,9 @@ El detalle oficial del modelo se encuentra en:
 ### Estado
 
 **Modelo documentado:** SÍ.  
-**Implementación física:** NO EXISTE (verificado el 2026-09-27). `ddl-auto=none`: no se crean tablas hasta decidir D-051. El modelo lógico de `03` §16 (incluidas las decisiones de AG-00, D-024 a D-033) está implementado como objetos de dominio con repositorios **en memoria**; el adaptador PostgreSQL se conectará a los mismos puertos. La aplicación sigue configurada con PostgreSQL y arranca con él, pero no lo usa.
+**Implementación física:** 6 tablas del núcleo en el esquema `nayra` (2026-09-27, sin commit): `entidades_bancarias`, `registro_identidad_simulado`, `usuarios`, `cuentas`, `dispositivos` y `auditoria`, creadas por migraciones Flyway V001–V004 con `ddl-auto=validate` (D-051, D-009; detalle en `03` §17). Sesiones, operaciones, solicitudes de atención, notificaciones y `biometria.perfiles_voz` siguen sin tabla física.
 
-No deben agregarse tablas biométricas como `VOICE_BIOMETRICS`, `VOICE_EMBEDDINGS` o `ANTI_SPOOFING` sin una decisión explícita. _(AG-13: la única estructura biométrica aprobada es `biometria.PERFILES_VOZ`, D-013, `03_BASE_DE_DATOS_NAYRA.md` §16.11; su tabla física depende de D-051.)_
+No deben agregarse tablas biométricas como `VOICE_BIOMETRICS`, `VOICE_EMBEDDINGS` o `ANTI_SPOOFING` sin una decisión explícita. _(AG-13: la única estructura biométrica aprobada es `biometria.PERFILES_VOZ`, D-013, `03_BASE_DE_DATOS_NAYRA.md` §16.11; el esquema y su historial de migraciones propio están decididos (D-051), pero su estructura física sigue pendiente.)_
 
 ---
 
@@ -284,13 +292,13 @@ Definiciones aprobadas en AG-00 (ver `07_DECISIONES_TECNICAS_NAYRA.md`, D-024 a 
 
 La lista de funcionalidades implementadas debe mantenerse sincronizada con el repositorio.
 
-**Estado actual (verificado 2026-09-27, sin commit):** ninguna funcionalidad se considera terminada: todas dependen de persistencia en memoria (D-051) y de piezas provisionales. Ver «En desarrollo».
+**Estado actual (verificado 2026-09-27, sin commit):** ninguna funcionalidad se considera terminada: todas dependen de piezas provisionales (sesiones en memoria, D-018; biometría en memoria). Ver «En desarrollo».
 
 ### En desarrollo
 
 Deben registrarse aquí las funcionalidades que tengan código parcial pero que todavía no estén completas.
 
-**Estado actual (2026-09-27, sin commit):** de extremo a extremo entre `Nayra-App/`, `Nayra-Back/` (perfil `prototipo`) y `Nayra-Voz/`, con persistencia en memoria y parámetros provisionales:
+**Estado actual (2026-09-27, sin commit):** de extremo a extremo entre `Nayra-App/`, `Nayra-Back/` (perfil `prototipo`) y `Nayra-Voz/`, con el núcleo persistido en PostgreSQL (sesiones y biometría en memoria) y parámetros provisionales:
 
 - registro inicial asistido con enrolamiento de voz (D-052; sin tutorial);
 - inicio de sesión por dispositivo, PIN (tecleado o dictado), desafío y voz, con sesión y cierre por inactividad;
@@ -301,7 +309,7 @@ Deben registrarse aquí las funcionalidades que tengan código parcial pero que 
 
 Deben registrarse las funcionalidades que todavía no tengan una implementación funcional.
 
-**Estado actual:** cambio de dispositivo y recuperación (D-049), solicitudes de atención y pérdida del celular (estados sin definir), actualización de datos (HU-10), saldo, movimientos y transferencias, tutorial, panel web del administrador (D-045) y persistencia en PostgreSQL (D-051). El QR queda para un siguiente entregable.
+**Estado actual:** cambio de dispositivo y recuperación (D-049), solicitudes de atención y pérdida del celular (estados sin definir), actualización de datos (HU-10), saldo, movimientos y transferencias, tutorial, panel web del administrador (D-045) y persistencia en PostgreSQL de sesiones, operaciones y biometría. El QR queda para un siguiente entregable.
 
 > No convertir automáticamente una historia de usuario en una funcionalidad implementada.
 
@@ -320,7 +328,7 @@ Las pruebas deben registrar como mínimo:
 
 ### Estado actual
 
-**Pruebas automatizadas (2026-09-27):** 52 pruebas Java OK y 1 omitida (contrato con el servicio real, ejecutada aparte: OK), 40 pruebas Python y 9 pruebas Flutter OK. `contextLoads` ya no necesita PostgreSQL: excluye la autoconfiguración JPA porque no hay tablas (D-051). Los modelos ECAPA-TDNN y Vosk se sustituyen por dobles de prueba.
+**Pruebas automatizadas (2026-09-27):** 68 pruebas Java ejecutadas con 0 fallos y 1 omitida (contrato con el servicio real), 40 pruebas Python y 9 pruebas Flutter OK. `contextLoads`, `ApiHttpTest` y `PersistenciaPostgresTest` necesitan PostgreSQL: corren solo con `NAYRA_TEST_DB_URL` y reconstruyen el esquema con Flyway (clean + migrate). Los modelos ECAPA-TDNN y Vosk se sustituyen por dobles de prueba.
 
 **Pruebas de integración:** prueba de contrato Java ↔ Python y recorrido HTTP completo contra los servicios en ejecución (Spring Boot con PostgreSQL local encendido y FastAPI con modelos simulados): arranque del administrador, registro asistido, enrolamiento, inicio de sesión, autorización USER/ADMIN, bloqueo, desbloqueo, revocación del dispositivo, cierre de sesión y auditoría. 42 de 42 comprobaciones OK el 2026-09-27.
 
@@ -342,10 +350,10 @@ Formato recomendado:
 | P-003 | `GET /usuarios` era público y exponía datos personales y el campo contraseña | Seguridad crítica | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): ruta retirada; la consulta de usuarios exige ADMIN | — |
 | P-004 | Mecanismo JWT implementado sin aprobación (D-018 pendiente) | Alto | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): JWT retirado; sesión con token opaco **provisional** hasta decidir D-018 | — |
 | P-005 | Código heredado ajeno a Nayra (reglas `/bicicletas`, `/alquileres`, comentarios de plantilla) y CORS abierto | Medio | RESUELTO en el árbol de trabajo (2026-09-27, sin commit) | — |
-| P-006 | `ddl-auto=update` creaba el esquema sin estrategia de migraciones (D-051) | Alto | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): `ddl-auto=none` | — |
+| P-006 | `ddl-auto=update` creaba el esquema sin estrategia de migraciones (D-051) | Alto | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): Flyway y `ddl-auto=validate` (D-051) | — |
 | P-007 | Posible incompatibilidad de versiones en `pom.xml` (Spring Boot 4.1.1 con `spring-boot-starter-security` 3.5.5) | Alto | 2026-09-27: la versión fija de seguridad se retiró (la gestiona Spring Boot); compila y arranca con JDK 21 (`-Djava.version=21`); el `pom.xml` pide Java 25 | — |
 | P-009 | La aplicación no arrancaba sin la propiedad `jwt.secret` | Medio | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): al retirar JWT ya no se necesita | — |
-| P-008 | Modelo `Users` no correspondía al aprobado | Medio | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): `Usuario` según `03` §16.1, sin mapeo físico (D-051) | — |
+| P-008 | Modelo `Users` no correspondía al aprobado | Medio | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): `Usuario` según `03` §16.1, mapeado a `nayra.usuarios` (`03` §17.3) | — |
 
 No inventar problemas si no existe evidencia.
 

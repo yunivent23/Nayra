@@ -5,6 +5,8 @@ python-multipart
 numpy
 pyyaml
 cryptography
+# Persistencia de biometria.perfiles_voz (D-013, modelo de datos v4 §2.12)
+psycopg[binary]
 # Calidad de audio: WebRTC VAD — PROVISIONAL, candidato inicial pendiente de prueba técnica (D-058)
 webrtcvad-wheels
 # Contenido del desafío (D-046)

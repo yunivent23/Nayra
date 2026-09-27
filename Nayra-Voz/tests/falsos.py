@@ -28,6 +28,7 @@ class ExtractorFalso:
     """Devuelve embeddings de una cola, o uno fijo."""
 
     nombre_modelo = "speechbrain/spkrec-ecapa-voxceleb"
+    version_modelo = "falso-1"
 
     def __init__(self, embeddings: list[np.ndarray]):
         self.embeddings = list(embeddings)

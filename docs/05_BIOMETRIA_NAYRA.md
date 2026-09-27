@@ -655,5 +655,5 @@ Implementación del flujo de §27.4 y §27.5 para el primer entregable, con las 
 
 - **Servicio de voz:** `Nayra-Voz/` (FastAPI). Calidad con WebRTC VAD (candidata provisional, D-058) → Vosk con gramática cerrada → AASIST → ECAPA-TDNN con coseno 1:1. Parámetros en `Nayra-Voz/config/parametros_provisionales.yaml`, todos PROVISIONALES — PENDIENTES DE VALIDACIÓN.
 - **PIN dictado** (D-061): transcripción con Vosk restringido a dígitos (candidata provisional, D-046). El audio no entra al pipeline biométrico y no se guarda ni se registra.
-- **Provisionales por dependencias externas:** referencias biométricas cifradas en memoria en lugar del esquema `biometria` (D-051); clave de cifrado y token de servicio leídos de variables de entorno (D-017); contrato bajo `/prototipo/v1` (D-014).
+- **Provisionales por dependencias externas:** referencias biométricas cifradas en memoria en lugar del esquema `biometria` (estructura física de `biometria.perfiles_voz` pendiente; el esquema separado está decidido en D-051); clave de cifrado y token de servicio leídos de variables de entorno (D-017); contrato bajo `/prototipo/v1` (D-014).
 - **Sin resultados biométricos:** el prototipo no produce ni reporta FAR, FRR ni EER (§27.8).

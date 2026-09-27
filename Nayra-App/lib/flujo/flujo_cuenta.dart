@@ -29,7 +29,7 @@ class FlujoCuenta extends ChangeNotifier {
       final d = datos!;
       _ir(PasoCuenta.datos, 'Nombre: ${d.nombres} ${d.apellidos}. '
           '${d.celular == null ? '' : 'Celular: ${d.celular}. '}'
-          'Estado de la cuenta: ${d.estado == 'ACTIVA' ? 'activa' : 'bloqueada'}.');
+          'Estado de la cuenta: ${d.estado == 'ACTIVO' ? 'activa' : 'bloqueada'}.');
     } on ErrorApi catch (e) {
       datos = null;
       _ir(PasoCuenta.cerrada, e.estadoHttp == 401

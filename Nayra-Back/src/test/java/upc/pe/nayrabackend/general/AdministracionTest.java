@@ -29,20 +29,22 @@ class AdministracionTest {
 
     @Test
     void listaYBuscaUsuarios() {
-        assertEquals(3, s.admin.buscarUsuarios(admin.usuarioId(), null, null).size());
+        assertEquals(3, s.admin.buscarUsuarios(admin.usuarioId(), null, null, null).size());
         assertEquals(List.of(usuario.usuarioId()),
-                s.admin.buscarUsuarios(admin.usuarioId(), Soporte.DNI_USUARIO, null).stream().map(u -> u.id()).toList());
+                s.admin.buscarUsuarios(admin.usuarioId(), "DNI", Soporte.DNI_USUARIO, null).stream().map(u -> u.id()).toList());
         String nombres = s.usuarios.obtener(usuario.usuarioId()).getNombres();
-        assertTrue(s.admin.buscarUsuarios(admin.usuarioId(), null, nombres.toUpperCase()).stream()
+        assertTrue(s.admin.buscarUsuarios(admin.usuarioId(), null, null, nombres.toUpperCase()).stream()
                 .anyMatch(u -> u.id().equals(usuario.usuarioId())));
     }
 
     @Test
     void detalleNoExponeElHashDelPin() {
         var d = s.admin.detalleUsuario(admin.usuarioId(), usuario.usuarioId());
-        assertEquals("ACTIVA", d.estado());
+        assertEquals("ACTIVO", d.estado());
+        assertEquals("DNI", d.tipoDocumentoIdentidad());
+        assertEquals(Soporte.DNI_USUARIO, d.numeroDocumento());
         assertEquals(usuario.dispositivoId(), d.dispositivoActivo().id());
-        String hash = s.usuarios.obtener(usuario.usuarioId()).getPinHash();
+        String hash = s.credencialesRepo.deUsuario(usuario.usuarioId()).orElseThrow().getPinHash();
         assertFalse(String.valueOf(d).contains(hash));
         assertEquals("USUARIO_NO_ENCONTRADO",
                 assertThrows(NayraException.class, () -> s.admin.detalleUsuario(admin.usuarioId(), "x")).getCodigo());
@@ -51,11 +53,11 @@ class AdministracionTest {
     @Test
     void bloqueaYDesbloquea() {
         s.admin.bloquearUsuario(admin.usuarioId(), usuario.usuarioId());
-        assertEquals(Usuario.Estado.BLOQUEADA, s.usuarios.obtener(usuario.usuarioId()).getEstado());
+        assertEquals(Usuario.Estado.BLOQUEADO, s.usuarios.obtener(usuario.usuarioId()).getEstado());
         assertEquals("CUENTA_YA_BLOQUEADA", assertThrows(NayraException.class,
                 () -> s.admin.bloquearUsuario(admin.usuarioId(), usuario.usuarioId())).getCodigo());
         s.admin.desbloquearUsuario(admin.usuarioId(), usuario.usuarioId());
-        assertEquals(Usuario.Estado.ACTIVA, s.usuarios.obtener(usuario.usuarioId()).getEstado());
+        assertEquals(Usuario.Estado.ACTIVO, s.usuarios.obtener(usuario.usuarioId()).getEstado());
         assertEquals("CUENTA_NO_BLOQUEADA", assertThrows(NayraException.class,
                 () -> s.admin.desbloquearUsuario(admin.usuarioId(), usuario.usuarioId())).getCodigo());
     }
@@ -101,8 +103,8 @@ class AdministracionTest {
     }
 
     @Test
-    void laBusquedaNoGuardaElDniEnLaAuditoria() {
-        s.admin.buscarUsuarios(admin.usuarioId(), Soporte.DNI_USUARIO, null);
+    void laBusquedaNoGuardaElDocumentoEnLaAuditoria() {
+        s.admin.buscarUsuarios(admin.usuarioId(), "DNI", Soporte.DNI_USUARIO, null);
         assertTrue(s.auditoriaRepo.todos().stream().noneMatch(e -> String.valueOf(e).contains(Soporte.DNI_USUARIO)));
     }
 }

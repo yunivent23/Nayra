@@ -47,13 +47,13 @@ public class WebSecurityConfig {
         return new InMemoryUserDetailsManager();
     }
 
-    /** Botón "Authorize" de Swagger con el token de sesión (formato opaco PROVISIONAL, D-018; no JWT). */
+    /** Botón "Authorize" de Swagger con el JWT de sesión (v4 §4.1; algoritmo y clave PROVISIONALES, P-5). */
     @Bean
     public OpenAPI customOpenAPI() {
         final String esquema = "bearerAuth";
         return new OpenAPI()
                 .components(new Components().addSecuritySchemes(esquema,
-                        new SecurityScheme().name(esquema).type(SecurityScheme.Type.HTTP).scheme("bearer")))
+                        new SecurityScheme().name(esquema).type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))
                 .addSecurityItem(new SecurityRequirement().addList(esquema));
     }
 

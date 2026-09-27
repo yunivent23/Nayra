@@ -10,7 +10,7 @@ import logging
 import os
 from pathlib import Path
 
-from .almacen import AlmacenPerfilesEnMemoria, CifradorEmbeddings, clave_desde_entorno
+from .almacen import AlmacenPerfilesEnMemoria, almacen_desde_entorno, cifrador_desde_entorno
 from .antispoofing import DetectorAasist, EvaluadorSpoofing
 from .api import Componentes, crear_app
 from .calidad import EvaluadorCalidad
@@ -26,6 +26,9 @@ RAIZ_MODELOS = Path(os.environ.get("NAYRA_VOZ_MODELOS", Path(__file__).resolve()
 
 def construir_componentes() -> Componentes:
     parametros = cargar_parametros()
+    almacen = almacen_desde_entorno()
+    if isinstance(almacen, AlmacenPerfilesEnMemoria):
+        log.warning("NAYRA_VOZ_BD no está definida: perfiles en memoria (solo desarrollo; se pierden al reiniciar).")
     vocabulario = cargar_vocabulario()
     reconocedor = ReconocedorVosk(str(RAIZ_MODELOS / parametros.contenido.modelo))
     pipeline = Pipeline(
@@ -37,8 +40,8 @@ def construir_componentes() -> Componentes:
             parametros.antispoofing,
         ),
         extractor=ExtractorEcapa(str(RAIZ_MODELOS / "spkrec-ecapa-voxceleb")),
-        almacen=AlmacenPerfilesEnMemoria(),
-        cifrador=CifradorEmbeddings(clave_desde_entorno()),
+        almacen=almacen,
+        cifrador=cifrador_desde_entorno(),
     )
     return Componentes(parametros, pipeline, TranscriptorPin(reconocedor, vocabulario, parametros.contenido))
 

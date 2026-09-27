@@ -18,6 +18,6 @@ public interface IUsuarioService {
      */
     void bloquear(String usuarioId, String actorId, String motivo);
 
-    /** Desbloqueo por el administrador (HU-19); reinicia los intentos. */
+    /** Desbloqueo por el administrador (HU-19); reinicia los intentos de PIN (PROVISIONAL, P-11). */
     void desbloquear(String usuarioId, String actorId);
 }

@@ -16,6 +16,9 @@ public interface IDispositivoService {
     /** Revoca el dispositivo activo del usuario, si existe (D-040, HU-125). */
     void revocarActivo(String usuarioId);
 
+    /** Si existe un dispositivo con ese identificador (activo o revocado). */
+    boolean existe(String dispositivoId);
+
     /** Nonce aleatorio de un solo uso y vida corta para el dispositivo (D-048). */
     String emitirNonce(String dispositivoId);
 

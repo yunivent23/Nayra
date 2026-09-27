@@ -20,11 +20,11 @@ public interface IAuditoriaService {
                    String dispositivoId);
 
     default void exito(String accion, String actorId, String usuarioAfectadoId) {
-        registrar(accion, Resultado.EXITO, actorId, usuarioAfectadoId, null, null);
+        registrar(accion, Resultado.EXITOSO, actorId, usuarioAfectadoId, null, null);
     }
 
     default void fallo(String accion, String actorId, String usuarioAfectadoId, String motivo) {
-        registrar(accion, Resultado.FALLO, actorId, usuarioAfectadoId, motivo, null);
+        registrar(accion, Resultado.FALLIDO, actorId, usuarioAfectadoId, motivo, null);
     }
 
     List<Auditoria> consultar(Filtro filtro);

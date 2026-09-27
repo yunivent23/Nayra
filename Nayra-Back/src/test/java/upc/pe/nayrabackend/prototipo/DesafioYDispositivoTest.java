@@ -18,6 +18,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DesafioYDispositivoTest {
 
+    /** Los identificadores de usuario son UUID (D-051). */
+    private static final String USUARIO = "3d7a1f52-6b0e-4c9a-8e21-4f6b2d9c0a11";
+
     private static final Set<String> DIGITOS = Set.of(
             "cero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve");
 
@@ -58,10 +61,10 @@ class DesafioYDispositivoTest {
     void firmaCorrectaDevuelveCuentaYNonceNoSeReutiliza() throws Exception {
         Soporte s = new Soporte();
         KeyPair par = Soporte.claveP256();
-        String disp = s.dispositivos.vincular("c1", par.getPublic()).getId();
+        String disp = s.dispositivos.vincular(USUARIO, par.getPublic()).getId();
         String nonce = s.dispositivos.emitirNonce(disp);
         String firma = Soporte.firmar(par, nonce, disp, "INICIO_SESION");
-        assertEquals("c1", s.dispositivos.verificarFirma(disp, nonce, firma, "INICIO_SESION"));
+        assertEquals(USUARIO, s.dispositivos.verificarFirma(disp, nonce, firma, "INICIO_SESION"));
         assertThrows(SecurityException.class, () -> s.dispositivos.verificarFirma(disp, nonce, firma, "INICIO_SESION"));
     }
 
@@ -70,7 +73,7 @@ class DesafioYDispositivoTest {
         Soporte s = new Soporte();
         KeyPair par = Soporte.claveP256();
         KeyPair otra = Soporte.claveP256();
-        String disp = s.dispositivos.vincular("c1", par.getPublic()).getId();
+        String disp = s.dispositivos.vincular(USUARIO, par.getPublic()).getId();
 
         String n1 = s.dispositivos.emitirNonce(disp);
         String f1 = Soporte.firmar(otra, n1, disp, "INICIO_SESION");
@@ -89,8 +92,8 @@ class DesafioYDispositivoTest {
     @Test
     void vincularOtroDispositivoRevocaElAnterior() throws Exception {
         Soporte s = new Soporte();
-        String viejo = s.dispositivos.vincular("c1", Soporte.claveP256().getPublic()).getId();
-        s.dispositivos.vincular("c1", Soporte.claveP256().getPublic());
+        String viejo = s.dispositivos.vincular(USUARIO, Soporte.claveP256().getPublic()).getId();
+        s.dispositivos.vincular(USUARIO, Soporte.claveP256().getPublic());
         assertThrows(SecurityException.class, () -> s.dispositivos.emitirNonce(viejo));
     }
 

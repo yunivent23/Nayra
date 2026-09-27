@@ -68,9 +68,10 @@ public class EnrolamientoVozServiceImplement implements IEnrolamientoVozService 
             IServicioVozCliente.ResultadoEnrolamiento r = servicioVoz.finalizarEnrolamiento(usuarioId);
             if (r.correcto()) {
                 registro.marcarVozEnrolada(codigoRegistro);
-                auditoria.exito("ENROLAMIENTO_VOZ_CORRECTO", null, usuarioId);
+                // Sin usuario afectado: la cuenta aún no existe (FK de D-051; auditoría del registro pendiente, D-052).
+                auditoria.exito("ENROLAMIENTO_VOZ_CORRECTO", null, null);
             } else {
-                auditoria.fallo("ENROLAMIENTO_VOZ_FALLIDO", null, usuarioId, r.motivo());
+                auditoria.fallo("ENROLAMIENTO_VOZ_FALLIDO", null, null, r.motivo());
             }
             return new ResultadoEnrolamiento(r.correcto(), r.motivo(), r.muestrasValidas());
         } catch (ServicioVozNoDisponibleException e) {

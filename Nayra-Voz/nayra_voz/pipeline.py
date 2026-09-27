@@ -71,13 +71,14 @@ class Pipeline:
 
     def verificar(self, usuario_id: str, audio: Audio, desafio: str) -> ResultadoPipeline:
         perfil = self._almacen.obtener(usuario_id)
-        if perfil is None:
+        if perfil is None or not perfil.activo:
+            # Sin perfil o con el perfil revocado (B-8, B-13): hace falta volver a enrolar.
             return self._resultado([], Motivo.SIN_REFERENCIA)
         etapas, motivo = self._etapas_comunes(audio, desafio)
         if motivo:
             return self._resultado(etapas, motivo)
-        if perfil.modelo != self._extractor.nombre_modelo:
-            # Un cambio de modelo invalida la referencia y exige re-enrolar (D-013).
+        if perfil.modelo != self._extractor.nombre_modelo or perfil.version_modelo != self._extractor.version_modelo:
+            # Solo se compara contra un perfil del mismo modelo y versión (B-9); si no, hay que re-enrolar (D-013).
             return self._resultado(etapas, Motivo.SIN_REFERENCIA)
         referencia = self._cifrador.descifrar(perfil)
         similitud = similitud_coseno(self._extractor.extraer(audio.muestras), referencia)
@@ -108,7 +109,10 @@ class Pipeline:
         return self._resultado(etapas, motivo), len(pendiente.embeddings)
 
     def finalizar_enrolamiento(self, usuario_id: str) -> tuple[bool, str | None, int]:
-        """Descarta muestras atípicas, calcula el centroide y guarda solo el embedding cifrado."""
+        """Descarta muestras atípicas, calcula el centroide y guarda solo el embedding cifrado.
+
+        El perfil se guarda solo si el enrolamiento terminó bien; si ya había uno, se reemplaza (B-13).
+        """
         with self._candado:
             pendiente = self._pendientes.get(usuario_id)
         if pendiente is None:
@@ -116,7 +120,8 @@ class Pipeline:
         validas = descartar_atipicas(pendiente.embeddings, self._p.enrolamiento.similitud_minima_al_resto)
         if len(validas) < self._p.enrolamiento.muestras_validas:
             return False, "MUESTRAS_INSUFICIENTES", len(validas)
-        perfil = self._cifrador.cifrar(usuario_id, centroide(validas), self._extractor.nombre_modelo, self._p.version)
+        perfil = self._cifrador.cifrar(usuario_id, centroide(validas), self._extractor.nombre_modelo,
+                                       self._extractor.version_modelo, len(validas))
         self._almacen.guardar(perfil)
         with self._candado:
             self._pendientes.pop(usuario_id, None)

@@ -15,7 +15,7 @@ import upc.pe.nayrabackend.serviceinterfaces.IDesafioService;
 import upc.pe.nayrabackend.serviceinterfaces.IDesafioService.Contexto;
 import upc.pe.nayrabackend.serviceinterfaces.IDesafioService.Desafio;
 import upc.pe.nayrabackend.serviceinterfaces.IDispositivoService;
-import upc.pe.nayrabackend.serviceinterfaces.IPinService;
+import upc.pe.nayrabackend.serviceinterfaces.ICredencialesService;
 import upc.pe.nayrabackend.serviceinterfaces.IServicioVozCliente;
 import upc.pe.nayrabackend.serviceinterfaces.IServicioVozCliente.ResultadoTecnico;
 import upc.pe.nayrabackend.serviceinterfaces.IServicioVozCliente.ServicioVozNoDisponibleException;
@@ -33,8 +33,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * PROVISIONAL:
  * - Transacciones en memoria (D-051) con vida PROVISIONAL — PENDIENTE DE VALIDACIÓN.
- * - Qué cuenta como intento: {@link PoliticaIntentosProvisional} (detalle de D-044 pendiente).
- * - Al autenticar se crea la sesión con {@link ISesionesService}, cuyo mecanismo es PROVISIONAL (D-018).
+ * - Qué cuenta como intento: {@link PoliticaIntentosProvisional}. Solo el PIN incorrecto (v4 §2.2); el contador vive
+ *   en nayra.credenciales ({@link ICredencialesService}) y vuelve a 0 tras un PIN correcto. Límite propio de la
+ *   biometría: P-8, PENDIENTE NO BLOQUEANTE (sin contador).
+ * - Al autenticar se crea la sesión con {@link ISesionesService} (JWT con jti; algoritmo y clave PROVISIONALES, P-5).
  * - El ADMIN usa este mismo flujo (dispositivo + PIN + voz) solo para el prototipo; D-050 sigue pendiente.
  *
  * Usa la cuenta de acceso, el dispositivo y la sesión del backend general; el backend general no depende de AG-13.
@@ -62,7 +64,7 @@ public class AutenticacionVozServiceImplement implements IAutenticacionVozServic
     }
 
     private final IDispositivoService dispositivos;
-    private final IPinService pines;
+    private final ICredencialesService credenciales;
     private final IDesafioService desafios;
     private final IServicioVozCliente servicioVoz;
     private final IAuditoriaService auditoria;
@@ -74,13 +76,13 @@ public class AutenticacionVozServiceImplement implements IAutenticacionVozServic
     private final Clock reloj;
     private final Map<String, Transaccion> transacciones = new ConcurrentHashMap<>();
 
-    public AutenticacionVozServiceImplement(IDispositivoService dispositivos, IPinService pines, IDesafioService desafios,
+    public AutenticacionVozServiceImplement(IDispositivoService dispositivos, ICredencialesService credenciales, IDesafioService desafios,
                                             IServicioVozCliente servicioVoz, IAuditoriaService auditoria,
                                             PoliticaIntentosProvisional politica, IUsuariosRepository usuarios,
                                             IUsuarioService usuarioService, ISesionesService sesiones,
                                             VozProperties props, Clock reloj) {
         this.dispositivos = dispositivos;
-        this.pines = pines;
+        this.credenciales = credenciales;
         this.desafios = desafios;
         this.servicioVoz = servicioVoz;
         this.auditoria = auditoria;
@@ -103,14 +105,17 @@ public class AutenticacionVozServiceImplement implements IAutenticacionVozServic
         try {
             cuentaId = dispositivos.verificarFirma(dispositivoId, nonce, firma, PROPOSITO_INICIO_SESION);
         } catch (SecurityException e) {
-            auditoria.registrar("AUTENTICACION_DISPOSITIVO_RECHAZADO", Resultado.FALLO, null, null, "FIRMA_O_NONCE_INVALIDO",
-                    dispositivoId);
+            // La FK de auditoria.dispositivo_id solo admite dispositivos existentes (D-051): un identificador
+            // desconocido se audita sin dispositivo.
+            auditoria.registrar("AUTENTICACION_DISPOSITIVO_RECHAZADO", Resultado.FALLIDO, null, null, "FIRMA_O_NONCE_INVALIDO",
+                    dispositivos.existe(dispositivoId) ? dispositivoId : null);
             throw e;
         }
         Usuario cuenta = cuenta(cuentaId);
-        if (cuenta.getEstado() == Usuario.Estado.BLOQUEADA) {
-            auditoria.registrar("AUTENTICACION_RECHAZADA", Resultado.FALLO, cuentaId, cuentaId, "CUENTA_BLOQUEADA", dispositivoId);
-            throw NayraException.conflicto("CUENTA_BLOQUEADA");
+        if (cuenta.getEstado() != Usuario.Estado.ACTIVO) {
+            String motivo = cuenta.getEstado() == Usuario.Estado.BLOQUEADO ? "CUENTA_BLOQUEADA" : "CUENTA_INACTIVA";
+            auditoria.registrar("AUTENTICACION_RECHAZADA", Resultado.FALLIDO, cuentaId, cuentaId, motivo, dispositivoId);
+            throw NayraException.conflicto(motivo);
         }
         // La cuenta de acceso solo existe cuando el registro terminó con la voz enrolada (D-052), así que no
         // hace falta comprobar aquí el enrolamiento: si Python no tiene referencia, responde SIN_REFERENCIA.
@@ -118,7 +123,7 @@ public class AutenticacionVozServiceImplement implements IAutenticacionVozServic
         Transaccion t = new Transaccion(UUID.randomUUID().toString(), cuentaId, dispositivoId,
                 Instant.now(reloj).plus(props.vidaTransaccion()));
         transacciones.put(t.id, t);
-        auditoria.registrar("AUTENTICACION_DISPOSITIVO_VERIFICADO", Resultado.EXITO, cuentaId, cuentaId, null, dispositivoId);
+        auditoria.registrar("AUTENTICACION_DISPOSITIVO_VERIFICADO", Resultado.EXITOSO, cuentaId, cuentaId, null, dispositivoId);
         return t.id;
     }
 
@@ -127,13 +132,15 @@ public class AutenticacionVozServiceImplement implements IAutenticacionVozServic
         Transaccion t = transaccion(transaccionId, Paso.DISPOSITIVO_VERIFICADO);
         Usuario cuenta = cuenta(t.cuentaId);
         synchronized (t) {
-            if (!pines.coincide(pin, cuenta.getPinHash())) {
-                return fallo(t, cuenta, PoliticaIntentosProvisional.PIN_INCORRECTO, false);
+            // Un PIN correcto devuelve el contador a 0; uno incorrecto lo incrementa (v4 §2.2).
+            ICredencialesService.ResultadoPin r = credenciales.verificar(cuenta.getId(), pin);
+            if (!r.correcto()) {
+                return falloPin(t, cuenta, r);
             }
             // El desafío se emite después de validar el dispositivo y el PIN (D-054).
             t.paso = Paso.PIN_VERIFICADO;
-            auditoria.registrar("AUTENTICACION_PIN_VERIFICADO", Resultado.EXITO, cuenta.getId(), cuenta.getId(), null, t.dispositivoId);
-            return new ResultadoPaso("CONTINUAR", null, restantes(cuenta), nuevoDesafio(t));
+            auditoria.registrar("AUTENTICACION_PIN_VERIFICADO", Resultado.EXITOSO, cuenta.getId(), cuenta.getId(), null, t.dispositivoId);
+            return new ResultadoPaso("CONTINUAR", null, r.intentosRestantes(), nuevoDesafio(t));
         }
     }
 
@@ -168,16 +175,15 @@ public class AutenticacionVozServiceImplement implements IAutenticacionVozServic
             try {
                 resultado = servicioVoz.verificar(t.cuentaId, desafio.texto(), audioWav);
             } catch (ServicioVozNoDisponibleException e) {
-                auditoria.registrar("AUTENTICACION_SERVICIO_VOZ_NO_DISPONIBLE", Resultado.FALLO, t.cuentaId, t.cuentaId,
+                auditoria.registrar("AUTENTICACION_SERVICIO_VOZ_NO_DISPONIBLE", Resultado.FALLIDO, t.cuentaId, t.cuentaId,
                         "SERVICIO_NO_DISPONIBLE", t.dispositivoId);
                 return new ResultadoPaso("SERVICIO_NO_DISPONIBLE", "SERVICIO_NO_DISPONIBLE", restantes(cuenta), nuevoDesafio(t));
             }
             if (resultado.aprobado()) {
-                cuenta.reiniciarIntentos();
                 t.paso = Paso.TERMINADA;
                 transacciones.remove(t.id);
-                auditoria.registrar("AUTENTICACION_EXITOSA", Resultado.EXITO, t.cuentaId, t.cuentaId, null, t.dispositivoId);
-                // Sesión con mecanismo PROVISIONAL (D-018); el token solo viaja en esta respuesta.
+                auditoria.registrar("AUTENTICACION_EXITOSA", Resultado.EXITOSO, t.cuentaId, t.cuentaId, null, t.dispositivoId);
+                // JWT de sesión (jti = nayra.sesiones.id); solo viaja en esta respuesta.
                 String token = sesiones.crear(t.cuentaId, t.dispositivoId);
                 return new ResultadoPaso("AUTENTICADO", null, null, null, token);
             }
@@ -185,26 +191,28 @@ public class AutenticacionVozServiceImplement implements IAutenticacionVozServic
                 // Sin referencia biométrica utilizable (p. ej. cambio de modelo): exige re-enrolar (D-013). No cuenta como intento.
                 t.paso = Paso.TERMINADA;
                 transacciones.remove(t.id);
-                auditoria.registrar("AUTENTICACION_RECHAZADA", Resultado.FALLO, t.cuentaId, t.cuentaId, "SIN_REFERENCIA",
+                auditoria.registrar("AUTENTICACION_RECHAZADA", Resultado.FALLIDO, t.cuentaId, t.cuentaId, "SIN_REFERENCIA",
                         t.dispositivoId);
                 return new ResultadoPaso("RECHAZADO", "SIN_REFERENCIA", restantes(cuenta), null);
             }
-            return fallo(t, cuenta, resultado.motivo(), true);
+            // Los fallos de voz, contenido o anti-spoofing no cuentan como intentos de PIN (v4 §2.2, P-8).
+            auditoria.registrar("AUTENTICACION_VOZ_FALLIDA", Resultado.FALLIDO, cuenta.getId(), cuenta.getId(),
+                    resultado.motivo(), t.dispositivoId);
+            return new ResultadoPaso("REINTENTAR", resultado.motivo(), restantes(cuenta), nuevoDesafio(t), null);
         }
     }
 
-    private ResultadoPaso fallo(Transaccion t, Usuario cuenta, String motivo, boolean etapaVoz) {
-        auditoria.registrar(etapaVoz ? "AUTENTICACION_VOZ_FALLIDA" : "AUTENTICACION_PIN_FALLIDO", Resultado.FALLO,
-                cuenta.getId(), cuenta.getId(), motivo, t.dispositivoId);
-        if (politica.cuentaComoIntentoFallido(motivo) && cuenta.registrarFallo() >= props.intentosMaximos()) {
+    private ResultadoPaso falloPin(Transaccion t, Usuario cuenta, ICredencialesService.ResultadoPin r) {
+        String motivo = PoliticaIntentosProvisional.PIN_INCORRECTO;
+        auditoria.registrar("AUTENTICACION_PIN_FALLIDO", Resultado.FALLIDO, cuenta.getId(), cuenta.getId(), motivo, t.dispositivoId);
+        if (r.agotados() && politica.cuentaComoIntentoFallido(motivo)) {
             t.paso = Paso.TERMINADA;
             transacciones.remove(t.id);
-            // Bloqueo por el sistema: revoca las sesiones y queda auditado como CUENTA_BLOQUEADA (D-044).
+            // Autenticación pide a Negocio el bloqueo; Negocio revoca las sesiones y lo audita como CUENTA_BLOQUEADA (v4 §2.2).
             usuarioService.bloquear(cuenta.getId(), null, "INTENTOS_AGOTADOS");
             return new ResultadoPaso("BLOQUEADA", motivo, 0, null, null);
         }
-        DesafioDTO desafio = etapaVoz ? nuevoDesafio(t) : null;
-        return new ResultadoPaso("REINTENTAR", motivo, restantes(cuenta), desafio, null);
+        return new ResultadoPaso("REINTENTAR", motivo, r.intentosRestantes(), null, null);
     }
 
     private DesafioDTO nuevoDesafio(Transaccion t) {
@@ -214,7 +222,7 @@ public class AutenticacionVozServiceImplement implements IAutenticacionVozServic
     }
 
     private int restantes(Usuario cuenta) {
-        return Math.max(0, props.intentosMaximos() - cuenta.getIntentosFallidos());
+        return credenciales.intentosRestantes(cuenta.getId());
     }
 
     private Usuario cuenta(String cuentaId) {
@@ -232,9 +240,10 @@ public class AutenticacionVozServiceImplement implements IAutenticacionVozServic
         if (t.paso != esperado) {
             throw NayraException.conflicto("PASO_NO_VALIDO");
         }
-        if (cuenta(t.cuentaId).getEstado() == Usuario.Estado.BLOQUEADA) {
+        Usuario.Estado estado = cuenta(t.cuentaId).getEstado();
+        if (estado != Usuario.Estado.ACTIVO) {
             transacciones.remove(id);
-            throw NayraException.conflicto("CUENTA_BLOQUEADA");
+            throw NayraException.conflicto(estado == Usuario.Estado.BLOQUEADO ? "CUENTA_BLOQUEADA" : "CUENTA_INACTIVA");
         }
         return t;
     }

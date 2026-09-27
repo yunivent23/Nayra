@@ -1,8 +1,10 @@
 package upc.pe.nayrabackend.serviceimplements;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import upc.pe.nayrabackend.config.NayraProperties;
 import upc.pe.nayrabackend.entities.Dispositivos;
+import upc.pe.nayrabackend.entities.Identificadores;
 import upc.pe.nayrabackend.excepciones.NayraException;
 import upc.pe.nayrabackend.repositories.IDispositivosRepository;
 import upc.pe.nayrabackend.serviceinterfaces.IDispositivoService;
@@ -22,13 +24,12 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Vinculación del dispositivo con par de claves (D-048).
  * La clave privada nunca sale del teléfono; aquí solo se guarda la clave pública.
- * Nonces en memoria: PROVISIONAL (D-051). Su vida es un valor PROVISIONAL DEL PROTOTIPO.
+ * Nonces en memoria: PROVISIONAL (su almacenamiento sigue pendiente, 03 §16.6). Su vida es un valor PROVISIONAL DEL PROTOTIPO.
  */
 @Service
 public class DispositivoServiceImplement implements IDispositivoService {
@@ -66,18 +67,30 @@ public class DispositivoServiceImplement implements IDispositivoService {
     }
 
     @Override
+    @Transactional
     public synchronized Dispositivos vincular(String usuarioId, PublicKey clavePublica) {
         Instant ahora = Instant.now(reloj);
-        // Un único dispositivo activo (D-039): el anterior queda revocado.
-        dispositivos.activoDeUsuario(usuarioId).ifPresent(d -> d.revocar(ahora));
-        Dispositivos nuevo = new Dispositivos(UUID.randomUUID().toString(), usuarioId, clavePublica, PLATAFORMA_PROTOTIPO, ahora);
+        // Un único dispositivo activo (D-039): el anterior queda revocado y se guarda antes de insertar el nuevo.
+        dispositivos.activoDeUsuario(usuarioId).ifPresent(d -> {
+            d.revocar(ahora);
+            dispositivos.guardar(d);
+        });
+        Dispositivos nuevo = new Dispositivos(Identificadores.nuevo(), usuarioId, clavePublica, PLATAFORMA_PROTOTIPO, ahora);
         dispositivos.guardar(nuevo);
         return nuevo;
     }
 
     @Override
     public void revocarActivo(String usuarioId) {
-        dispositivos.activoDeUsuario(usuarioId).ifPresent(d -> d.revocar(Instant.now(reloj)));
+        dispositivos.activoDeUsuario(usuarioId).ifPresent(d -> {
+            d.revocar(Instant.now(reloj));
+            dispositivos.guardar(d);
+        });
+    }
+
+    @Override
+    public boolean existe(String dispositivoId) {
+        return dispositivos.porId(dispositivoId).isPresent();
     }
 
     @Override

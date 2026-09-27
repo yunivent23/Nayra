@@ -7,6 +7,8 @@ import upc.pe.nayrabackend.dtos.AdministracionDTOs.UsuarioDetalle;
 import upc.pe.nayrabackend.dtos.AdministracionDTOs.UsuarioResumen;
 import upc.pe.nayrabackend.entities.Auditoria;
 import upc.pe.nayrabackend.entities.Dispositivos;
+import upc.pe.nayrabackend.entities.DocumentoIdentidad;
+import upc.pe.nayrabackend.entities.TipoDocumentoIdentidad;
 import upc.pe.nayrabackend.entities.Usuario;
 import upc.pe.nayrabackend.excepciones.NayraException;
 import upc.pe.nayrabackend.repositories.IDispositivosRepository;
@@ -51,17 +53,20 @@ public class AdministracionServiceImplement implements IAdministracionService {
     }
 
     @Override
-    public List<UsuarioResumen> buscarUsuarios(String adminId, String dni, String texto) {
+    public List<UsuarioResumen> buscarUsuarios(String adminId, String tipoDocumento, String numeroDocumento, String texto) {
         String buscado = normalizar(texto);
+        String numero = vacioANull(numeroDocumento);
+        TipoDocumentoIdentidad tipo = numero == null ? null : DocumentoIdentidad.tipo(tipoDocumento);
         List<UsuarioResumen> resultado = usuarios.todos().stream()
-                .filter(u -> dni == null || dni.isBlank() || u.getDni().equals(dni.trim()))
+                .filter(u -> numero == null || (u.getTipoDocumentoIdentidad() == tipo && u.getNumeroDocumento().equals(numero)))
                 .filter(u -> buscado.isEmpty() || normalizar(u.getNombres() + " " + u.getApellidos()).contains(buscado))
                 .sorted(Comparator.comparing(Usuario::getApellidos).thenComparing(Usuario::getNombres))
-                .map(u -> new UsuarioResumen(u.getId(), u.getDni(), u.getNombres(), u.getApellidos(),
+                .map(u -> new UsuarioResumen(u.getId(), u.getTipoDocumentoIdentidad().name(), u.getNumeroDocumento(),
+                        u.getNombres(), u.getApellidos(),
                         u.getRol().name(), u.getEstado().name()))
                 .toList();
-        boolean esBusqueda = (dni != null && !dni.isBlank()) || !buscado.isEmpty();
-        // Solo se registra el tipo de consulta: el DNI o el texto buscado son datos personales.
+        boolean esBusqueda = numero != null || !buscado.isEmpty();
+        // Solo se registra el tipo de consulta: el documento o el texto buscado son datos personales.
         auditoria.exito(esBusqueda ? "ADMIN_BUSQUEDA_USUARIOS" : "ADMIN_CONSULTA_USUARIOS", adminId, null);
         return resultado;
     }
@@ -70,7 +75,7 @@ public class AdministracionServiceImplement implements IAdministracionService {
     public UsuarioDetalle detalleUsuario(String adminId, String usuarioId) {
         Usuario u = usuarioService.obtener(usuarioId);
         auditoria.exito("ADMIN_CONSULTA_USUARIO", adminId, usuarioId);
-        return new UsuarioDetalle(u.getId(), u.getDni(), u.getNombres(), u.getApellidos(), u.getCelular(),
+        return new UsuarioDetalle(u.getId(), u.getTipoDocumentoIdentidad().name(), u.getNumeroDocumento(), u.getNombres(), u.getApellidos(), u.getCelular(),
                 u.getRol().name(), u.getEstado().name(), u.getFechaCreacion(),
                 dispositivosRepo.activoDeUsuario(usuarioId).map(AdministracionServiceImplement::resumen).orElse(null));
     }
@@ -79,7 +84,7 @@ public class AdministracionServiceImplement implements IAdministracionService {
     public void bloquearUsuario(String adminId, String usuarioId) {
         noSobreSiMismo(adminId, usuarioId, "ADMIN_BLOQUEO_CUENTA");
         Usuario u = usuarioService.obtener(usuarioId);
-        if (u.getEstado() == Usuario.Estado.BLOQUEADA) {
+        if (u.getEstado() == Usuario.Estado.BLOQUEADO) {
             throw NayraException.conflicto("CUENTA_YA_BLOQUEADA");
         }
         usuarioService.bloquear(usuarioId, adminId, null);
@@ -88,7 +93,7 @@ public class AdministracionServiceImplement implements IAdministracionService {
     @Override
     public void desbloquearUsuario(String adminId, String usuarioId) {
         Usuario u = usuarioService.obtener(usuarioId);
-        if (u.getEstado() != Usuario.Estado.BLOQUEADA) {
+        if (u.getEstado() != Usuario.Estado.BLOQUEADO) {
             throw NayraException.conflicto("CUENTA_NO_BLOQUEADA");
         }
         usuarioService.desbloquear(usuarioId, adminId);
@@ -109,8 +114,8 @@ public class AdministracionServiceImplement implements IAdministracionService {
                 .orElseThrow(() -> NayraException.conflicto("SIN_DISPOSITIVO_ACTIVO"));
         dispositivoService.revocarActivo(usuarioId);
         // Un dispositivo revocado no puede mantener sesiones (D-040).
-        sesiones.revocarDeUsuario(usuarioId, "DISPOSITIVO_REVOCADO");
-        auditoria.registrar("ADMIN_REVOCACION_DISPOSITIVO", Auditoria.Resultado.EXITO, adminId, usuarioId, null,
+        sesiones.revocarDeUsuario(usuarioId);
+        auditoria.registrar("ADMIN_REVOCACION_DISPOSITIVO", Auditoria.Resultado.EXITOSO, adminId, usuarioId, null,
                 activo.getId());
     }
 
@@ -123,7 +128,7 @@ public class AdministracionServiceImplement implements IAdministracionService {
 
     @Override
     public List<EventoAuditoriaDTO> intentosFallidos(String adminId, String usuarioId) {
-        List<EventoAuditoriaDTO> r = eventos(new Filtro(vacioANull(usuarioId), PREFIJO_AUTENTICACION, Auditoria.Resultado.FALLO));
+        List<EventoAuditoriaDTO> r = eventos(new Filtro(vacioANull(usuarioId), PREFIJO_AUTENTICACION, Auditoria.Resultado.FALLIDO));
         auditoria.exito("ADMIN_CONSULTA_INTENTOS_FALLIDOS", adminId, vacioANull(usuarioId));
         return r;
     }

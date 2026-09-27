@@ -193,7 +193,9 @@ La biometría de voz es un componente del proceso de autenticación, pero no def
 
 ## D-009 — Autorización
 
-**Estado:** PARCIAL — roles aprobados en D-041; mecanismo técnico PENDIENTE
+**Estado:** APROBADA (2026-09-27, AG-03) — representación de los roles: **opción A, valor fijo** (ver «Decisiones aprobadas el 2026-09-27 — Modelo físico de la base de datos»). El mecanismo de autorización por rutas del prototipo sigue como mecanismo provisional (tabla «Mecanismos técnicos provisionales del prototipo»).
+
+Texto anterior (se conserva para trazabilidad): **PARCIAL — roles aprobados en D-041; mecanismo técnico PENDIENTE.**
 
 Los roles del sistema quedan fijados en **D-041** (USER y ADMIN). Siguen pendientes la representación de roles y permisos en el modelo de datos y el punto de aplicación técnica de la autorización.
 
@@ -470,6 +472,8 @@ Registro:
 | D-060 | Dataset y consentimiento | — (nueva) | PENDIENTE | AG-13 | 2026-09-27 |
 | D-056 | Responsable de aplicar los umbrales técnicos | — (nueva) | APROBADA (servicio Python/FastAPI aplica los umbrales técnicos; Spring Boot decide la autenticación; valores en D-055) | AG-12: aprobación final | 2026-09-27 |
 | D-018 | Estrategia de sesiones | PARCIAL | PARCIAL — cierre automático tras 5 min de inactividad, sin aviso previo ni opción de continuar; mecanismo pendiente | AG-02: aprobación final | 2026-09-27 |
+| D-051 | Estrategia de migraciones de base de datos | PENDIENTE | APROBADA (Flyway, esquema `nayra`, UUID v4, nombres físicos, FK `RESTRICT`, historial propio de `biometria`) | AG-10: aprobada por el equipo tras la propuesta `PROPUESTA_MODELO_FISICO_D051_D009_2026-09-27.md` | 2026-09-27 |
+| D-009 | Autorización | PARCIAL | APROBADA — rol como valor fijo (opción A); sin tabla `ROLES` ni varios roles por usuario | AG-03: misma revisión | 2026-09-27 |
 
 Esto permitirá mantener trazabilidad de las decisiones de diseño.
 
@@ -824,7 +828,7 @@ _Resueltos en AG-01 v6:_ momento del registro del celular (paso 8) y posición d
 | D-048 | Mecanismo técnico de vinculación del dispositivo | **APROBADA:** par de claves del dispositivo (origen histórico: AG-01; aprobada el 2026-09-27; impacto secundario: AG-11 por anti-replay) (ver sección de decisiones del 2026-09-27) |
 | D-049 | Procedimiento de recuperación asistida | PENDIENTE |
 | D-050 | Autenticación del administrador | PENDIENTE |
-| D-051 | Estrategia de migraciones de base de datos | PENDIENTE |
+| D-051 | Estrategia de migraciones de base de datos | **APROBADA (2026-09-27, AG-10)** — ver «Modelo físico de la base de datos» |
 
 Siguen también **PENDIENTES**: D-007 (frontend móvil), D-010 (Java ↔ Python), D-011 (modelo biométrico), D-012 (anti-spoofing), D-013 (almacenamiento biométrico), umbral biométrico, D-014 (API), D-018 (sesiones) y D-019 (auditoría detallada). D-017 (secretos) pasa a **deuda técnica** (categoría C).
 
@@ -841,8 +845,8 @@ Una deuda técnica pendiente **no** se convierte automáticamente en un bloqueo 
 | Categoría | Decisiones | Estado de la clasificación |
 |---|---|---|
 | **A** | D-045 (panel web), D-046 (resto del reconocimiento del habla: comando y tecnología del PIN dictado, cuyo dictado ya aprobó D-061) | Propuesta para revisión (actualizada el 2026-09-27) |
-| **B** | D-047 (hash del PIN), D-018 (mecanismo técnico de sesión), D-051 (migraciones e identificadores), D-044 (detalle de intentos), D-050 (autenticación del administrador), D-049 (recuperación asistida), D-052 (registro técnico y auditoría de quién realizó la validación asistida), D-014 (API; incluye el contrato interno del servicio de voz), D-019 (auditoría detallada), D-058 (herramienta de VAD), D-054 (lista de palabras y TTL del desafío), D-060 (dataset y consentimiento), D-016 (despliegue del servicio de voz) | Propuesta para revisión (actualizada el 2026-09-27) |
-| **Cerradas el 2026-09-27** | D-007 (app móvil), D-010, D-011, D-012, D-013, D-048, D-056 (responsable de aplicar los umbrales técnicos), umbral biométrico (solo la estrategia, en D-055; los valores siguen pendientes de calibración) | APROBADAS (2026-09-27) |
+| **B** | D-047 (hash del PIN), D-018 (mecanismo técnico de sesión), D-044 (detalle de intentos), D-050 (autenticación del administrador), D-049 (recuperación asistida), D-052 (registro técnico y auditoría de quién realizó la validación asistida), D-014 (API; incluye el contrato interno del servicio de voz), D-019 (auditoría detallada), D-058 (herramienta de VAD), D-054 (lista de palabras y TTL del desafío), D-060 (dataset y consentimiento), D-016 (despliegue del servicio de voz) | Propuesta para revisión (actualizada el 2026-09-27) |
+| **Cerradas el 2026-09-27** | D-007 (app móvil), D-009 (representación de roles), D-010, D-011, D-012, D-013, D-048, D-051 (migraciones e identificadores), D-056 (responsable de aplicar los umbrales técnicos), umbral biométrico (solo la estrategia, en D-055; los valores siguen pendientes de calibración) | APROBADAS (2026-09-27) |
 | **C** | **D-017** (secretos y credenciales) | **Aprobada** (AG-01 v5) |
 
 Cada decisión A afecta solo a las funcionalidades que dependen de ella; las demás pueden avanzar en paralelo.
@@ -897,7 +901,7 @@ Defensa en capas:
 - **Actualización:** solo por re-enrolamiento explícito tras validar al titular (D-040; HU-34/HU-35). Sin adaptación automática de la plantilla.
 - **Eliminación (HU-36):** borrado físico de la referencia y registro en auditoría, sin el embedding.
 - El administrador **no** accede a la referencia (`06_SEGURIDAD_NAYRA.md` §36.5).
-- Modelo lógico en `03_BASE_DE_DATOS_NAYRA.md` §16.11. La tabla física se crea con la estrategia de migraciones (D-051).
+- Modelo lógico en `03_BASE_DE_DATOS_NAYRA.md` §16.11. La tabla física se crea con la estrategia de migraciones (D-051, aprobada el 2026-09-27: historial de migraciones propio para `biometria`; la estructura física de `perfiles_voz` sigue pendiente).
 
 ### D-010 — Comunicación Java ↔ Python (detalle)
 **Estado:** APROBADA / autenticación entre servicios en la nube PENDIENTE (D-016)
@@ -1053,7 +1057,7 @@ Estos mecanismos pueden usarse en el prototipo, pero son **PROVISIONALES**: no s
 | Organización de rutas `/api/v1/...` para la API general (propuesta, no contrato) | D-014 (PENDIENTE) | — |
 | Cancelar el registro si la persona no confirma sus datos | D-052 | Que la persona confirma sus datos (paso 7) |
 | El primer ADMIN puede no tener cuenta financiera (no es una exención definitiva) | D-025 | Cada usuario tiene una única cuenta financiera |
-| Un rol por usuario; mecanismo de autorización por rutas con denegación por defecto | D-009 (PARCIAL) | Roles USER y ADMIN (D-041) |
+| Mecanismo de autorización por rutas con denegación por defecto | D-009 (APROBADA solo en la representación de roles) | Roles USER y ADMIN (D-041); un rol por usuario como valor fijo (D-009, 2026-09-27) |
 
 Valores ya aprobados que el prototipo usa sin cambios: 3 intentos (D-044) y WAV PCM 16 kHz mono 16 bits (D-057). El prototipo usa además 3 muestras válidas como valor inicial (hasta 5), provisional y pendiente de validación según D-059.
 
@@ -1075,6 +1079,32 @@ Valores ya aprobados que el prototipo usa sin cambios: 3 intentos (D-044) y WAV 
 | RSA / Ed25519 para la clave del dispositivo | D-048 | Firmas grandes (RSA) / compatibilidad de dispositivos (Ed25519) |
 | Adaptación automática de la plantilla de voz | D-013 | Riesgo de envenenamiento de la plantilla |
 | Guardar audio de enrolamiento o autenticación | D-013 | Minimización (`05` §16) |
+
+## Decisiones aprobadas el 2026-09-27 — Modelo físico de la base de datos (D-051, D-009)
+
+Origen: propuesta `/mnt/project-files/analisis/PROPUESTA_MODELO_FISICO_D051_D009_2026-09-27.md`, revisada y aprobada por el equipo el 2026-09-27 (tras la auditoría `AUDITORIA_MODELO_DATOS_2026-09-27.md`). Nombres, tipos y restricciones de cada tabla en `03_BASE_DE_DATOS_NAYRA.md` §17.
+
+### D-051 — Estrategia de migraciones de base de datos
+**Estado:** APROBADA (AG-10)
+
+- **Herramienta:** Flyway con migraciones en SQL plano versionado (`V001__...sql`). Spring Boot ejecuta las migraciones del esquema general al arrancar (`Nayra-Back/src/main/resources/db/migration/nayra`). Hibernate usa `ddl-auto=validate`; **nunca** `update`.
+- **Esquema general:** `nayra`. No se usa `public`.
+- **Identificadores:** UUID v4, columna PostgreSQL `uuid`, generado por la aplicación con `UUID.randomUUID()`.
+- **Nombres físicos:** tablas y columnas en `snake_case`, minúsculas y sin tildes; se conservan los nombres documentados (`AUDITORÍA` → `auditoria`; `registro_identidad_simulado` se mantiene). Columnas nuevas: `codigo_cuenta`, `numero_celular`.
+- **FK:** `ON DELETE RESTRICT ON UPDATE RESTRICT` por defecto. Sin `CASCADE` ni `SET NULL` salvo decisión explícita posterior.
+- **Usuarios de base de datos:** el usuario de migración es distinto del usuario de ejecución. El usuario de ejecución no tiene `UPDATE` ni `DELETE` sobre `auditoria` (solo inserción).
+- **Biometría:** `biometria` sigue como esquema separado, con **historial de migraciones propio** y usuario de migración distinto del de ejecución. **Sin FK física** entre `biometria.perfiles_voz.usuario_id` y `nayra.usuarios.id` por ahora: referencia lógica, para preservar la separación de D-013. La estructura física de `perfiles_voz` **sigue pendiente** y no se crea todavía.
+- **Tablas implementadas:** `entidades_bancarias`, `registro_identidad_simulado`, `usuarios`, `cuentas`, `dispositivos`, `auditoria`. **No se crean todavía:** `sesiones` (D-018 parcial), `operaciones`, `solicitudes_atencion`, `notificaciones`, almacenamiento de desafíos y nonces, identificador del QR y `biometria.perfiles_voz`.
+- **PROVISIONAL:** la columna `usuarios.intentos_fallidos` depende del detalle de D-044.
+
+**No aprobado por esta decisión:** versión de PostgreSQL, despliegue de la base de datos (D-016), retención y copias de seguridad (`03` §13), creación de los usuarios de base de datos y sus credenciales (D-017).
+
+### D-009 — Autorización (representación de roles)
+**Estado:** APROBADA (AG-03) — opción A
+
+- El rol es un **valor fijo**: `usuarios.rol varchar(10) NOT NULL CHECK (rol IN ('USER', 'ADMIN'))`.
+- **No** se crea la tabla `ROLES`. **No** hay varios roles por usuario.
+- En Java se mantiene el enum `Rol`, mapeado como `EnumType.STRING`.
 
 ## Agendas temáticas (AG)
 
