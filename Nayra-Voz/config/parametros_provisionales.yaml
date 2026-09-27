@@ -34,12 +34,11 @@ contenido:                   # D-046 (Vosk con gramática cerrada, aprobado)
 antispoofing:                # D-012 (AASIST, aprobado)
   modelo: "AASIST"                        # aprobado (D-012)
   muestras_entrada: 64600                 # ventana del modelo publicado (~4 s); no es un parámetro de Nayra
-  probabilidad_bona_fide_minima: 0.50     # PROVISIONAL — PENDIENTE DE VALIDACIÓN
+  probabilidad_bona_fide_minima: 0.90     # D-055 (cerrada 2026-09-27, escala [0,1]); sin calibración estadística
 
 verificacion:                # D-011 (ECAPA-TDNN, aprobado)
   modelo: "speechbrain/spkrec-ecapa-voxceleb"   # aprobado (D-011)
-  similitud_coseno_minima: 0.25   # PROVISIONAL — PENDIENTE DE VALIDACIÓN
-                                  # (valor por defecto de SpeechBrain verify_batch; no calibrado para Nayra)
+  similitud_coseno_minima: 0.80   # D-055 (cerrada 2026-09-27, escala [0,1]); sin calibración estadística
 
 enrolamiento:                # D-059
   muestras_validas: 3             # valor inicial, provisional y pendiente de validación según D-059
