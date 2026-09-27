@@ -1,26 +1,23 @@
 package upc.pe.nayrabackend.serviceinterfaces;
 
-import upc.pe.nayrabackend.entities.Users;
+import upc.pe.nayrabackend.dtos.UsuarioDTOs.DatosPropios;
+import upc.pe.nayrabackend.entities.Usuario;
 
-import java.util.List;
-
+/** Cuenta de acceso (USUARIOS): consulta y cambios de estado. */
 public interface IUsuarioService {
 
-    List<Users> listarTodo();
+    Usuario obtener(String usuarioId);
 
-    Users listId(Long id);
+    /** Datos propios y estado de la cuenta de acceso (HU-09, HU-15). Nunca incluye el hash del PIN. */
+    DatosPropios datosPropios(String usuarioId);
 
-    void insert(Users usuario);
+    /**
+     * Bloquea la cuenta de acceso y revoca sus sesiones (D-040, D-044).
+     *
+     * @param actorId administrador que bloquea, o null cuando lo hace el sistema (intentos agotados)
+     */
+    void bloquear(String usuarioId, String actorId, String motivo);
 
-    void delete(Long id);
-
-    void edit(Users usuario);
-
-    List<Users> buscarPorNombre(String username);
-
-    Users buscarPorUsername(String username);
-
-    Users buscarPorDni(String dni);
-
-    Users buscarPorEmail(String email);
+    /** Desbloqueo por el administrador (HU-19); reinicia los intentos. */
+    void desbloquear(String usuarioId, String actorId);
 }

@@ -1,7 +1,11 @@
 package upc.pe.nayrabackend.repositories;
 
-import org.springframework.stereotype.Repository;
+import upc.pe.nayrabackend.entities.Auditoria;
 
-@Repository
+import java.util.List;
+
+/** Puerto de persistencia de AUDITORÍA (solo inserción y consulta). Adaptador actual: en memoria (PROVISIONAL, D-051). */
 public interface IAuditoriaRepository {
+    void guardar(Auditoria evento);
+    List<Auditoria> todos();
 }

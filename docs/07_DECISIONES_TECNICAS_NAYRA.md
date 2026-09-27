@@ -819,7 +819,7 @@ _Resueltos en AG-01 v6:_ momento del registro del celular (paso 8) y posición d
 | ID | Decisión | Estado |
 |---|---|---|
 | D-045 | Tecnología del panel web del administrador | PENDIENTE |
-| D-046 | Reconocimiento del habla (comando, DNI, contraseña dictada, contenido del desafío): tecnología y ubicación (dispositivo o servidor) | **PARCIAL (AG-13):** contenido del desafío APROBADO (Vosk en servidor); comando, PIN dictado (si se permite) y DNI PENDIENTES |
+| D-046 | Reconocimiento del habla (comando, DNI, contraseña dictada, contenido del desafío): tecnología y ubicación (dispositivo o servidor) | **PARCIAL (AG-13):** contenido del desafío APROBADO (Vosk en servidor); comando, tecnología del PIN dictado (dictado aprobado por D-061) y DNI PENDIENTES |
 | D-047 | Algoritmo de hash, política de contraseña compatible con dictado y normalización de la contraseña dictada | PENDIENTE — **AG-11** (2026-09-27): se aplica al **PIN de 6 dígitos** (D-061); el análisis A-K (Argon2id + pepper + límite de intentos) queda como insumo, no aprobado |
 | D-048 | Mecanismo técnico de vinculación del dispositivo | **APROBADA:** par de claves del dispositivo (origen histórico: AG-01; aprobada el 2026-09-27; impacto secundario: AG-11 por anti-replay) (ver sección de decisiones del 2026-09-27) |
 | D-049 | Procedimiento de recuperación asistida | PENDIENTE |
@@ -840,7 +840,7 @@ Una deuda técnica pendiente **no** se convierte automáticamente en un bloqueo 
 
 | Categoría | Decisiones | Estado de la clasificación |
 |---|---|---|
-| **A** | D-045 (panel web), D-046 (resto del reconocimiento del habla: comando y, si se permite, PIN dictado) | Propuesta para revisión (actualizada el 2026-09-27) |
+| **A** | D-045 (panel web), D-046 (resto del reconocimiento del habla: comando y tecnología del PIN dictado, cuyo dictado ya aprobó D-061) | Propuesta para revisión (actualizada el 2026-09-27) |
 | **B** | D-047 (hash del PIN), D-018 (mecanismo técnico de sesión), D-051 (migraciones e identificadores), D-044 (detalle de intentos), D-050 (autenticación del administrador), D-049 (recuperación asistida), D-052 (registro técnico y auditoría de quién realizó la validación asistida), D-014 (API; incluye el contrato interno del servicio de voz), D-019 (auditoría detallada), D-058 (herramienta de VAD), D-054 (lista de palabras y TTL del desafío), D-060 (dataset y consentimiento), D-016 (despliegue del servicio de voz) | Propuesta para revisión (actualizada el 2026-09-27) |
 | **Cerradas el 2026-09-27** | D-007 (app móvil), D-010, D-011, D-012, D-013, D-048, D-056 (responsable de aplicar los umbrales técnicos), umbral biométrico (solo la estrategia, en D-055; los valores siguen pendientes de calibración) | APROBADAS (2026-09-27) |
 | **C** | **D-017** (secretos y credenciales) | **Aprobada** (AG-01 v5) |
@@ -917,7 +917,8 @@ Defensa en capas:
 
 - **Contenido del desafío — APROBADO:** **Vosk** (Apache 2.0) con **gramática restringida** al vocabulario del desafío, ejecutado **en el servidor** (servicio Python). Modelo inicial `vosk-model-small-es-0.42`; `vosk-model-es-0.42` si la precisión no alcanza; `faster-whisper` (`small`) como respaldo si la evaluación muestra fallas con acentos o ruido. Criterio: coincidencia exacta de la secuencia más confianza por palabra (umbral en D-055). Motivo de la ubicación en servidor: `06_SEGURIDAD_NAYRA.md` §3.4 (no confiar en el cliente).
 - **Descartado para verificar el desafío:** reconocedor del sistema operativo del teléfono (no controlable por el backend y el audio puede salir a servidores de terceros).
-- **PENDIENTE:** reconocimiento del comando "Iniciar sesión Nayra", del PIN dictado (si se permite el dictado, ver D-061) y del DNI en recuperación/cambio de dispositivo. Si se procesa el PIN dictado, no se almacena ni registra el audio ni la transcripción (`05_BIOMETRIA_NAYRA.md` §26.6), y ese audio **nunca** entra al pipeline biométrico.
+- **PENDIENTE:** reconocimiento del comando "Iniciar sesión Nayra", tecnología definitiva de reconocimiento del PIN dictado (el dictado está aprobado por D-061) y del DNI en recuperación/cambio de dispositivo. Al procesar el PIN dictado no se almacena ni registra el audio ni la transcripción (`05_BIOMETRIA_NAYRA.md` §26.6), y ese audio **nunca** entra al pipeline biométrico.
+- **PIN dictado — candidata PROVISIONAL del prototipo (2026-09-27):** el dictado quedó permitido (D-061). Para el prototipo se usa Vosk en el servicio Python con una gramática restringida a los diez dígitos, que exige exactamente 6 dígitos. Es una candidata **no definitiva, PENDIENTE DE VALIDACIÓN**; el comando "Iniciar sesión Nayra" y el DNI siguen PENDIENTES.
 
 ### D-048 — Vinculación del dispositivo mediante par de claves
 **Estado:** APROBADA
@@ -932,7 +933,7 @@ Defensa en capas:
 - **No aprobado:** Key Attestation (extensión opcional); soporte de iOS (no definido); vida exacta del nonce.
 
 ### D-054 — Generación del desafío de voz
-**Estado:** APROBADA (estructura) / lista de palabras y vida del desafío PENDIENTES DE DECISIÓN / comprensión PENDIENTE DE VALIDACIÓN con usuarios
+**Estado:** APROBADA (estructura) / lista v2 y vida del desafío PROVISIONALES — PENDIENTES DE VALIDACIÓN (2026-09-27) / comprensión PENDIENTE DE VALIDACIÓN con usuarios
 
 - Estructura: **5 elementos: palabra + 3 dígitos + palabra** (ej.: "sol, cuatro, siete, dos, mesa").
 - Lista cerrada de ~40 palabras comunes, bisílabas, fonéticamente distintas y sin homófonos (la lista se aprueba aparte). Dígitos del 0 al 9 dichos uno por uno.
@@ -943,12 +944,15 @@ Defensa en capas:
 - En el enrolamiento se usan desafíos distintos por muestra (D-059).
 - El vocabulario es un archivo de configuración versionado, compartido por Spring Boot (generación) y Python (gramática de Vosk).
 - Esta estructura se considera una "frase de desafío" en el sentido de HU-29, HU-43 y del glosario de `01_REQUISITOS_NAYRA.md`.
+- **Lista v2 (2026-09-27, reemplaza a la v1):** 40 palabras **bisílabas**, comunes, sin homófonos con seseo o yeísmo y no parecidas a los dígitos, en `shared/desafio/vocabulario_v2.json`, compartido por Spring Boot y Python. La v1 se retiró porque incluía una palabra monosílaba (*tren*) y catorce de tres sílabas. La verificación de sílabas, las confusiones que se mantienen y las palabras descartadas están en `/mnt/project-files/analisis/BACKEND_GENERAL_AUDITORIA_2026-09-27.md`, parte 1. Queda **PROVISIONAL — PENDIENTE DE VALIDACIÓN** y **no es una lista aprobada**: falta validar la comprensión con usuarios, la diferenciación fonética y la presencia de las 40 palabras en el léxico de Vosk.
+- **Vida del desafío:** valor PROVISIONAL del prototipo en la tabla «Parámetros provisionales del prototipo».
 
 ### D-055 — Umbrales y calibración
 **Estado:** APROBADA (estrategia) / valores PENDIENTES DE VALIDACIÓN
 
 - Umbrales de similitud, anti-spoofing, calidad de audio y confianza del reconocimiento en **configuración versionada junto con el modelo**; **nunca en el código** (`05_BIOMETRIA_NAYRA.md` §12).
 - **Umbral provisional:** para que el prototipo funcione (D-034), se fija un valor provisional a partir de un piloto pequeño con consentimiento, registrado aquí como PROVISIONAL con el piloto que lo respalda.
+- **Autorización del 2026-09-27:** mientras no exista el piloto, el equipo autorizó valores provisionales **sin estudio que los respalde** para construir el prototipo funcional, marcados `PROVISIONAL — PENDIENTE DE VALIDACIÓN` (tabla «Parámetros provisionales del prototipo»). No son resultados de Nayra ni sustituyen al piloto ni a la calibración.
 - **Valor definitivo:** calibración con voluntarios (D-060), conjuntos de desarrollo y prueba separados, curvas DET/ROC, FAR, FRR y EER; punto de operación orientado a **baja FAR** (contexto de billetera).
 - No se reduce el umbral para aceptar voces alteradas (`05_BIOMETRIA_NAYRA.md` §26.5).
 - Normalización de puntajes (AS-norm) solo si la calibración la justifica.
@@ -970,11 +974,12 @@ Defensa en capas:
 - Captura controlada manualmente por el usuario (HU-28, HU-42, HU-62).
 
 ### D-058 — Control de calidad de audio
-**Estado:** APROBADA (etapa) / herramienta de VAD PENDIENTE DE DECISIÓN / valores PENDIENTES DE VALIDACIÓN
+**Estado:** APROBADA (etapa) / herramienta de VAD: candidata PROVISIONAL (2026-09-27) / valores PENDIENTES DE VALIDACIÓN
 
 - Etapa previa en el servicio Python: voz neta (detección de actividad de voz), relación señal/ruido estimada y saturación.
 - Devuelve un motivo que la app convierte en instrucción accesible (HU-31, HU-32, HU-44).
 - Opción sin dependencia nueva para la VAD: el modelo de VAD de SpeechBrain (a evaluar).
+- **Candidata PROVISIONAL (2026-09-27):** **WebRTC VAD** (paquete `webrtcvad-wheels`) como herramienta inicial del prototipo. **No es definitiva**; sus parámetros son PROVISIONALES — PENDIENTES DE VALIDACIÓN.
 
 ### D-059 — Orden del pipeline y enrolamiento
 **Estado:** APROBADA / número de muestras PENDIENTE DE VALIDACIÓN
@@ -995,7 +1000,8 @@ Debe definirse: número de voluntarios (incluidas personas con discapacidad visu
 - Validación **solo en el servidor**; el PIN nunca se guarda en el teléfono.
 - El espacio de 10⁶ combinaciones exige, además del hash, un secreto del servidor (*pepper*) y límite estricto de intentos; algoritmo y parámetros siguen en **D-047 (PENDIENTE)**.
 - Ingreso accesible: teclado numérico propio con distribución fija, cada tecla etiquetada y anuncio solo del avance ("3 de 6 dígitos"), nunca de los dígitos; sin aleatorizar teclas.
-- **PENDIENTE:** si además se permite dictar el PIN por voz (HU-118 menciona el dictado de la credencial; dictarlo en voz alta lo expone a terceros) y el rechazo de PIN triviales (000000, 123456…).
+- **Dictado del PIN — APROBADO (2026-09-27):** el PIN puede dictarse por voz además de ingresarse con el teclado. Sigue siendo una **credencial de conocimiento, no biometría**: el audio del dictado nunca entra al pipeline biométrico, y ni el PIN, ni el audio ni la transcripción se almacenan en texto plano ni aparecen en logs. Riesgo conocido: dictarlo en voz alta puede exponerlo a terceros (HU-118). Reconocimiento: D-046. El PIN y el desafío de voz siguen siendo pasos separados y no se fusionan (D-054). D-061 se mantiene como modificación de D-037, con origen AG-01.
+- **PENDIENTE:** rechazo de PIN triviales (000000, 123456…).
 - El texto de HU-118 se conserva sin cambios; su interpretación bajo esta decisión consta en `01_REQUISITOS_NAYRA.md` §13.
 
 ### D-018 — Sesiones (actualización parcial)
@@ -1003,6 +1009,53 @@ Ver la actualización en la sección D-018: **cierre automático tras 5 minutos 
 
 ### D-016 — Despliegue del servicio de voz (sin cambio de estado)
 **Estado:** PENDIENTE. Estimación del análisis A–K, a medir: contenedor o VM solo CPU (2–4 vCPU, 4 GB RAM). Falta decidir si el servicio Python se replica en las 2 instancias de D-023.
+
+### Parámetros provisionales del prototipo (autorizados el 2026-09-27)
+
+Todos los valores de esta tabla son **PROVISIONAL — PENDIENTE DE VALIDACIÓN**. Se autorizaron solo para construir el prototipo funcional (D-034, D-055), no provienen de ningún estudio y no deben presentarse como resultados. Los del servicio de voz viven en `Nayra-Voz/config/parametros_provisionales.yaml` (versionados con el modelo, D-055); los de Spring Boot, en `Nayra-Back/src/main/resources/application-prototipo.properties` (voz) y `application.properties` (nonce y registro en curso, prefijo `nayra.`).
+
+| Parámetro | Valor provisional | Dónde | Decisión |
+|---|---|---|---|
+| Vida del desafío | 120 s | Spring Boot | D-054 |
+| Duración mínima / máxima de la muestra | 1,5 s / 20 s | Python (la app corta a 20 s) | D-057 |
+| VAD (WebRTC): agresividad / trama | 2 / 30 ms | Python | D-058 |
+| Voz neta mínima | 1,0 s | Python | D-058 |
+| Relación señal/ruido mínima | 10 dB | Python | D-058 |
+| Saturación máxima | 1 % de las muestras | Python | D-058 |
+| Confianza mínima por palabra (Vosk) | 0,60 | Python | D-046, D-055 |
+| Probabilidad mínima de voz genuina (AASIST) | 0,50 | Python | D-012, D-055 |
+| Similitud coseno mínima (ECAPA-TDNN) | 0,25 (valor por defecto de SpeechBrain, no calibrado) | Python | D-011, D-055 |
+| Muestra atípica en el enrolamiento | similitud < 0,50 con el centroide del resto | Python | D-059 |
+
+**Parámetros autorizados provisionalmente para el prototipo (2026-09-27).** Se mantienen solo para esta entrega; **no** son decisiones aprobadas y ninguna decisión D los fija:
+
+| Parámetro | Valor provisional | Dónde | Decisión |
+|---|---|---|---|
+| Vida del nonce del dispositivo | 60 s | Spring Boot (`nayra.dispositivo.vida-nonce`) | D-048 |
+| Vida de la transacción de inicio de sesión | 5 min | Spring Boot | D-037 |
+| Timeout de conexión / lectura del cliente del servicio de voz | 2 s / 30 s | Spring Boot | D-010 |
+| Vida máxima de un enrolamiento incompleto | 900 s | Python | D-059 |
+| Vida del código de registro en curso | 900 s | Spring Boot (`nayra.registro.vida-registro-en-curso`) | Relacionada con D-052, sin ser decisión de D-052 |
+
+### Mecanismos técnicos provisionales del prototipo (autorizados el 2026-09-27)
+
+Estos mecanismos pueden usarse en el prototipo, pero son **PROVISIONALES**: no son decisiones aprobadas y **no cierran** las decisiones relacionadas, que siguen en su estado.
+
+| Mecanismo | Decisión relacionada (sigue en su estado) | Qué sí está definido |
+|---|---|---|
+| Sesión con token opaco aleatorio; solo se guarda su hash; `Authorization: Bearer`; sin duración máxima absoluta ni renovación por ahora | D-018 (PARCIAL) | Cierre tras 5 min de inactividad (APROBADO) |
+| El ADMIN se autentica con dispositivo + PIN + voz | D-050 (PENDIENTE) | — |
+| Ruta de arranque del primer ADMIN (perfil `prototipo`). Separada del registro asistido: **no cumple** D-052 porque el primer ADMIN no pasa por la validación de un representante | D-050 (PENDIENTE); relacionada con D-052 | — |
+| Código de registro de un solo uso para pasar del representante al celular de la persona | D-052 (registro técnico pendiente, categoría B) | Los 13 pasos del flujo |
+| Solo un ADMIN actúa como representante | D-052 | D-052 admite un administrador u otra persona autorizada; queda pendiente si puede ser otra persona |
+| Un ADMIN no puede bloquearse ni revocar su propio dispositivo (regla añadida para no dejar el prototipo sin administrador; no proviene de D-041) | — | — |
+| Formatos: DNI de 8 dígitos; celular de 9 a 15 dígitos con `+` opcional | D-035, D-043 | Los datos, no el formato |
+| Organización de rutas `/api/v1/...` para la API general (propuesta, no contrato) | D-014 (PENDIENTE) | — |
+| Cancelar el registro si la persona no confirma sus datos | D-052 | Que la persona confirma sus datos (paso 7) |
+| El primer ADMIN puede no tener cuenta financiera (no es una exención definitiva) | D-025 | Cada usuario tiene una única cuenta financiera |
+| Un rol por usuario; mecanismo de autorización por rutas con denegación por defecto | D-009 (PARCIAL) | Roles USER y ADMIN (D-041) |
+
+Valores ya aprobados que el prototipo usa sin cambios: 3 intentos (D-044) y WAV PCM 16 kHz mono 16 bits (D-057). El prototipo usa además 3 muestras válidas como valor inicial (hasta 5), provisional y pendiente de validación según D-059.
 
 ### Alternativas descartadas el 2026-09-27
 

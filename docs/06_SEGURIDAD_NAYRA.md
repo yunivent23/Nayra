@@ -687,7 +687,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-044.
 
 ## 36.1 Contraseña
 
-> **D-061 (origen AG-01; aprobada el 2026-09-27; hash en AG-11):** la contraseña se concreta como **PIN numérico de 6 dígitos**. Todas las reglas de esta sección aplican al PIN. Por su espacio pequeño (10⁶ combinaciones), el hash por sí solo no lo protege ante una filtración de la base de datos: se requiere además un secreto del servidor (*pepper*) fuera de la BD y el límite estricto de intentos (D-044). El PIN se ingresa con un teclado accesible que anuncia solo el avance, nunca los dígitos. Si se permite dictarlo por voz sigue **pendiente** (D-061, D-046).
+> **D-061 (origen AG-01; aprobada el 2026-09-27; hash en AG-11):** la contraseña se concreta como **PIN numérico de 6 dígitos**. Todas las reglas de esta sección aplican al PIN. Por su espacio pequeño (10⁶ combinaciones), el hash por sí solo no lo protege ante una filtración de la base de datos: se requiere además un secreto del servidor (*pepper*) fuera de la BD y el límite estricto de intentos (D-044). El PIN se ingresa con un teclado accesible que anuncia solo el avance, nunca los dígitos. El dictado por voz del PIN está **aprobado** (D-061, 2026-09-27); la tecnología de reconocimiento sigue pendiente (D-046).
 
 - Se crea en el registro y puede dictarse por voz (D-037).
 - Se almacena **solo mediante hash seguro**; nunca en texto plano, nunca como audio, nunca en logs, ni siquiera en intentos fallidos.
@@ -739,6 +739,8 @@ El código actual del backend presenta problemas de seguridad identificados en l
 4. ~~secretos y credenciales en el código/configuración, y revisión de las credenciales expuestas en el historial de Git (rotación);~~ **AG-01 v5: reclasificado como deuda técnica (D-017, categoría C).** No bloquea el primer entregable; ver §36.8;
 5. revisión del mecanismo JWT existente antes de reutilizarlo (no está aprobado, D-018);
 6. retiro del código heredado ajeno a Nayra.
+
+**Estado (2026-09-27, en el árbol de trabajo, sin commit):** los puntos 1, 2, 3, 5 y 6 están aplicados: se retiraron el CRUD de usuarios, el listado público, el JWT (no se reutilizó) y el código heredado con CORS abierto. El punto 4 sigue como deuda técnica. Detalle en `08_ESTADO_PROYECTO.md` §11.
 
 El código existente **no** debe considerarse correcto solo porque existe.
 

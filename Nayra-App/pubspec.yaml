@@ -1,0 +1,23 @@
+name: nayra_app
+description: "Nayra — aplicación móvil (prototipo AG-13: inicio de sesión por dispositivo, PIN y voz)."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Cliente HTTP (paquete oficial del equipo de Dart) para las rutas PROVISIONALES del backend (D-014).
+  http: ^1.6.0
+  # Captura de audio del micrófono como PCM 16 bits, 16 kHz, mono; el audio se mantiene solo en memoria (D-013).
+  record: ^7.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

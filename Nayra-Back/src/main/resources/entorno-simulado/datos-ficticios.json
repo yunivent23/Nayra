@@ -1,0 +1,19 @@
+{
+  "nota": "DATOS FICTICIOS del entorno bancario simulado (D-021, D-035). No representan personas, bancos ni cuentas reales.",
+  "entidadesBancarias": [
+    { "id": "EBS-01", "nombre": "Entidad Bancaria Simulada 1" }
+  ],
+  "registroIdentidad": [
+    { "dni": "10000001", "nombres": "Persona Uno", "apellidos": "Ficticia Simulada" },
+    { "dni": "10000002", "nombres": "Persona Dos", "apellidos": "Ficticia Simulada" },
+    { "dni": "10000003", "nombres": "Persona Tres", "apellidos": "Ficticia Simulada" },
+    { "dni": "10000004", "nombres": "Persona Cuatro", "apellidos": "Ficticia Simulada" },
+    { "dni": "10000005", "nombres": "Persona Cinco", "apellidos": "Ficticia Simulada" }
+  ],
+  "cuentas": [
+    { "titularDni": "10000002", "entidadBancariaId": "EBS-01", "identificador": "SIM-0000000002", "saldo": "500.00", "moneda": "PEN" },
+    { "titularDni": "10000003", "entidadBancariaId": "EBS-01", "identificador": "SIM-0000000003", "saldo": "500.00", "moneda": "PEN" },
+    { "titularDni": "10000004", "entidadBancariaId": "EBS-01", "identificador": "SIM-0000000004", "saldo": "500.00", "moneda": "PEN" },
+    { "titularDni": "10000005", "entidadBancariaId": "EBS-01", "identificador": "SIM-0000000005", "saldo": "500.00", "moneda": "PEN" }
+  ]
+}

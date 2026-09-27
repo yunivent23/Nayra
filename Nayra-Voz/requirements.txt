@@ -1,0 +1,15 @@
+# Servicio de voz de Nayra (D-002, D-010). Versiones a fijar al validar el prototipo.
+fastapi
+uvicorn
+python-multipart
+numpy
+pyyaml
+cryptography
+# Calidad de audio: WebRTC VAD — PROVISIONAL, candidato inicial pendiente de prueba técnica (D-058)
+webrtcvad-wheels
+# Contenido del desafío (D-046)
+vosk
+# Verificación 1:1 (D-011) y anti-spoofing (D-012)
+torch
+torchaudio
+speechbrain

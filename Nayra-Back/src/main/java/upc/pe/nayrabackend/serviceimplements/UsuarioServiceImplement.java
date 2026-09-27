@@ -1,68 +1,63 @@
 package upc.pe.nayrabackend.serviceimplements;
 
 import org.springframework.stereotype.Service;
-
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
-import upc.pe.nayrabackend.entities.Users;
-import upc.pe.nayrabackend.repositories.IUsersRepository;
+import upc.pe.nayrabackend.dtos.UsuarioDTOs.DatosPropios;
+import upc.pe.nayrabackend.entities.Auditoria;
+import upc.pe.nayrabackend.entities.Usuario;
+import upc.pe.nayrabackend.excepciones.NayraException;
+import upc.pe.nayrabackend.repositories.IDispositivosRepository;
+import upc.pe.nayrabackend.repositories.IUsuariosRepository;
+import upc.pe.nayrabackend.serviceinterfaces.IAuditoriaService;
+import upc.pe.nayrabackend.serviceinterfaces.ISesionesService;
 import upc.pe.nayrabackend.serviceinterfaces.IUsuarioService;
 
-import java.util.List;
+import java.time.Clock;
+import java.time.Instant;
 
 @Service
 public class UsuarioServiceImplement implements IUsuarioService {
 
-    @Autowired
-    private IUsersRepository repository;
+    private final IUsuariosRepository usuarios;
+    private final IDispositivosRepository dispositivos;
+    private final ISesionesService sesiones;
+    private final IAuditoriaService auditoria;
+    private final Clock reloj;
 
-    @Override
-    public List<Users> listarTodo() {
-        return repository.findAll();
+    public UsuarioServiceImplement(IUsuariosRepository usuarios, IDispositivosRepository dispositivos,
+                                   ISesionesService sesiones, IAuditoriaService auditoria, Clock reloj) {
+        this.usuarios = usuarios;
+        this.dispositivos = dispositivos;
+        this.sesiones = sesiones;
+        this.auditoria = auditoria;
+        this.reloj = reloj;
     }
 
     @Override
-    public Users listId(Long id) {
-        return repository.findById(id).orElse(null);
+    public Usuario obtener(String usuarioId) {
+        return usuarios.porId(usuarioId).orElseThrow(() -> NayraException.noEncontrado("USUARIO_NO_ENCONTRADO"));
     }
 
     @Override
-    public void insert(Users usuario) {
-        repository.save(usuario);
+    public DatosPropios datosPropios(String usuarioId) {
+        Usuario u = obtener(usuarioId);
+        boolean dispositivoActivo = dispositivos.activoDeUsuario(usuarioId).isPresent();
+        return new DatosPropios(u.getNombres(), u.getApellidos(), u.getCelular(), u.getRol().name(), u.getEstado().name(),
+                dispositivoActivo);
     }
 
     @Override
-    public void delete(Long id) {
-
-        Users usuario = repository.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Usuario no encontrado"));
-
-        repository.delete(usuario);
+    public void bloquear(String usuarioId, String actorId, String motivo) {
+        Usuario u = obtener(usuarioId);
+        u.bloquear(Instant.now(reloj));
+        sesiones.revocarDeUsuario(usuarioId, "CUENTA_BLOQUEADA");
+        auditoria.registrar(actorId == null ? "CUENTA_BLOQUEADA" : "ADMIN_BLOQUEO_CUENTA",
+                Auditoria.Resultado.EXITO, actorId, usuarioId, motivo, null);
     }
 
     @Override
-    public void edit(Users usuario) {
-        repository.save(usuario);
-    }
-
-    @Override
-    public List<Users> buscarPorNombre(String username) {
-        return repository.findByUsernameContainingIgnoreCase(username);
-    }
-
-    @Override
-    public Users buscarPorUsername(String username) {
-        return repository.findByUsername(username);
-    }
-
-    @Override
-    public Users buscarPorDni(String dni) {
-        return repository.findByDni(dni);
-    }
-
-    @Override
-    public Users buscarPorEmail(String email) {
-        return repository.findByEmail(email);
+    public void desbloquear(String usuarioId, String actorId) {
+        Usuario u = obtener(usuarioId);
+        u.desbloquear(Instant.now(reloj));
+        auditoria.exito("ADMIN_DESBLOQUEO_CUENTA", actorId, usuarioId);
     }
 }

@@ -709,7 +709,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-007, D-018, D-048
 
 | HU | Interpretación | Decisión |
 |---|---|---|
-| HU-118 | La "contraseña de acceso" se concreta como **PIN de 6 dígitos**, ingresado con un teclado accesible que anuncia solo el avance. **Pendiente:** si además puede dictarse por voz, como menciona la HU (dictarlo en voz alta lo expone a terceros) | D-061, D-046 |
+| HU-118 | La "contraseña de acceso" se concreta como **PIN de 6 dígitos**, ingresado con un teclado accesible que anuncia solo el avance. El PIN también puede dictarse por voz, como menciona la HU (dictado aprobado por D-061 el 2026-09-27; riesgo conocido: dictarlo en voz alta lo expone a terceros). La tecnología de reconocimiento del PIN dictado sigue pendiente (D-046) | D-061, D-046 |
 | HU-12, HU-40 | El acceso sigue el flujo de D-037 con PIN en lugar de contraseña; el dispositivo vinculado se comprueba mediante la firma de un nonce con la clave del dispositivo | D-037, D-048, D-061 |
 | HU-13 | Además del cierre manual, la sesión se cierra automáticamente tras 5 minutos de inactividad | D-018 |
 | HU-119 | La vinculación registra la clave pública del par de claves generado en el teléfono | D-048 |

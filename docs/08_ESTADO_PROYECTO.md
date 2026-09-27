@@ -37,7 +37,7 @@ El short paper contempla hasta el Objetivo 2, incluyendo el diseño de la soluci
 | Requisitos | DOCUMENTADO — depurado por AG-00 y actualizado por AG-01 (HU-117 a HU-125; alcance del primer entregable; D1–D6 pendientes) |
 | Arquitectura | EN DEFINICIÓN CONTROLADA — componentes y flujos lógicos del primer entregable documentados (AG-01) |
 | Base de datos | MODELO LÓGICO DOCUMENTADO — AG-00 y AG-01 (`03_BASE_DE_DATOS_NAYRA.md` §16); esquema físico y migraciones PENDIENTES (D-051) |
-| Biometría de voz | DISEÑO TÉCNICO APROBADO (AG-13, `05_BIOMETRIA_NAYRA.md` §27): modelo, anti-spoofing, reconocimiento del desafío, almacenamiento y comunicación decididos; **valores de umbral PENDIENTES DE VALIDACIÓN**; implementación NO INICIADA |
+| Biometría de voz | DISEÑO TÉCNICO APROBADO (AG-13, `05_BIOMETRIA_NAYRA.md` §27): modelo, anti-spoofing, reconocimiento del desafío, almacenamiento y comunicación decididos; **valores de umbral PENDIENTES DE VALIDACIÓN**; prototipo funcional EN DESARROLLO (2026-09-27, ver §3 y §5) |
 | Seguridad | PRINCIPIOS Y CONTROLES DOCUMENTADOS — controles AG-01 en `06_SEGURIDAD_NAYRA.md` §36 |
 | Decisiones técnicas | REGISTRADAS hasta D-061 (revisión del 2026-09-27; trazabilidad temática AG en `07_DECISIONES_TECNICAS_NAYRA.md`); siguen PENDIENTES, entre otras, D-014, D-016, D-018 (mecanismo), D-044 (detalle), D-045, D-046 (resto), D-047, D-055 (valores de umbral), D-060 |
 | API | PENDIENTE DE DEFINICIÓN FINAL |
@@ -68,14 +68,26 @@ Responsabilidad general:
 - auditoría;
 - comunicación con servicios especializados cuando corresponda.
 
-**Estado de implementación (verificado en el repositorio, commit `127a601`, 2026-09-26):** ESQUELETO PARCIAL. Sin compilación ni ejecución verificadas.
+**Estado de implementación (verificado en el árbol de trabajo el 2026-09-27, sin commit):** BACKEND GENERAL EN DESARROLLO, con persistencia en memoria.
 
-- Existe el proyecto Spring Boot (`Nayra-Back/`).
-- `Users` y `Role` están implementados como entidades JPA, con repositorio, servicio y `UsuarioController` (CRUD). El modelo **no** corresponde al aprobado (`03_BASE_DE_DATOS_NAYRA.md` §16).
-- Hay una configuración de Spring Security con filtro JWT: **no aprobada** (D-018), sin endpoint de inicio de sesión.
-- `Cuentas`, `Sesiones`, `Dispositivos`, `Operaciones`, `Notificaciones`, `Solicitudes_atencion` y `Auditoria` son **clases vacías**, con repositorios y servicios vacíos.
-- Ninguna funcionalidad de negocio de Nayra está implementada.
-- Existen problemas de seguridad que deben corregirse antes de nuevas funcionalidades (ver §11 y `06_SEGURIDAD_NAYRA.md` §36.7).
+- **Retirado** por inseguro o no aprobado (`06` §36.7): CRUD de `Users`/`Role` con contraseña en texto plano y rol elegido por el cliente, `GET /usuarios` público, JWT (D-018), CORS abierto y reglas heredadas (`/bicicletas`, `/alquileres`), `ddl-auto=update` (ahora `none`, D-051). Las credenciales existentes **no** se tocaron (D-017).
+- **Dominio según `03` §16**: `Usuario` (estado ACTIVA/BLOQUEADA, rol USER o ADMIN), `Dispositivos`, `Sesiones`, `Auditoria` (actor, usuario afectado, acción, resultado, motivo, dispositivo), `Cuentas`, `EntidadBancaria` y `RegistroIdentidadSimulado`. Sin mapeo JPA: los servicios usan puertos de repositorio con adaptadores **en memoria** hasta decidir D-051. Datos **ficticios** del entorno simulado en `entorno-simulado/datos-ficticios.json`.
+- **Registro inicial asistido (flujo de D-052)**: el representante proporciona el DNI y valida la identidad; la persona confirma sus datos, registra su celular, crea su PIN (solo hash), vincula la clave del dispositivo, enrola su voz (AG-13) y finaliza. Se vincula la cuenta financiera simulada por DNI. DNI ya registrado → rechazo auditado. **Provisional del prototipo** (no son decisiones de D-052): solo un ADMIN actúa como representante; el paso al celular de la persona usa un código de un solo uso (900 s); si la persona no confirma sus datos, el registro se cancela; formatos de DNI y celular.
+- **Sesión**: se crea al autenticar por voz. Cierre tras 5 minutos de inactividad controlado en el servidor (aprobado, D-018), cierre de sesión (HU-13) y revocación al bloquear la cuenta o revocar el dispositivo (D-040). Token opaco aleatorio en `Authorization: Bearer`, del que solo se guarda el hash, sin duración máxima absoluta ni renovación: mecanismo **provisional** del prototipo; D-018 sigue parcial.
+- **Autorización** (roles USER y ADMIN de D-041; mecanismo **provisional** mientras D-009 siga pendiente): `/api/v1/admin/**` solo ADMIN, `/api/v1/**` con sesión, `/prototipo/**` por la excepción del primer entregable, todo lo demás denegado; respuestas 401/403 en JSON.
+- **Administración** (solo API; panel web pendiente, D-045): listar y buscar usuarios (HU-20, HU-21), detalle y estado (HU-22, HU-101), bloqueo y desbloqueo (HU-19), consulta y revocación del dispositivo (HU-125) y consultas de auditoría (HU-89, HU-80, HU-94). Toda acción queda auditada. Regla técnica **provisional** añadida (no proviene de D-041): un ADMIN no puede bloquearse ni revocar su propio dispositivo.
+- **Usuario**: datos propios y estado (HU-09, HU-15).
+- **Errores**: formato único `{"error": "CODIGO"}` sin datos sensibles.
+- **Organización de la API**: `/api/v1/...` para la API general y `/prototipo/...` para voz y arranque. Es una propuesta **provisional**: el contrato sigue pendiente (D-014).
+- Sin código: operaciones, notificaciones, solicitudes de atención, saldo y transferencias (clases vacías sin uso).
+- Compila con JDK 21 (`mvn -Djava.version=21`; el `pom.xml` pide Java 25). Arranca sin `jwt.secret`.
+
+**Prototipo AG-13 (verificado el 2026-09-27): EN DESARROLLO, integrado con el backend general.** Activado con el perfil `prototipo`:
+
+- Implementado: nonce y firma ECDSA P-256 del dispositivo (D-048), PIN de 6 dígitos con hash y PIN dictado (D-061), desafío palabra + 3 dígitos + palabra con `SecureRandom` y un solo uso (D-054), cliente del servicio de voz (D-010), decisión final, intentos, bloqueo y auditoría (D-056), creación de la sesión al autenticar.
+- AG-13 usa el usuario, el dispositivo, la sesión y la auditoría generales; el backend general no depende de AG-13. Java no accede a embeddings (D-013).
+- Provisional: política de intentos propuesta en D-044, hash del PIN con BCrypt sin pepper (D-047; no cumple el pepper que exige D-061), rutas `/prototipo/...` (D-014), el ADMIN se autentica con el mismo flujo del usuario (D-050 pendiente) y el primer ADMIN se crea con una ruta de arranque del perfil `prototipo`, separada de D-052 y sin validación por representante.
+- Pruebas Java: 52 OK y 1 omitida (contrato, necesita el servicio Python en ejecución; ejecutada aparte: OK).
 
 ---
 
@@ -91,7 +103,10 @@ Responsabilidad:
 - biometría de voz;
 - mecanismos de detección de intentos de suplantación, cuando hayan sido implementados.
 
-**Estado:** DISEÑO TÉCNICO APROBADO / IMPLEMENTACIÓN NO INICIADA. **No existe código Python en el repositorio** (verificado 2026-09-26).  
+**Estado (verificado el 2026-09-27):** PROTOTIPO EN DESARROLLO en `Nayra-Voz/` (FastAPI): audio, calidad con WebRTC VAD (candidata provisional), Vosk, AASIST, ECAPA-TDNN, cifrado AES-256-GCM del embedding, enrolamiento con centroide y transcripción del PIN dictado. 40 pruebas OK con modelos simulados y WebRTC VAD real; AASIST cargado y ejecutado con sus pesos publicados. ECAPA-TDNN y Vosk **no se ejecutaron** porque sus modelos no pudieron descargarse en el entorno de desarrollo. Referencias en memoria (D-051) y parámetros PROVISIONALES.
+
+Antes (2026-09-26): no existía código Python en el repositorio.
+
 Revisión del 2026-09-27 (AG-13; D-010 y D-056 en AG-12): decididos FastAPI (D-010), SpeechBrain ECAPA-TDNN (D-011), AASIST (D-012), almacenamiento del embedding cifrado sin audio (D-013) y Vosk para el contenido del desafío (D-046, parcial). El servicio Python aplica los umbrales técnicos y Spring Boot decide la autenticación (D-056). Pendientes: contrato en `04_API.md` (D-014), valores de umbral (D-055) y despliegue (D-016).
 
 ---
@@ -100,7 +115,9 @@ Revisión del 2026-09-27 (AG-13; D-010 y D-056 en AG-12): decididos FastAPI (D-0
 
 La tecnología definitiva del frontend todavía debe considerarse una decisión técnica pendiente si no ha sido aprobada formalmente.
 
-**Estado:** POR DEFINIR. **No existe código de aplicación móvil ni de panel web en el repositorio** (verificado 2026-09-26). 2026-09-27: la aplicación móvil será **Flutter** (D-007), con canal Kotlin para el almacén de claves (D-048); implementación no iniciada. El panel web sigue pendiente (D-045).
+**Estado:** POR DEFINIR. **No existe código de aplicación móvil ni de panel web en el repositorio** (verificado 2026-09-26). 2026-09-27: la aplicación móvil será **Flutter** (D-007), con canal Kotlin para el almacén de claves (D-048). El panel web sigue pendiente (D-045).
+
+**Prototipo (verificado el 2026-09-27): EN DESARROLLO** en `Nayra-App/`: teclado de PIN accesible (solo anuncia el avance), PIN dictado, clave del dispositivo en el Android Keystore mediante canal Kotlin, desafío en pantalla y para el lector de pantalla, grabación manual WAV 16 kHz mono en memoria, registro en el celular con el código de registro (D-052), sesión tras autenticar, "Mis datos" y cierre de sesión. El tutorial (paso 12 de D-052) no está implementado porque su contenido no está definido. `flutter analyze` sin observaciones y 9 pruebas OK. **No se compiló para Android** (no hay Android SDK en el entorno de desarrollo), por lo que el canal Kotlin no está verificado.
 
 Claude no debe asumir un framework de frontend sin consultar `07_DECISIONES_TECNICAS_NAYRA.md` y el repositorio.
 
@@ -140,7 +157,7 @@ El detalle oficial del modelo se encuentra en:
 ### Estado
 
 **Modelo documentado:** SÍ.  
-**Implementación física:** POR VERIFICAR EN EL REPOSITORIO. Las decisiones de AG-00 (D-024 a D-033) son solo documentales: **no se han implementado** en el código.
+**Implementación física:** NO EXISTE (verificado el 2026-09-27). `ddl-auto=none`: no se crean tablas hasta decidir D-051. El modelo lógico de `03` §16 (incluidas las decisiones de AG-00, D-024 a D-033) está implementado como objetos de dominio con repositorios **en memoria**; el adaptador PostgreSQL se conectará a los mismos puertos. La aplicación sigue configurada con PostgreSQL y arranca con él, pero no lo usa.
 
 No deben agregarse tablas biométricas como `VOICE_BIOMETRICS`, `VOICE_EMBEDDINGS` o `ANTI_SPOOFING` sin una decisión explícita. _(AG-13: la única estructura biométrica aprobada es `biometria.PERFILES_VOZ`, D-013, `03_BASE_DE_DATOS_NAYRA.md` §16.11; su tabla física depende de D-051.)_
 
@@ -164,10 +181,11 @@ La biometría de voz constituye uno de los componentes centrales de Nayra.
 - ~~modelo definitivo~~ (D-011), ~~algoritmo de comparación~~ (coseno 1:1, D-011), ~~estrategia de almacenamiento~~ (D-013), ~~retención de audio~~ (no se guarda audio, D-013), ~~anti-spoofing~~ (D-012), ~~integración con Java~~ (D-010), ~~responsable de aplicar los umbrales técnicos~~ (servicio Python, D-056) — resueltos el 2026-09-27 (AG-13; D-010 y D-056 en AG-12);
 - valores de umbral (D-055; primero un umbral provisional por piloto);
 - dataset de calibración y consentimiento (D-060);
-- herramienta de VAD (D-058), lista de palabras y vida del desafío (D-054);
-- resto del reconocimiento del habla: comando y PIN dictado (D-046).
+- herramienta de VAD definitiva (D-058; WebRTC VAD es candidata provisional desde el 2026-09-27);
+- validación de la lista v2 y de la vida del desafío (D-054, ambas PROVISIONALES);
+- resto del reconocimiento del habla: comando y DNI (D-046); el PIN dictado usa una candidata provisional.
 
-**Estado:** DISEÑO TÉCNICO APROBADO / IMPLEMENTACIÓN NO INICIADA / VALIDACIÓN PENDIENTE.
+**Estado:** DISEÑO TÉCNICO APROBADO / PROTOTIPO EN DESARROLLO (2026-09-27) / VALIDACIÓN PENDIENTE.
 
 ---
 
@@ -191,7 +209,7 @@ La solución debe aplicar principios de:
 
 Los mecanismos tecnológicos concretos deben consultarse en `07_DECISIONES_TECNICAS_NAYRA.md`.
 
-**Estado:** REQUISITOS Y PRINCIPIOS DOCUMENTADOS; IMPLEMENTACIÓN POR VERIFICAR.
+**Estado:** REQUISITOS Y PRINCIPIOS DOCUMENTADOS. Implementado en el árbol de trabajo (2026-09-27, sin commit): correcciones de `06` §36.7, autorización USER/ADMIN con denegación por defecto, PIN solo con hash, sesión con token del que solo se guarda el hash, firma del dispositivo contra replay, auditoría sin PIN, audio, embeddings ni secretos, y errores sin datos sensibles. Sigue pendiente: TLS, secretos (D-017), hash definitivo del PIN (D-047) y mecanismo de sesión (D-018).
 
 ---
 
@@ -266,19 +284,24 @@ Definiciones aprobadas en AG-00 (ver `07_DECISIONES_TECNICAS_NAYRA.md`, D-024 a 
 
 La lista de funcionalidades implementadas debe mantenerse sincronizada con el repositorio.
 
-**Estado actual (verificado 2026-09-26):** ninguna funcionalidad de Nayra implementada.
+**Estado actual (verificado 2026-09-27, sin commit):** ninguna funcionalidad se considera terminada: todas dependen de persistencia en memoria (D-051) y de piezas provisionales. Ver «En desarrollo».
 
 ### En desarrollo
 
 Deben registrarse aquí las funcionalidades que tengan código parcial pero que todavía no estén completas.
 
-**Estado actual:** código parcial no alineado con las decisiones vigentes: modelo `Users`/`Role`, CRUD de usuarios y configuración de seguridad JWT (no aprobada). Requieren revisión antes de reutilizarse.
+**Estado actual (2026-09-27, sin commit):** de extremo a extremo entre `Nayra-App/`, `Nayra-Back/` (perfil `prototipo`) y `Nayra-Voz/`, con persistencia en memoria y parámetros provisionales:
+
+- registro inicial asistido con enrolamiento de voz (D-052; sin tutorial);
+- inicio de sesión por dispositivo, PIN (tecleado o dictado), desafío y voz, con sesión y cierre por inactividad;
+- datos propios, estado de la cuenta y cierre de sesión;
+- API del administrador: usuarios, bloqueo, dispositivo y auditoría (sin panel web, D-045).
 
 ### Pendientes
 
 Deben registrarse las funcionalidades que todavía no tengan una implementación funcional.
 
-**Estado actual:** todas las funcionalidades del primer entregable (`01_REQUISITOS_NAYRA.md` §12.4): registro, enrolamiento, inicio de sesión, dispositivo, recuperación, saldo, movimientos, transferencias, QR, tutorial, panel del administrador y auditoría.
+**Estado actual:** cambio de dispositivo y recuperación (D-049), solicitudes de atención y pérdida del celular (estados sin definir), actualización de datos (HU-10), saldo, movimientos y transferencias, tutorial, panel web del administrador (D-045) y persistencia en PostgreSQL (D-051). El QR queda para un siguiente entregable.
 
 > No convertir automáticamente una historia de usuario en una funcionalidad implementada.
 
@@ -297,8 +320,10 @@ Las pruebas deben registrar como mínimo:
 
 ### Estado actual
 
-**Pruebas automatizadas:** solo existe `NayraBackendApplicationTests.contextLoads`; no se ha verificado que se ejecute correctamente.  
-**Pruebas de integración:** POR VERIFICAR.  
+**Pruebas automatizadas (2026-09-27):** 52 pruebas Java OK y 1 omitida (contrato con el servicio real, ejecutada aparte: OK), 40 pruebas Python y 9 pruebas Flutter OK. `contextLoads` ya no necesita PostgreSQL: excluye la autoconfiguración JPA porque no hay tablas (D-051). Los modelos ECAPA-TDNN y Vosk se sustituyen por dobles de prueba.
+
+**Pruebas de integración:** prueba de contrato Java ↔ Python y recorrido HTTP completo contra los servicios en ejecución (Spring Boot con PostgreSQL local encendido y FastAPI con modelos simulados): arranque del administrador, registro asistido, enrolamiento, inicio de sesión, autorización USER/ADMIN, bloqueo, desbloqueo, revocación del dispositivo, cierre de sesión y auditoría. 42 de 42 comprobaciones OK el 2026-09-27.
+
 **Pruebas de biometría:** PENDIENTES DE IMPLEMENTACIÓN/VALIDACIÓN.  
 **Pruebas de seguridad:** POR VERIFICAR.
 
@@ -313,13 +338,14 @@ Formato recomendado:
 | ID | Problema | Impacto | Estado | Responsable |
 |---|---|---|---|---|
 | P-001 | Credenciales de PostgreSQL en texto plano en `application.properties`; secretos (`jwt.secret`, clave de API) presentes en el historial de Git | Seguridad — **deuda técnica** (D-017, categoría C) | ABIERTO — no bloquea el primer entregable; se corrige antes de producción (segundo entregable) | Equipo |
-| P-002 | `POST /usuarios` guarda contraseñas en texto plano y permite que el cliente elija su rol | Seguridad crítica | ABIERTO | — |
-| P-003 | `GET /usuarios` es público y expone datos personales y el campo contraseña | Seguridad crítica | ABIERTO | — |
-| P-004 | Mecanismo JWT implementado sin aprobación (D-018 pendiente), sin endpoint de inicio de sesión | Alto | ABIERTO (AG-02: D-018 solo aprobó el cierre automático tras 5 min de inactividad, sin aviso previo; el mecanismo sigue pendiente) | — |
-| P-005 | Código heredado ajeno a Nayra (reglas `/bicicletas`, `/alquileres`, comentarios de plantilla) y CORS abierto | Medio | ABIERTO | — |
-| P-006 | `ddl-auto=update` crea el esquema sin estrategia de migraciones (D-051) | Alto | ABIERTO | — |
-| P-007 | Posible incompatibilidad de versiones en `pom.xml` (Spring Boot 4.1.1 con `spring-boot-starter-security` 3.5.5); compilación sin verificar | Alto | POR VERIFICAR | — |
-| P-008 | Modelo `Users` no corresponde al aprobado (faltan nombres, apellidos y estado; sobran campos sin HU) | Medio | ABIERTO | — |
+| P-002 | `POST /usuarios` guardaba contraseñas en texto plano y permitía que el cliente eligiera su rol | Seguridad crítica | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): CRUD retirado; el rol lo fija el registro asistido | — |
+| P-003 | `GET /usuarios` era público y exponía datos personales y el campo contraseña | Seguridad crítica | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): ruta retirada; la consulta de usuarios exige ADMIN | — |
+| P-004 | Mecanismo JWT implementado sin aprobación (D-018 pendiente) | Alto | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): JWT retirado; sesión con token opaco **provisional** hasta decidir D-018 | — |
+| P-005 | Código heredado ajeno a Nayra (reglas `/bicicletas`, `/alquileres`, comentarios de plantilla) y CORS abierto | Medio | RESUELTO en el árbol de trabajo (2026-09-27, sin commit) | — |
+| P-006 | `ddl-auto=update` creaba el esquema sin estrategia de migraciones (D-051) | Alto | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): `ddl-auto=none` | — |
+| P-007 | Posible incompatibilidad de versiones en `pom.xml` (Spring Boot 4.1.1 con `spring-boot-starter-security` 3.5.5) | Alto | 2026-09-27: la versión fija de seguridad se retiró (la gestiona Spring Boot); compila y arranca con JDK 21 (`-Djava.version=21`); el `pom.xml` pide Java 25 | — |
+| P-009 | La aplicación no arrancaba sin la propiedad `jwt.secret` | Medio | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): al retirar JWT ya no se necesita | — |
+| P-008 | Modelo `Users` no correspondía al aprobado | Medio | RESUELTO en el árbol de trabajo (2026-09-27, sin commit): `Usuario` según `03` §16.1, sin mapeo físico (D-051) | — |
 
 No inventar problemas si no existe evidencia.
 

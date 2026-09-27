@@ -1,0 +1,48 @@
+# Parámetros técnicos del servicio de voz (D-055, D-056).
+#
+# TODOS los valores numéricos de este archivo son:
+#   PROVISIONAL — PENDIENTE DE VALIDACIÓN
+# Se usan solo para que el prototipo funcione (D-034). No provienen de ningún
+# estudio ni calibración de Nayra y no deben presentarse como resultados.
+# Los valores definitivos se fijarán con la calibración de D-055 / D-060.
+#
+# Los umbrales se versionan junto con el modelo (D-055): si cambia un modelo,
+# este archivo debe revisarse.
+
+version: "prototipo-v1"
+estado: "PROVISIONAL — PENDIENTE DE VALIDACIÓN"
+
+audio:                       # D-057 (formato aprobado; duraciones provisionales)
+  frecuencia_hz: 16000       # aprobado (D-057)
+  canales: 1                 # aprobado (D-057)
+  bits: 16                   # aprobado (D-057)
+  duracion_minima_s: 1.5     # PROVISIONAL — PENDIENTE DE VALIDACIÓN
+  duracion_maxima_s: 20.0    # PROVISIONAL — PENDIENTE DE VALIDACIÓN
+
+calidad:                     # D-058 (etapa aprobada; herramienta y valores provisionales)
+  herramienta_vad: "webrtcvad"   # PROVISIONAL — candidato inicial, pendiente de prueba técnica
+  vad_agresividad: 2             # PROVISIONAL — PENDIENTE DE VALIDACIÓN (0-3)
+  vad_trama_ms: 30               # PROVISIONAL — PENDIENTE DE VALIDACIÓN (10, 20 o 30)
+  voz_neta_minima_s: 1.0         # PROVISIONAL — PENDIENTE DE VALIDACIÓN
+  snr_minimo_db: 10.0            # PROVISIONAL — PENDIENTE DE VALIDACIÓN
+  saturacion_maxima_fraccion: 0.01  # PROVISIONAL — PENDIENTE DE VALIDACIÓN
+
+contenido:                   # D-046 (Vosk con gramática cerrada, aprobado)
+  modelo: "vosk-model-small-es-0.42"      # aprobado (D-046)
+  confianza_minima_por_palabra: 0.60      # PROVISIONAL — PENDIENTE DE VALIDACIÓN
+
+antispoofing:                # D-012 (AASIST, aprobado)
+  modelo: "AASIST"                        # aprobado (D-012)
+  muestras_entrada: 64600                 # ventana del modelo publicado (~4 s); no es un parámetro de Nayra
+  probabilidad_bona_fide_minima: 0.50     # PROVISIONAL — PENDIENTE DE VALIDACIÓN
+
+verificacion:                # D-011 (ECAPA-TDNN, aprobado)
+  modelo: "speechbrain/spkrec-ecapa-voxceleb"   # aprobado (D-011)
+  similitud_coseno_minima: 0.25   # PROVISIONAL — PENDIENTE DE VALIDACIÓN
+                                  # (valor por defecto de SpeechBrain verify_batch; no calibrado para Nayra)
+
+enrolamiento:                # D-059
+  muestras_validas: 3             # valor inicial, provisional y pendiente de validación según D-059
+  muestras_maximas: 5             # "hasta 5", provisional y pendiente de validación según D-059
+  similitud_minima_al_resto: 0.50 # PROVISIONAL — PENDIENTE DE VALIDACIÓN (criterio de muestra atípica)
+  vida_enrolamiento_pendiente_s: 900  # PROVISIONAL — PENDIENTE DE VALIDACIÓN (limpieza de enrolamientos a medias)

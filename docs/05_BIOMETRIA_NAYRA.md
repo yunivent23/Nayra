@@ -593,7 +593,7 @@ WAV PCM 16 kHz, mono, 16 bits, sin compresión con pérdida (D-057). Captura man
 
 ## 27.3 Desafío
 
-Estructura **palabra + 3 dígitos + palabra**, generado por Spring Boot con `SecureRandom`, de un solo uso, ligado a la cuenta y al contexto, emitido después de validar dispositivo y PIN, nunca 6 dígitos seguidos (D-054). Repetir la lectura no lo cambia; enviar un audio lo consume. El vocabulario es un archivo versionado compartido por Spring Boot y Python. Lista de palabras y vida del desafío: pendientes.
+Estructura **palabra + 3 dígitos + palabra**, generado por Spring Boot con `SecureRandom`, de un solo uso, ligado a la cuenta y al contexto, emitido después de validar dispositivo y PIN, nunca 6 dígitos seguidos (D-054). Repetir la lectura no lo cambia; enviar un audio lo consume. El vocabulario es un archivo versionado compartido por Spring Boot y Python. Lista v2 de 40 palabras bisílabas (`shared/desafio/vocabulario_v2.json`, reemplaza a la v1) y vida del desafío: PROVISIONALES — PENDIENTES DE VALIDACIÓN (2026-09-27, `07` D-054).
 
 ## 27.4 Pipeline de verificación (inicio de sesión y cambio de dispositivo)
 
@@ -634,6 +634,7 @@ Solo embedding cifrado (AES-256-GCM), en el esquema `biometria` del PostgreSQL d
 
 - Umbrales en configuración versionada con el modelo, nunca en el código.
 - **Umbral provisional** para el prototipo, obtenido en un piloto pequeño y registrado como provisional en `07`.
+- Hasta que exista el piloto, el prototipo usa valores provisionales **sin estudio que los respalde**, autorizados el 2026-09-27 y listados en `07` («Parámetros provisionales del prototipo»).
 - Valores definitivos por calibración con voluntarios (dataset y consentimiento pendientes, D-060), desarrollo y prueba separados, FAR/FRR/EER, punto de operación de baja FAR.
 - No reducir el umbral para voces alteradas (§26.5).
 
@@ -647,3 +648,12 @@ Precisión biométrica en español y con celulares; umbral provisional y definit
 - AASIST se entrenó con ataques de 2019 en inglés; su generalización a voces clonadas modernas es limitada.
 - El replay en tiempo real no queda cubierto por el desafío ni por AASIST; es un riesgo aceptado del prototipo.
 - Un cambio de modelo invalida las referencias existentes y exige re-enrolamiento.
+
+## 27.10 Prototipo funcional (2026-09-27)
+
+Implementación del flujo de §27.4 y §27.5 para el primer entregable, con las reglas de `09_REGLAS_DESARROLLO_NAYRA.md` §27:
+
+- **Servicio de voz:** `Nayra-Voz/` (FastAPI). Calidad con WebRTC VAD (candidata provisional, D-058) → Vosk con gramática cerrada → AASIST → ECAPA-TDNN con coseno 1:1. Parámetros en `Nayra-Voz/config/parametros_provisionales.yaml`, todos PROVISIONALES — PENDIENTES DE VALIDACIÓN.
+- **PIN dictado** (D-061): transcripción con Vosk restringido a dígitos (candidata provisional, D-046). El audio no entra al pipeline biométrico y no se guarda ni se registra.
+- **Provisionales por dependencias externas:** referencias biométricas cifradas en memoria en lugar del esquema `biometria` (D-051); clave de cifrado y token de servicio leídos de variables de entorno (D-017); contrato bajo `/prototipo/v1` (D-014).
+- **Sin resultados biométricos:** el prototipo no produce ni reporta FAR, FRR ni EER (§27.8).
