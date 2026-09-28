@@ -93,7 +93,7 @@ class ConcurrenciaPostgresTest {
 
     private Usuario usuarioConCredencial() {
         Usuario u = new Usuario(Identificadores.nuevo(), TipoDocumentoIdentidad.DNI, String.valueOf(SECUENCIA.incrementAndGet()),
-                "Ana", "Torres Ruiz", "987654321", Rol.USER, ahora);
+                "Ana", "Torres Ruiz", Soporte.celularNuevo(), Rol.USER, ahora);
         usuarios.guardar(u);
         credenciales.crear(u.getId(), pines.hashear(Soporte.PIN));
         return u;

@@ -12,7 +12,7 @@
 >
 > **Actualización del 2026-09-27 (modelo físico):** D-051 y D-009 quedan aprobadas. La **sección 17** registra el modelo físico de las seis tablas implementadas con migraciones Flyway en el esquema `nayra`. `SESIONES`, `OPERACIONES`, `SOLICITUDES_ATENCION`, `NOTIFICACIONES` y `biometria.PERFILES_VOZ` siguen sin tabla física.
 >
-> **Actualización del 2026-09-27 (modelo de datos v4, implementado):** se crean `credenciales` (PIN fuera de `USUARIOS`), `sesiones`, `operaciones`, `notificaciones` y `biometria.perfiles_voz`; documento DNI/CE; estados `ACTIVO`/`BLOQUEADO`/`INACTIVO`; moneda `PEN`; `codigo_qr` provisional; solo `ANDROID`. **La sección 17 es la referencia vigente del modelo físico** (migraciones `nayra` V001–V011 y `biometria` V001–V003, commits `5bbd505` y `ca98bb3`). La sección 16 conserva el modelo lógico de AG-01 con notas de actualización. Siguen sin tabla `ROLES` y `SOLICITUDES_ATENCION`.
+> **Actualización del 2026-09-27 (modelo de datos v4, implementado):** se crean `credenciales` (PIN fuera de `USUARIOS`), `sesiones`, `operaciones`, `notificaciones` y `biometria.perfiles_voz`; documento DNI/CE; estados `ACTIVO`/`BLOQUEADO`/`INACTIVO`; moneda `PEN`; `codigo_qr` provisional; solo `ANDROID`. **La sección 17 es la referencia vigente del modelo físico** (migraciones `nayra` V001–V012 y `biometria` V001–V003, commits `5bbd505` y `ca98bb3`; V012 del 2026-09-28, sin commit). La sección 16 conserva el modelo lógico de AG-01 con notas de actualización. Siguen sin tabla `ROLES` y `SOLICITUDES_ATENCION`.
 
 ## 1. Propósito
 
@@ -384,7 +384,7 @@ Esta sección es la **referencia vigente** del modelo lógico para las tablas in
 | Identificador | PK | §13 |
 | DNI | Obligatorio y **único**: un DNI no puede tener dos cuentas de acceso. _(Modelo v4: documento de identidad `DNI` o `CE`, único por tipo y número; validación local/simulada provisional, P-2)_ | D-036 |
 | Nombres, apellidos | Obtenidos del registro de identidad simulado una vez que el representante autorizado confirma la validación de identidad | D-035, D-052 |
-| Número de celular | Dato de contacto; sin validación OTP en el primer entregable | D-043 |
+| Número de celular | Dato de contacto; sin validación OTP en el primer entregable. _(2026-09-28, G-1: también localiza al destinatario de una transferencia; único y en formato canónico de Perú; no prueba la titularidad de la línea)_ | D-043 |
 | Hash del PIN | PIN de 6 dígitos (D-061). Solo el hash (con *pepper* fuera de la BD); nunca texto plano ni audio. Algoritmo y parámetros pendientes. _(Modelo v4: se trasladó a `CREDENCIALES`, junto con el contador de intentos; ya no está en `USUARIOS`)_ | D-037, D-061, D-047 |
 | Rol | `USER` o `ADMIN` (valor fijo, sin tabla `ROLES`, D-009) | D-041 |
 | Estado de la cuenta de acceso | Al menos `ACTIVA` y `BLOQUEADA` (bloqueo por 3 intentos, por pérdida o por el administrador). Otros estados pendientes (AG-05). _(Modelo v4: `ACTIVO`, `BLOQUEADO`, `INACTIVO`; el bloqueo automático es por 3 PIN incorrectos)_ | D-040, D-044 |
@@ -455,7 +455,7 @@ Duración máxima absoluta, renovación, formato de sesión o token (incluido si
 
 ### 16.7 `OPERACIONES`
 
-Mantiene lo aprobado en AG-00 (origen y destino como FK a `CUENTAS`). En el primer entregable el tipo utilizado es **TRANSFERENCIA directa** entre usuarios de Nayra (D-042). La transferencia mediante QR corresponde a un siguiente entregable; registrar el canal (directa/QR) es opcional y queda pendiente. El administrador **no** puede crear, modificar ni eliminar operaciones (D-041). ~~El estado CANCELADA (HU-87) sigue pendiente.~~ _(Resuelto por el modelo v4: existe `CANCELADO`; no hay estado pendiente.)_ _(Modelo v4, 2026-09-27: estados `EXITOSO`/`FALLIDO`/`CANCELADO`; destino obligatorio y distinto del origen; moneda `PEN`; canal `MOVIL`; código de referencia de 6 dígitos único; monto mayor que 0 y menor que 500. El destinatario se identifica por el ID interno de la cuenta destino (G-1, cerrada). Ver §17.9.)_
+Mantiene lo aprobado en AG-00 (origen y destino como FK a `CUENTAS`). En el primer entregable el tipo utilizado es **TRANSFERENCIA directa** entre usuarios de Nayra (D-042). La transferencia mediante QR corresponde a un siguiente entregable; registrar el canal (directa/QR) es opcional y queda pendiente. El administrador **no** puede crear, modificar ni eliminar operaciones (D-041). ~~El estado CANCELADA (HU-87) sigue pendiente.~~ _(Resuelto por el modelo v4: existe `CANCELADO`; no hay estado pendiente.)_ _(Modelo v4, 2026-09-27: estados `EXITOSO`/`FALLIDO`/`CANCELADO`; destino obligatorio y distinto del origen; moneda `PEN`; canal `MOVIL`; código de referencia de 6 dígitos único; monto mayor que 0 y menor que 500. El destinatario se identifica por el ID interno de la cuenta destino (G-1). Ver §17.9.)_ _(2026-09-28, G-1 modificada: el usuario busca al destinatario por su celular; el backend resuelve la cuenta y usa su ID interno, que no se muestra.)_
 
 ### 16.8 `SOLICITUDES_ATENCION`
 
@@ -520,7 +520,7 @@ Reglas: **no se guarda audio** en ninguna tabla; la clave de cifrado vive fuera 
 
 Modelo físico **implementado** en el repositorio (commits `5bbd505` y `ca98bb3` de `yuniv`, sin push). Decisiones en `07_DECISIONES_TECNICAS_NAYRA.md` (D-051, D-009 y «Decisiones del modelo de datos v4»). Migraciones:
 
-- esquema `nayra`: `Nayra-Back/src/main/resources/db/migration/nayra/V001` a `V011` (V001–V004: modelo físico D-051; V005–V011: modelo v4);
+- esquema `nayra`: `Nayra-Back/src/main/resources/db/migration/nayra/V001` a `V012` (V001–V004: modelo físico D-051; V005–V011: modelo v4; V012: celular único, G-1 del 2026-09-28);
 - esquema `biometria`: `Nayra-Voz/migraciones/biometria/V001` a `V003`, con historial propio.
 
 **Reglas comunes:** nombres en `snake_case` sin tildes; PK `id uuid` (UUID v4 generado por la aplicación); FK con `ON DELETE RESTRICT ON UPDATE RESTRICT`; fechas `timestamptz`; estados como `varchar` con `CHECK`. Hibernate usa `ddl-auto=validate`.
@@ -564,11 +564,13 @@ Hoy Negocio y Autenticación son una sola aplicación Spring Boot. V011 prepara 
 | `numero_documento` | `varchar(30)` | NOT NULL | `uq_usuarios_documento (tipo_documento_identidad, numero_documento)`. Formato por tipo PROVISIONAL (P-2) |
 | `nombres` | `varchar(100)` | NOT NULL | — |
 | `apellidos` | `varchar(100)` | NOT NULL | — |
-| `numero_celular` | `varchar(20)` | NOT NULL | — |
+| `numero_celular` | `varchar(20)` | NOT NULL | `uq_usuarios_numero_celular` y `CHECK (numero_celular ~ '^9[0-9]{8}$')` (V012): celular de Perú en formato canónico, sin `+51`. Localiza al destinatario de una transferencia (G-1); no prueba la titularidad |
 | `rol` | `varchar(10)` | NOT NULL | `CHECK (rol IN ('USER','ADMIN'))` (D-009) |
 | `estado` | `varchar(20)` | NOT NULL, `DEFAULT 'ACTIVO'` | `CHECK (estado IN ('ACTIVO','BLOQUEADO','INACTIVO'))` (V005) |
 | `fecha_creacion` | `timestamptz` | NOT NULL | — |
 | `fecha_actualizacion` | `timestamptz` | NOT NULL | — |
+
+V012 comprueba antes los datos existentes: si hay celulares repetidos o fuera de formato, la migración se detiene sin modificar ni eliminar usuarios (se requiere una decisión sobre esos datos).
 
 `pin_hash` e `intentos_fallidos` **ya no están en `usuarios`**: V006 los copió a `credenciales`, verificó la copia y eliminó las columnas. Sin `username`, `email`, `direccion` ni otros atributos no documentados. La credencial de usuario y contraseña del administrador (D-050, aprobada funcionalmente) **no tiene modelo todavía**: su almacenamiento sigue PENDIENTE.
 
@@ -589,7 +591,7 @@ Hoy Negocio y Autenticación son una sola aplicación Spring Boot. V011 prepara 
 
 | Columna | Tipo | Nulo | Restricción |
 |---|---|---|---|
-| `id` | `uuid` | NOT NULL | PK. Es el **ID interno de la cuenta destino** que usa el backend para las transferencias (G-1, cerrada) |
+| `id` | `uuid` | NOT NULL | PK. Es el **ID interno de la cuenta destino** que usa el backend para las transferencias. Desde el 2026-09-28 (G-1) el usuario no lo ve: el backend lo obtiene a partir del celular del destinatario |
 | `titular_id` | `uuid` | NOT NULL | FK → `registro_identidad_simulado.id`; `uq_cuentas_titular_id` |
 | `propietario_id` | `uuid` | NULL | FK → `usuarios.id`; `uq_cuentas_propietario_id` (admite varios NULL) |
 | `entidad_bancaria_id` | `uuid` | NOT NULL | FK → `entidades_bancarias.id` |
@@ -664,7 +666,7 @@ Seis columnas: no guarda el token, su hash, `exp` ni motivo. La sesión es váli
 | `fecha` | `timestamptz` | NOT NULL | — |
 | `fecha_actualizacion` | `timestamptz` | NOT NULL | — |
 
-Transferencias **simuladas**. **Monto (corrección E-03):** la entidad valida el `BigDecimal` antes de persistir: escala ≤ 2 sin redondeo (`MONTO_ESCALA_INVALIDA`), precisión ≤ 15 y 0 < monto < 500 (`MONTO_FUERA_DE_RANGO`); no se depende del redondeo implícito de `numeric(15,2)`. El destinatario se identifica por el ID interno de la cuenta destino (G-1). Las transferencias todavía **no tienen endpoint** (D-014). Nota: el comentario SQL de la tabla en V010 todavía dice "G-1 PENDIENTE BLOQUEANTE"; quedó desactualizado y no se edita una migración ya aplicada.
+Transferencias **simuladas**. **Monto (corrección E-03):** la entidad valida el `BigDecimal` antes de persistir: escala ≤ 2 sin redondeo (`MONTO_ESCALA_INVALIDA`), precisión ≤ 15 y 0 < monto < 500 (`MONTO_FUERA_DE_RANGO`); no se depende del redondeo implícito de `numeric(15,2)`. El destinatario se identifica por el ID interno de la cuenta destino, que el backend obtiene del celular del destinatario (G-1, 2026-09-28). La búsqueda del destinatario existe; las transferencias todavía **no tienen endpoint** (D-014). Nota: el comentario SQL de la tabla en V010 todavía dice "G-1 PENDIENTE BLOQUEANTE"; quedó desactualizado y no se edita una migración ya aplicada.
 
 ### 17.10 `nayra.notificaciones` (V010)
 
@@ -703,7 +705,7 @@ Los tipos `SEGURIDAD` y `SISTEMA` del Excel (§3.7) quedan fuera del primer mode
 
 ### 17.12 Índices
 
-`uq_usuarios_documento`, `uq_registro_identidad_simulado_documento`, `uq_credenciales_usuario_id`, `uq_cuentas_titular_id`, `uq_cuentas_propietario_id`, `uq_cuentas_codigo_cuenta`, `uq_cuentas_codigo_qr`, `uq_dispositivos_usuario_activo` (parcial), `ix_dispositivos_usuario_id`, `ix_cuentas_entidad_bancaria_id`, `ix_auditoria_fecha` (descendente), `ix_auditoria_actor_id`, `ix_auditoria_usuario_afectado_id`, `ix_sesiones_usuario_id` e `ix_sesiones_dispositivo_id` (confirmada, H-02), `uq_operaciones_codigo_referencia`, `ix_operaciones_cuenta_origen_id` e `ix_operaciones_cuenta_destino_id` (confirmada, H-02), `uq_notificaciones_operacion_destinatario` y `biometria.uq_perfiles_voz_usuario`.
+`uq_usuarios_documento`, `uq_usuarios_numero_celular` (V012), `uq_registro_identidad_simulado_documento`, `uq_credenciales_usuario_id`, `uq_cuentas_titular_id`, `uq_cuentas_propietario_id`, `uq_cuentas_codigo_cuenta`, `uq_cuentas_codigo_qr`, `uq_dispositivos_usuario_activo` (parcial), `ix_dispositivos_usuario_id`, `ix_cuentas_entidad_bancaria_id`, `ix_auditoria_fecha` (descendente), `ix_auditoria_actor_id`, `ix_auditoria_usuario_afectado_id`, `ix_sesiones_usuario_id` e `ix_sesiones_dispositivo_id` (confirmada, H-02), `uq_operaciones_codigo_referencia`, `ix_operaciones_cuenta_origen_id` e `ix_operaciones_cuenta_destino_id` (confirmada, H-02), `uq_notificaciones_operacion_destinatario` y `biometria.uq_perfiles_voz_usuario`.
 
 ### 17.13 Pendientes que afectan al modelo físico
 
@@ -712,4 +714,5 @@ Los tipos `SEGURIDAD` y `SISTEMA` del Excel (§3.7) quedan fuera del primer mode
 - **B-4** (AAD), **B-5** (rotación), **D-059** (rango de `numero_muestras`) y CHECK de 784 bytes de `embedding_cifrado`.
 - **D-050:** modelo y almacenamiento de la credencial administrativa (usuario y contraseña).
 - **P-11:** si el desbloqueo administrativo reinicia `intentos_fallidos`.
+- **V012 (G-1):** qué hacer con datos existentes con celular repetido o fuera de formato; hoy la migración se detiene sin tocarlos.
 - Sin tabla, por decisión: `roles`, `solicitudes_atencion`, desafíos y nonces (en memoria del servicio de autenticación), historial de embeddings y tablas nuevas de auditoría.

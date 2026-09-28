@@ -83,7 +83,7 @@ class PermisosPorServicioTest {
         String id = UUID.randomUUID().toString();
         assertNull(como(NEGOCIO, "INSERT INTO nayra.usuarios (id, tipo_documento_identidad, numero_documento, nombres, apellidos, "
                 + "numero_celular, rol, estado, fecha_creacion, fecha_actualizacion) VALUES ('" + id + "', 'DNI', '"
-                + (40000000 + Math.abs(id.hashCode() % 9999999)) + "', 'N', 'A', '987654321', 'USER', 'ACTIVO', now(), now())"));
+                + (40000000 + Math.abs(id.hashCode() % 9999999)) + "', 'N', 'A', '" + upc.pe.nayrabackend.soporte.Soporte.celularNuevo() + "', 'USER', 'ACTIVO', now(), now())"));
         return id;
     }
 
@@ -93,7 +93,7 @@ class PermisosPorServicioTest {
             var r = s.executeQuery("SELECT (SELECT count(*) FROM nayra.flyway_schema_history WHERE type = 'SQL'), "
                     + "(SELECT count(*) FROM biometria.flyway_schema_history WHERE type = 'SQL')");
             r.next();
-            assertEquals(11, r.getInt(1));
+            assertEquals(12, r.getInt(1));
             assertEquals(3, r.getInt(2));
         }
     }

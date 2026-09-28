@@ -9,6 +9,7 @@ import upc.pe.nayrabackend.dtos.RegistroDTOs.RegistroFinalizado;
 import upc.pe.nayrabackend.dtos.RegistroDTOs.RegistroIniciado;
 import upc.pe.nayrabackend.dtos.RegistroDTOs.SolicitudDatosRegistro;
 import upc.pe.nayrabackend.entities.Auditoria.Resultado;
+import upc.pe.nayrabackend.entities.Celular;
 import upc.pe.nayrabackend.entities.Cuentas;
 import upc.pe.nayrabackend.entities.DocumentoIdentidad;
 import upc.pe.nayrabackend.entities.Dispositivos;
@@ -36,7 +37,6 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 
 /**
  * Registro inicial asistido (D-052). Los registros en curso viven en memoria (PROVISIONAL, D-051) y el
@@ -50,9 +50,6 @@ import java.util.regex.Pattern;
  */
 @Service
 public class RegistroServiceImplement implements IRegistroService {
-
-    /** PROVISIONAL: D-043 no fija un formato; se aceptan de 9 a 15 dígitos con "+" opcional. */
-    private static final Pattern CELULAR = Pattern.compile("\\+?\\d{9,15}");
 
     private final IUsuariosRepository usuarios;
     private final IRegistroIdentidadRepository identidades;
@@ -142,14 +139,16 @@ public class RegistroServiceImplement implements IRegistroService {
             auditoria.fallo("REGISTRO_CANCELADO", null, null, "DATOS_NO_CONFIRMADOS");
             return new EstadoRegistro("CANCELADO");
         }
-        if (s.celular() == null || !CELULAR.matcher(s.celular()).matches()) {
-            throw NayraException.solicitudInvalida("CELULAR_INVALIDO");
+        // Celular de Perú en formato canónico y único: localiza al destinatario de una transferencia (G-1, V012).
+        Celular celular = Celular.leer(s.celular());
+        if (usuarios.porCelular(celular.numero()).isPresent()) {
+            throw NayraException.conflicto("CELULAR_REGISTRADO");
         }
         if (!pines.formatoValido(s.pin())) {
             throw NayraException.solicitudInvalida("PIN_INVALIDO");
         }
         PublicKey clave = dispositivos.leerClavePublica(s.clavePublicaDispositivo());
-        r.completarDatos(s.celular(), pines.hashear(s.pin()), clave);
+        r.completarDatos(celular.numero(), pines.hashear(s.pin()), clave);
         auditoria.exito("REGISTRO_DATOS_COMPLETOS", null, null);
         return new EstadoRegistro(r.getPaso().name());
     }
@@ -183,6 +182,11 @@ public class RegistroServiceImplement implements IRegistroService {
         if (usuarios.porDocumento(r.getTipoDocumentoIdentidad(), r.getNumeroDocumento()).isPresent()) {
             enCurso.remove(r.getCodigo());
             throw NayraException.conflicto("DOCUMENTO_REGISTRADO");
+        }
+        if (usuarios.porCelular(r.getCelular()).isPresent()) {
+            // Otro registro terminó antes con el mismo número (UNIQUE en V012).
+            enCurso.remove(r.getCodigo());
+            throw NayraException.conflicto("CELULAR_REGISTRADO");
         }
         Instant ahora = Instant.now(reloj);
         Usuario usuario = new Usuario(r.getUsuarioIdPrevisto(), r.getTipoDocumentoIdentidad(), r.getNumeroDocumento(),

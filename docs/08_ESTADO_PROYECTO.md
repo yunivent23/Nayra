@@ -16,13 +16,21 @@ Este documento **no reemplaza** los requisitos, la arquitectura ni el registro d
 
 > **Regla principal:** el estado de implementación debe basarse en evidencia del repositorio y no en suposiciones.
 
+> **Actualización del 2026-09-28 (G-1 modificada y cerrada; commit «feat: implementa busqueda de destinatario por celular»):** el destinatario de una transferencia se busca por
+> su **número de celular registrado en Nayra** (D-042, D-043). Implementado: migración V012 (celular `UNIQUE` y en
+> formato canónico de Perú), normalización de `+51` y rechazo de celular repetido en el registro, endpoint provisional
+> `POST /api/v1/destinatarios/busqueda` (solo devuelve el nombre parcial, p. ej. "María De la...") y, en `Nayra-App/`, la pantalla de búsqueda con
+> teclado grande y la confirmación **Sí** / **No, buscar otro número**. La transferencia sigue sin implementarse; el
+> dictado del número, la respuesta hablada y la agenda del teléfono quedan fuera. Detalle en
+> `/mnt/project-files/analisis/G1_DESTINATARIO_CELULAR_IMPLEMENTACION_2026-09-28.md`.
+
 > **Actualización del 2026-09-27 (modelo de datos v4, commits `5bbd505` y `ca98bb3` en `yuniv`, todavía sin push):**
 > migraciones Flyway V001–V011 del esquema `nayra` (D-051/D-009 y modelo v4: documento DNI/CE, estados
 > ACTIVO/BLOQUEADO/INACTIVO, `credenciales`, `codigo_qr` PROVISIONAL, solo ANDROID, `sesiones` con JWT `jti`,
 > `operaciones`, `notificaciones`, permisos por servicio) y V001–V003 del esquema `biometria` (`perfiles_voz`, historial
 > propio, en `Nayra-Voz/migraciones/biometria`). Persistencia del perfil de voz con psycopg. Correcciones de
 > concurrencia y montos E-01, E-02 y E-03 aplicadas y probadas. Umbrales D-055: similitud 0.80 y bona fide 0.90
-> (escala [0,1], provisionales hasta D-060). Decisiones cerradas el mismo día: G-1 (ID interno de la cuenta destino),
+> (escala [0,1], provisionales hasta D-060). Decisiones cerradas el mismo día: G-1 (ID interno de la cuenta destino; modificada el 2026-09-28: celular),
 > P-2 (provisional, sin APIs externas) y D-050 (aprobada funcionalmente, no implementada). El extractor ECAPA real no se
 > ejecutó, así que el CHECK de 784 bytes de `embedding_cifrado` no se aplicó. Detalle en
 > `/mnt/project-files/analisis/IMPLEMENTACION_MODELO_DATOS_V4_2026-09-27.md` y
@@ -48,7 +56,7 @@ El short paper contempla hasta el Objetivo 2, incluyendo el diseño de la soluci
 | Contexto del proyecto | COMPLETADO |
 | Requisitos | DOCUMENTADO — depurado por AG-00 y actualizado por AG-01 (HU-117 a HU-125; alcance del primer entregable; D1–D6 pendientes) |
 | Arquitectura | EN DEFINICIÓN CONTROLADA — componentes y flujos lógicos del primer entregable documentados (AG-01); 2 instancias en zonas diferentes (D-023) y 3 servicios lógicos por responsabilidad (modelo v4: Negocio, Autenticación y Biométrico; Negocio y Autenticación en una sola aplicación Spring Boot) |
-| Base de datos | MODELO DE DATOS v4 IMPLEMENTADO (2026-09-27, commit `5bbd505`, sin push): 10 tablas en el esquema `nayra` (V001–V011) y `biometria.perfiles_voz` (V001–V003), con Flyway y `ddl-auto=validate` (D-051, D-009; `03` §17). Sin tabla `roles` ni `solicitudes_atencion`. Pendientes: P-3, P-4 y el CHECK de 784 bytes (las seis reglas de H-02 quedaron confirmadas) |
+| Base de datos | MODELO DE DATOS v4 IMPLEMENTADO (2026-09-27, commit `5bbd505`, sin push): 10 tablas en el esquema `nayra` (V001–V011; V012 del 2026-09-28, celular único) y `biometria.perfiles_voz` (V001–V003), con Flyway y `ddl-auto=validate` (D-051, D-009; `03` §17). Sin tabla `roles` ni `solicitudes_atencion`. Pendientes: P-3, P-4 y el CHECK de 784 bytes (las seis reglas de H-02 quedaron confirmadas) |
 | Biometría de voz | DISEÑO TÉCNICO APROBADO (AG-13, `05_BIOMETRIA_NAYRA.md` §27): modelo, anti-spoofing, reconocimiento del desafío, almacenamiento y comunicación decididos; umbrales de similitud 0.80 y bona fide 0.90 fijados como **provisionales hasta la calibración** (D-055, D-060); prototipo funcional EN DESARROLLO (2026-09-27, ver §3 y §5); **biometría real no validada** en el entorno actual |
 | Seguridad | PRINCIPIOS Y CONTROLES DOCUMENTADOS — controles AG-01 en `06_SEGURIDAD_NAYRA.md` §36 |
 | Decisiones técnicas | REGISTRADAS hasta D-061 más las decisiones del modelo de datos v4 (2026-09-27; `07_DECISIONES_TECNICAS_NAYRA.md`); siguen PENDIENTES, entre otras, D-014, D-016, D-045, D-046 (resto), D-047, D-060, P-3, P-4, P-5, P-7/D-059, P-8, P-10, P-11, B-4, B-5 y el modelo de la credencial administrativa (D-050); H-01, H-02 y H-03 quedaron cerradas el 2026-09-27 |
@@ -84,7 +92,7 @@ Responsabilidad general:
 
 - **Retirado** por inseguro o no aprobado (`06` §36.7): CRUD de `Users`/`Role` con contraseña en texto plano y rol elegido por el cliente, `GET /usuarios` público, el JWT heredado sin aprobación (D-018; el JWT actual es el del modelo v4, ver «Sesión»), CORS abierto y reglas heredadas (`/bicicletas`, `/alquileres`), `ddl-auto=update` (ahora `validate` con migraciones Flyway, D-051). Las credenciales existentes **no** se tocaron (D-017).
 - **Dominio según `03` §17**: `Usuario` (documento DNI/CE, estado ACTIVO/BLOQUEADO/INACTIVO, rol USER o ADMIN), `Credenciales` (hash del PIN e intentos), `Dispositivos`, `Sesiones`, `Auditoria` (actor, usuario afectado, acción, resultado, motivo, dispositivo), `Cuentas` (con `codigo_qr` provisional y moneda PEN), `EntidadBancaria`, `RegistroIdentidadSimulado`, `Operaciones` y `Notificaciones`. Mapeo JPA sobre el esquema `nayra` con adaptadores PostgreSQL detrás de los puertos de repositorio; los adaptadores en memoria quedan solo para pruebas unitarias. Datos **ficticios** del entorno simulado en `entorno-simulado/datos-ficticios.json`.
-- **Registro inicial asistido (flujo de D-052)**: el representante proporciona el DNI y valida la identidad; la persona confirma sus datos, registra su celular, crea su PIN (solo hash), vincula la clave del dispositivo, enrola su voz (AG-13) y finaliza. Se vincula la cuenta financiera simulada por DNI. DNI ya registrado → rechazo auditado. **Provisional del prototipo** (no son decisiones de D-052): solo un ADMIN actúa como representante; el paso al celular de la persona usa un código de un solo uso (900 s); si la persona no confirma sus datos, el registro se cancela; formatos de DNI y celular.
+- **Registro inicial asistido (flujo de D-052)**: el representante proporciona el DNI y valida la identidad; la persona confirma sus datos, registra su celular, crea su PIN (solo hash), vincula la clave del dispositivo, enrola su voz (AG-13) y finaliza. Se vincula la cuenta financiera simulada por DNI. DNI ya registrado → rechazo auditado. **Provisional del prototipo** (no son decisiones de D-052): solo un ADMIN actúa como representante; el paso al celular de la persona usa un código de un solo uso (900 s); si la persona no confirma sus datos, el registro se cancela; formato del DNI. El celular es único y de Perú (9 dígitos, empieza por 9, sin `+51`; G-1, 2026-09-28).
 - **Sesión**: se crea al autenticar por voz y se persiste en `nayra.sesiones`. JWT en `Authorization: Bearer` cuyo claim `jti` es `sesiones.id`; el token no se guarda. Cierre tras 5 minutos de inactividad controlado en el servidor (D-018), sin renovación ni duración máxima absoluta; cierre de sesión (HU-13) y revocación al bloquear la cuenta o revocar el dispositivo (D-040). Revocación y registro de acceso con UPDATE condicionales (E-02). HS256 con clave de `NAYRA_JWT_CLAVE`: algoritmo y custodia PROVISIONALES (P-5).
 - **Autorización** (roles USER y ADMIN de D-041, representados como valor fijo en `usuarios.rol` por D-009; el mecanismo por rutas sigue siendo **provisional**): `/api/v1/admin/**` solo ADMIN, `/api/v1/**` con sesión, `/prototipo/**` por la excepción del primer entregable, todo lo demás denegado; respuestas 401/403 en JSON.
 - **Administración** (solo API; panel web pendiente, D-045): listar y buscar usuarios (HU-20, HU-21), detalle y estado (HU-22, HU-101), bloqueo y desbloqueo (HU-19), consulta y revocación del dispositivo (HU-125) y consultas de auditoría (HU-89, HU-80, HU-94). Toda acción queda auditada. Regla técnica **provisional** añadida (no proviene de D-041): un ADMIN no puede bloquearse ni revocar su propio dispositivo.
@@ -171,7 +179,7 @@ El detalle oficial del modelo se encuentra en:
 ### Estado
 
 **Modelo documentado:** SÍ.  
-**Implementación física (commit `5bbd505`, sin push):** esquema `nayra` con `entidades_bancarias`, `registro_identidad_simulado`, `usuarios`, `credenciales`, `cuentas`, `dispositivos`, `sesiones`, `operaciones`, `notificaciones` y `auditoria` (Flyway V001–V011, `ddl-auto=validate`; D-051, D-009 y modelo v4) y esquema `biometria` con `perfiles_voz` (V001–V003, historial propio). Detalle en `03` §17. Sin tabla: `roles`, `solicitudes_atencion`, desafíos y nonces. Las seis reglas que v4 marcaba "(a confirmar)" están aplicadas en la base de datos y quedaron confirmadas formalmente (H-02, cerrada el 2026-09-27). Qué servicio ejecuta las migraciones y con qué permisos sigue pendiente (P-4).
+**Implementación física (commit `5bbd505`, sin push):** esquema `nayra` con `entidades_bancarias`, `registro_identidad_simulado`, `usuarios`, `credenciales`, `cuentas`, `dispositivos`, `sesiones`, `operaciones`, `notificaciones` y `auditoria` (Flyway V001–V012, `ddl-auto=validate`; D-051, D-009, modelo v4 y V012 del 2026-09-28) y esquema `biometria` con `perfiles_voz` (V001–V003, historial propio). Detalle en `03` §17. Sin tabla: `roles`, `solicitudes_atencion`, desafíos y nonces. Las seis reglas que v4 marcaba "(a confirmar)" están aplicadas en la base de datos y quedaron confirmadas formalmente (H-02, cerrada el 2026-09-27). Qué servicio ejecuta las migraciones y con qué permisos sigue pendiente (P-4).
 
 No deben agregarse tablas biométricas como `VOICE_BIOMETRICS`, `VOICE_EMBEDDINGS` o `ANTI_SPOOFING` sin una decisión explícita. _(AG-13: la única estructura biométrica aprobada es `biometria.PERFILES_VOZ`, D-013, `03_BASE_DE_DATOS_NAYRA.md` §16.11; implementada en el modelo de datos v4, `03` §17.11.)_
 
@@ -289,7 +297,7 @@ Definiciones aprobadas en AG-00 (ver `07_DECISIONES_TECNICAS_NAYRA.md`, D-024 a 
 - las operaciones referencian la cuenta financiera de origen y la de destino;
 - las transferencias no requieren seleccionar cuenta;
 - AG-01: la identidad se consulta en un registro de identidad simulado (D-035); las transferencias son a otros usuarios de Nayra, directamente o mediante QR (D-042);
-- modelo v4 (2026-09-27): documento DNI o CE sin APIs externas (P-2, provisional); moneda PEN; el destinatario se identifica por el ID interno de la cuenta destino (G-1); monto mayor que 0 y menor que 500;
+- modelo v4 (2026-09-27): documento DNI o CE sin APIs externas (P-2, provisional); moneda PEN; el destinatario se identifica por el ID interno de la cuenta destino (G-1), que desde el 2026-09-28 el backend obtiene del celular del destinatario; monto mayor que 0 y menor que 500;
 - no se incluyen apertura de cuentas, múltiples cuentas, transferencias entre cuentas propias ni gestión de entidades por el administrador.
 
 ---
@@ -311,13 +319,14 @@ Deben registrarse aquí las funcionalidades que tengan código parcial pero que 
 - registro inicial asistido con enrolamiento de voz (D-052; sin tutorial);
 - inicio de sesión por dispositivo, PIN (tecleado o dictado), desafío y voz, con sesión y cierre por inactividad;
 - datos propios, estado de la cuenta y cierre de sesión;
+- búsqueda del destinatario de una transferencia por celular y confirmación Sí / No (G-1, 2026-09-28; sin transferencia);
 - API del administrador: usuarios, bloqueo, dispositivo y auditoría (sin panel web, D-045; el acceso del ADMIN usa provisionalmente dispositivo + PIN + voz, no el usuario y contraseña de D-050; las consultas de auditoría se mantienen en el alcance, H-03 cerrada).
 
 ### Pendientes
 
 Deben registrarse las funcionalidades que todavía no tengan una implementación funcional.
 
-**Estado actual:** cambio de dispositivo y recuperación (D-049), solicitudes de atención y pérdida del celular (estados sin definir), actualización de datos (HU-10), saldo, movimientos y transferencias (tablas creadas, sin servicio ni endpoint), notificaciones, tutorial, panel web del administrador (D-045), autenticación del administrador con usuario y contraseña (D-050, modelo pendiente) y ejecución de las migraciones de `biometria` fuera de las pruebas (P-4). El QR queda para un siguiente entregable.
+**Estado actual:** cambio de dispositivo y recuperación (D-049), solicitudes de atención y pérdida del celular (estados sin definir), actualización de datos (HU-10), saldo, movimientos y ejecución de transferencias (tablas creadas, sin servicio ni endpoint; solo existe la búsqueda del destinatario), notificaciones, tutorial, panel web del administrador (D-045), autenticación del administrador con usuario y contraseña (D-050, modelo pendiente) y ejecución de las migraciones de `biometria` fuera de las pruebas (P-4). El QR queda para un siguiente entregable.
 
 > No convertir automáticamente una historia de usuario en una funcionalidad implementada.
 
@@ -341,6 +350,8 @@ Las pruebas deben registrar como mínimo:
 - Java: 110 ejecutadas, 109 correctas, 0 fallos, 1 omitida (`ContratoServicioVozTest`, contrato con el servicio real). Incluye `ConcurrenciaPostgresTest` (12 pruebas de E-01 y E-02), `ModeloDatosV4Test`, `ModeloDatosV4PostgresTest`, `PermisosPorServicioTest`, `MigracionDatosDesarrolloTest` y `PersistenciaPostgresTest`. Las pruebas con PostgreSQL corren solo con `NAYRA_TEST_DB_URL` y reconstruyen el esquema con Flyway (clean + migrate).
 - Python: 57 ejecutadas, 56 correctas, 0 fallos, 1 omitida (`test_aasist_real`). Los modelos ECAPA-TDNN, AASIST y Vosk se sustituyen por dobles de prueba: **la biometría real no se ejecutó**.
 - Flutter: 9 pruebas OK (registro anterior del 2026-09-27; no se volvieron a ejecutar en esta sincronización).
+
+**2026-09-28 (G-1, destinatario por celular, cierre):** Java 122 ejecutadas, 121 correctas, 0 fallos, 1 omitida (la misma). Flutter: `flutter analyze` sin observaciones y 42 pruebas OK (incluye el frontend reescrito el 2026-09-27). Las pruebas que registraban varios usuarios con el mismo celular se adaptaron a la unicidad de V012. V012 se validó solo sobre las bases de prueba disponibles (`nayra_test` y la base de datos de desarrollo simulada de `MigracionDatosDesarrolloTest`); no se aplicó sobre una base de desarrollo real.
 
 **Pruebas de integración:** prueba de contrato Java ↔ Python y recorrido HTTP completo contra los servicios en ejecución (Spring Boot con PostgreSQL local encendido y FastAPI con modelos simulados): arranque del administrador, registro asistido, enrolamiento, inicio de sesión, autorización USER/ADMIN, bloqueo, desbloqueo, revocación del dispositivo, cierre de sesión y auditoría. 42 de 42 comprobaciones OK el 2026-09-27, **antes** del modelo de datos v4; no se volvió a ejecutar después.
 
@@ -368,7 +379,8 @@ Formato recomendado:
 | P-008 | Modelo `Users` no correspondía al aprobado | Medio | RESUELTO (2026-09-27, commit `5bbd505`): `Usuario` según `03` §16.1, mapeado a `nayra.usuarios` (`03` §17.3) | — |
 | P-010 | Contradicción documental sobre el momento en que vuelve a 0 el contador de PIN (H-01): el modelo v4 dice "tras una autenticación correcta con PIN" y "un PIN correcto → 0"; el código lo reinicia en el paso del PIN correcto, antes de la voz | Medio | RESUELTO (2026-09-27): H-01 cerrada, PIN correcto → 0; coincide con el código | Equipo |
 | P-011 | Consultas administrativas de auditoría en el código frente al alcance del modelo v4 (H-03); `01` §12.4 no se modificó | Medio | RESUELTO (2026-09-27): H-03 cerrada, se mantiene `01` §12.4 y las consultas existentes | Equipo |
-| P-012 | El comentario SQL de `nayra.operaciones` en V010 todavía dice "G-1 PENDIENTE BLOQUEANTE", aunque G-1 se cerró | Bajo | ACEPTADO como deuda documental: no se edita V010 ni se crea V012; la documentación registra G-1 como cerrada | Equipo |
+| P-012 | El comentario SQL de `nayra.operaciones` en V010 todavía dice "G-1 PENDIENTE BLOQUEANTE", aunque G-1 se cerró | Bajo | ACEPTADO como deuda documental: no se edita V010; V012 (celular único) no toca ese comentario; la documentación registra G-1 | Equipo |
+| P-013 | En Flutter, la pantalla B4 del inicio de sesión ("Repita la frase") se desborda con el tamaño de letra del sistema al 200 % | Medio (accesibilidad) | ABIERTO: deuda de accesibilidad de la autenticación, independiente de G-1; se corrige en un cambio aparte | Equipo |
 
 No inventar problemas si no existe evidencia.
 

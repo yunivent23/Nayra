@@ -32,6 +32,11 @@ public class UsuariosPostgres implements IUsuariosRepository {
     }
 
     @Override
+    public Optional<Usuario> porCelular(String celular) {
+        return celular == null ? Optional.empty() : jpa.findByCelular(celular);
+    }
+
+    @Override
     public List<Usuario> todos() { return jpa.findAll(); }
 
     @Override

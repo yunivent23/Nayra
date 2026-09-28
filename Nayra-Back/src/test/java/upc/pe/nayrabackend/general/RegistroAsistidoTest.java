@@ -151,10 +151,11 @@ class RegistroAsistidoTest {
 
     @Test
     void elRegistroNoGuardaDatosSensiblesEnLaAuditoria() throws Exception {
-        s.registrarUsuario(admin, Soporte.DNI_USUARIO);
+        Soporte.Persona p = s.registrarUsuario(admin, Soporte.DNI_USUARIO);
+        String celular = s.usuariosRepo.porId(p.usuarioId()).orElseThrow().getCelular();
         assertTrue(s.auditoriaRepo.todos().stream().noneMatch(e -> {
             String t = String.valueOf(e);
-            return t.contains(Soporte.PIN) || t.contains(Soporte.DNI_USUARIO) || t.contains(Soporte.CELULAR);
+            return t.contains(Soporte.PIN) || t.contains(Soporte.DNI_USUARIO) || t.contains(celular);
         }));
     }
 

@@ -75,11 +75,15 @@ class ApiHttpTest {
     }
 
     private Persona completarRegistro(String codigo) throws Exception {
+        return completarRegistro(codigo, Soporte.celularNuevo());
+    }
+
+    private Persona completarRegistro(String codigo, String celular) throws Exception {
         KeyPair par = Soporte.claveP256();
         Resp datos = llamar(get("/api/v1/registros/" + codigo), null, null);
         assertEquals(200, datos.estado());
         assertEquals(200, llamar(post("/api/v1/registros/" + codigo + "/datos"), null,
-                Map.of("confirmaDatos", true, "celular", Soporte.CELULAR, "pin", Soporte.PIN,
+                Map.of("confirmaDatos", true, "celular", celular, "pin", Soporte.PIN,
                         "clavePublicaDispositivo", Soporte.publica(par))).estado());
         String base = "/prototipo/registro/" + codigo + "/enrolamiento";
         for (int i = 1; i <= 3; i++) {
@@ -123,7 +127,8 @@ class ApiHttpTest {
         // Primer administrador (arranque del prototipo) y su registro en el celular.
         Resp arranque = llamar(post("/prototipo/arranque/administrador"), null, Map.of("tipoDocumentoIdentidad", "DNI", "numeroDocumento", Soporte.DNI_ADMIN));
         assertEquals(200, arranque.estado());
-        Persona admin = completarRegistro(arranque.cuerpo().get("codigoRegistro").asString());
+        String celularAdmin = Soporte.celularNuevo();
+        Persona admin = completarRegistro(arranque.cuerpo().get("codigoRegistro").asString(), celularAdmin);
         assertEquals(409, llamar(post("/prototipo/arranque/administrador"), null, Map.of("tipoDocumentoIdentidad", "DNI", "numeroDocumento", Soporte.DNI_USUARIO)).estado());
         String tokenAdmin = iniciarSesion(admin);
 
@@ -133,8 +138,26 @@ class ApiHttpTest {
         String codigo = inicio.cuerpo().get("codigoRegistro").asString();
         assertEquals(409, llamar(get("/api/v1/registros/" + codigo), null, null).estado());
         assertEquals(204, llamar(post("/api/v1/admin/registros/" + codigo + "/validacion-identidad"), tokenAdmin, null).estado());
-        Persona usuario = completarRegistro(codigo);
+        String celularUsuario = Soporte.celularNuevo();
+        Persona usuario = completarRegistro(codigo, "+51" + celularUsuario);
         String tokenUsuario = iniciarSesion(usuario);
+        assertEquals(celularUsuario, jdbc.queryForObject("SELECT numero_celular FROM nayra.usuarios WHERE id = ?::uuid",
+                String.class, usuario.usuarioId()), "Se guarda el formato canónico, sin +51");
+
+        // Búsqueda del destinatario por celular (G-1): con sesión, solo el nombre parcial, sin datos internos.
+        String busqueda = "/api/v1/destinatarios/busqueda";
+        assertEquals(401, llamar(post(busqueda), null, Map.of("celular", celularUsuario)).estado());
+        Resp encontrado = llamar(post(busqueda), tokenAdmin, Map.of("celular", "+51" + celularUsuario));
+        assertEquals(200, encontrado.estado());
+        assertEquals(Map.of("nombreVisible", "Persona Fict..."), json.convertValue(encontrado.cuerpo(), Map.class));
+        assertEquals("CUENTAS_IGUALES", llamar(post(busqueda), tokenUsuario, Map.of("celular", celularUsuario)).cuerpo().get("error").asString());
+        assertEquals("CELULAR_INVALIDO", llamar(post(busqueda), tokenUsuario, Map.of("celular", "12345")).cuerpo().get("error").asString());
+        Resp noRegistrado = llamar(post(busqueda), tokenUsuario, Map.of("celular", "999999999"));
+        assertEquals(404, noRegistrado.estado());
+        assertEquals("DESTINATARIO_NO_ENCONTRADO", noRegistrado.cuerpo().get("error").asString());
+        // El administrador inicial no tiene cuenta financiera: responde igual que un número sin cuenta.
+        assertEquals(Map.of("error", "DESTINATARIO_NO_ENCONTRADO"),
+                json.convertValue(llamar(post(busqueda), tokenUsuario, Map.of("celular", celularAdmin)).cuerpo(), Map.class));
 
         // Datos propios, sin hash del PIN.
         Resp me = llamar(get("/api/v1/usuarios/me"), tokenUsuario, null);
@@ -151,6 +174,8 @@ class ApiHttpTest {
         assertEquals(2, llamar(get("/api/v1/admin/usuarios"), tokenAdmin, null).cuerpo().size());
         assertEquals(204, llamar(post("/api/v1/admin/usuarios/" + usuario.usuarioId() + "/bloqueo"), tokenAdmin, null).estado());
         assertEquals(401, llamar(get("/api/v1/usuarios/me"), tokenUsuario, null).estado());
+        // Una cuenta bloqueada no puede recibir: se responde como número sin cuenta.
+        assertEquals(404, llamar(post(busqueda), tokenAdmin, Map.of("celular", celularUsuario)).estado());
         Resp acciones = llamar(get("/api/v1/admin/auditoria/acciones-administrativas"), tokenAdmin, null);
         assertTrue(acciones.cuerpo().toString().contains("ADMIN_BLOQUEO_CUENTA"));
 

@@ -78,7 +78,7 @@ class PersistenciaPostgresTest {
     }
 
     private Usuario usuarioNuevo() {
-        Usuario u = new Usuario(Identificadores.nuevo(), TipoDocumentoIdentidad.DNI, dniNuevo(), "Nombre", "Apellido", "987654321",
+        Usuario u = new Usuario(Identificadores.nuevo(), TipoDocumentoIdentidad.DNI, dniNuevo(), "Nombre", "Apellido", Soporte.celularNuevo(),
                 Rol.USER, ahora);
         usuarios.guardar(u);
         return u;
@@ -98,7 +98,7 @@ class PersistenciaPostgresTest {
 
     @Test
     void migracionesAplicadasEnElEsquemaNayra() {
-        assertEquals(11, jdbc.queryForObject("SELECT count(*) FROM nayra.flyway_schema_history WHERE success AND type = 'SQL'", Integer.class));
+        assertEquals(12, jdbc.queryForObject("SELECT count(*) FROM nayra.flyway_schema_history WHERE success AND type = 'SQL'", Integer.class));
         List<String> tablas = jdbc.queryForList(
                 "SELECT table_name FROM information_schema.tables WHERE table_schema = 'nayra' AND table_name <> 'flyway_schema_history'"
                         + " ORDER BY table_name", String.class);
@@ -161,14 +161,30 @@ class PersistenciaPostgresTest {
     }
 
     @Test
+    void celularUnicoYEnFormatoCanonico() {
+        Usuario u = usuarioNuevo();
+        assertEquals(u.getId(), usuarios.porCelular(u.getCelular()).orElseThrow().getId());
+        assertTrue(usuarios.porCelular("+51" + u.getCelular()).isEmpty(), "La búsqueda usa solo el formato canónico");
+        Usuario mismoCelular = new Usuario(Identificadores.nuevo(), TipoDocumentoIdentidad.DNI, dniNuevo(), "Otro", "Otro",
+                u.getCelular(), Rol.USER, ahora);
+        assertThrows(DataIntegrityViolationException.class, () -> usuarios.guardar(mismoCelular));
+        // V012: CHECK del formato canónico (Perú, 9 dígitos que empiezan por 9, sin +51).
+        for (String fueraDeFormato : List.of("+51" + Soporte.celularNuevo(), "812345678", "98765432")) {
+            Usuario v = new Usuario(Identificadores.nuevo(), TipoDocumentoIdentidad.DNI, dniNuevo(), "Otro", "Otro",
+                    fueraDeFormato, Rol.USER, ahora);
+            assertThrows(DataIntegrityViolationException.class, () -> usuarios.guardar(v), fueraDeFormato);
+        }
+    }
+
+    @Test
     void documentoUnicoPorTipoYNumero() {
         Usuario u = usuarioNuevo();
         Usuario otro = new Usuario(Identificadores.nuevo(), TipoDocumentoIdentidad.DNI, u.getNumeroDocumento(), "Otro", "Otro",
-                "987654321", Rol.USER, ahora);
+                Soporte.celularNuevo(), Rol.USER, ahora);
         assertThrows(DataIntegrityViolationException.class, () -> usuarios.guardar(otro));
         // El mismo número con otro tipo es otro documento (UNIQUE compuesto, v4 §2.1).
         Usuario ce = new Usuario(Identificadores.nuevo(), TipoDocumentoIdentidad.CE, u.getNumeroDocumento(), "Otro", "Otro",
-                "987654321", Rol.USER, ahora);
+                Soporte.celularNuevo(), Rol.USER, ahora);
         usuarios.guardar(ce);
         assertEquals(ce.getId(), usuarios.porDocumento(TipoDocumentoIdentidad.CE, u.getNumeroDocumento()).orElseThrow().getId());
         RegistroIdentidadSimulado r = titularNuevo();

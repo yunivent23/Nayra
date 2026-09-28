@@ -10,13 +10,14 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Migración de una base con datos de desarrollo creada con V001–V004 al modelo v4 (V005–V011): los hashes del PIN y
+ * Migración de una base con datos de desarrollo creada con V001–V004 al modelo v4 (V005–V012): los hashes del PIN y
  * los contadores pasan a credenciales y se verifican antes de borrar las columnas de usuarios (v4 §2.1 y §2.2).
  */
 @EnabledIfEnvironmentVariable(named = "NAYRA_TEST_DB_URL", matches = ".+",
@@ -41,13 +42,18 @@ class MigracionDatosDesarrolloTest {
 
     /** Base en V004 con dos usuarios, dos cuentas y un dispositivo de la plataforma indicada. */
     private static void baseEnV004(String plataforma) throws Exception {
+        baseEnV004(plataforma, "912345678");
+    }
+
+    /** Igual, con el celular indicado para el segundo usuario (el primero tiene 987654321). */
+    private static void baseEnV004(String plataforma, String celularSegundo) throws Exception {
         BaseAuxiliar.recrear(BASE);
         BaseAuxiliar.flywayNayra(BASE, MARCADORES, "4").migrate();
         try (Connection c = BaseAuxiliar.conectar(BASE); Statement s = c.createStatement()) {
             s.execute("INSERT INTO nayra.usuarios (id, dni, nombres, apellidos, numero_celular, pin_hash, rol, estado, fecha_creacion, "
                     + "fecha_actualizacion, intentos_fallidos) VALUES "
                     + "('" + U_ACTIVO + "', '10000002', 'Persona', 'Dos', '987654321', '$2a$04$hashActivo', 'USER', 'ACTIVA', now(), now(), 1),"
-                    + "('" + U_BLOQUEADO + "', '10000003', 'Persona', 'Tres', '987654321', '$2a$04$hashBloqueado', 'ADMIN', 'BLOQUEADA', now(), now(), 3)");
+                    + "('" + U_BLOQUEADO + "', '10000003', 'Persona', 'Tres', '" + celularSegundo + "', '$2a$04$hashBloqueado', 'ADMIN', 'BLOQUEADA', now(), now(), 3)");
             s.execute("INSERT INTO nayra.entidades_bancarias VALUES ('" + ENTIDAD + "', 'Entidad')");
             s.execute("INSERT INTO nayra.registro_identidad_simulado VALUES "
                     + "('44444444-4444-4444-8444-444444444441', '10000002', 'Persona', 'Dos'),"
@@ -115,6 +121,24 @@ class MigracionDatosDesarrolloTest {
             r = s.executeQuery("SELECT plataforma FROM nayra.dispositivos");
             r.next();
             assertEquals("IOS", r.getString(1));
+        }
+    }
+
+    @Test
+    void celularesRepetidosOFueraDeFormatoDetienenV012SinTocarLosUsuarios() throws Exception {
+        for (String celularSegundo : List.of("987654321", "+51987654321", "01234")) {
+            baseEnV004("ANDROID", celularSegundo);
+            assertThrows(FlywayException.class, () -> BaseAuxiliar.flywayNayra(BASE, MARCADORES, null).migrate(), celularSegundo);
+            try (Connection c = BaseAuxiliar.conectar(BASE); Statement s = c.createStatement()) {
+                ResultSet r = s.executeQuery("SELECT max(version::int) FROM nayra.flyway_schema_history WHERE success AND type = 'SQL'");
+                r.next();
+                assertEquals(11, r.getInt(1), "V012 no se aplica mientras haya celulares repetidos o fuera de formato");
+                r = s.executeQuery("SELECT numero_celular FROM nayra.usuarios ORDER BY numero_documento");
+                r.next();
+                assertEquals("987654321", r.getString(1));
+                r.next();
+                assertEquals(celularSegundo, r.getString(1), "Los datos no se modifican ni se eliminan");
+            }
         }
     }
 }

@@ -12,6 +12,8 @@ public interface IUsuariosRepository {
     void guardar(Usuario usuario);
     Optional<Usuario> porId(String id);
     Optional<Usuario> porDocumento(TipoDocumentoIdentidad tipo, String numero);
+    /** Usuario con ese celular en formato canónico (único, V012). */
+    Optional<Usuario> porCelular(String celular);
     List<Usuario> todos();
     boolean existeConRol(Rol rol);
 }

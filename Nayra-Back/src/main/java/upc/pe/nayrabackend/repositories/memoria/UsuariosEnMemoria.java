@@ -31,6 +31,11 @@ public class UsuariosEnMemoria implements IUsuariosRepository {
     }
 
     @Override
+    public Optional<Usuario> porCelular(String celular) {
+        return usuarios.values().stream().filter(u -> u.getCelular().equals(celular)).findFirst();
+    }
+
+    @Override
     public List<Usuario> todos() { return List.copyOf(usuarios.values()); }
 
     @Override

@@ -84,7 +84,7 @@ class ModeloDatosV4PostgresTest {
 
     private Usuario usuario() {
         Usuario u = new Usuario(Identificadores.nuevo(), TipoDocumentoIdentidad.DNI, documento(), "Juan", "Pérez Gómez",
-                "987654321", Rol.USER, ahora);
+                Soporte.celularNuevo(), Rol.USER, ahora);
         usuarios.guardar(u);
         return u;
     }

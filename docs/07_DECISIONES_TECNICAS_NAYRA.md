@@ -488,6 +488,8 @@ Registro:
 | D-035 | Validación del documento de identidad | APROBADA | APROBADA — documento DNI o CE; sin APIs externas; validación local/simulada **provisional** (P-2) | Modelo de datos v4 y decisión del equipo (P-2) | 2026-09-27 |
 | D-050 | Autenticación del administrador | PENDIENTE | APROBADA FUNCIONALMENTE — usuario y contraseña en el panel web; **no implementada**; modelo y almacenamiento de la credencial administrativa PENDIENTES | Decisión del equipo | 2026-09-27 |
 | D-055 | Umbrales y calibración | Estrategia APROBADA / valores PENDIENTES | APROBADA — similitud mínima **0.80** y probabilidad bona fide mínima **0.90**, escala [0,1]; **provisionales hasta la calibración** (D-060) | Decisión del equipo | 2026-09-27 |
+| D-042 | Transferencias: dato del destinatario | APROBADA — ID interno de la cuenta destino (G-1) | APROBADA — **G-1 modificada:** el destinatario se busca por su **número de celular registrado en Nayra**; el ID interno de la cuenta sigue solo en el backend; la agenda del teléfono sigue fuera del primer entregable | Decisión del equipo (G-1) | 2026-09-28 |
+| D-043 | Número de celular | APROBADA — dato de contacto | APROBADA — además de dato de contacto, **localiza al destinatario** de una transferencia; único y en formato canónico de Perú (9 dígitos, empieza por 9, sin `+51`); no prueba la titularidad de la línea | Decisión del equipo (G-1) | 2026-09-28 |
 | D-048 | Vinculación del dispositivo | APROBADA (iOS no definido) | APROBADA — alcance del primer entregable solo Android (APK); iOS fuera de alcance | Modelo de datos v4 | 2026-09-27 |
 | H-01 | Reinicio del contador de PIN | Contradicción abierta | CERRADA — PIN correcto → 0, inmediatamente | Decisión del equipo; coincide con el código | 2026-09-27 |
 | H-02 | Seis reglas de BD "(a confirmar)" | Aplicadas sin confirmación formal | CERRADA — confirmadas | Decisión del equipo | 2026-09-27 |
@@ -781,13 +783,23 @@ La referencia biométrica permanece **asociada a la cuenta de acceso en el backe
 **Pendiente (texto de AG-01):** dato concreto con el que se busca/selecciona al destinatario; identificador que codifica el QR (`03_BASE_DE_DATOS_NAYRA.md` §16).
 
 **Actualización del 2026-09-27:**
-- **G-1 — CERRADA:** el backend identifica al destinatario de una transferencia por el **ID interno de la cuenta financiera de destino** (`cuentas.id`, que `operaciones.cuenta_destino_id` referencia). El frontend usa ese ID para obtener y mostrar la información del destinatario. Las transferencias **todavía no están implementadas** (no hay endpoint); el contrato sigue en D-014.
+- ~~**G-1 — CERRADA:** el backend identifica al destinatario de una transferencia por el **ID interno de la cuenta financiera de destino** (`cuentas.id`, que `operaciones.cuenta_destino_id` referencia). El frontend usa ese ID para obtener y mostrar la información del destinatario.~~ _(Modificada el 2026-09-28: ver abajo.)_ Las transferencias **todavía no están implementadas** (no hay endpoint); el contrato sigue en D-014.
 - **QR:** `cuentas.codigo_qr` existe como identificador fijo, único y sin datos personales; su valor actual es un identificador aleatorio **PROVISIONAL**. El formato definitivo sigue **PENDIENTE (P-3)** y las funciones de QR (HU-123, HU-124) siguen fuera del primer entregable.
 
+**Actualización del 2026-09-28 — G-1 modificada (identificación del destinatario):**
+- El destinatario de una transferencia se **busca por su número de celular registrado en Nayra**. La persona escribe el número con un teclado grande y accesible; Nayra-Back localiza la cuenta Nayra asociada y usa internamente el ID de la cuenta destino (`cuentas.id`) para la operación. El ID interno **no** se pide ni se muestra al usuario.
+- Flujo: celular → búsqueda → nombre parcial → confirmación → Sí (continúa al monto) / No, buscar otro número (se reinicia el ingreso del número).
+- Tras encontrar el número se muestra solo el **primer nombre y el primer apellido parcial (con sus partículas De, Del, La, Las, Los; cuatro letras sin contar espacios, sin cortar una partícula; entero si tiene cinco letras o menos)** ("María Sala...", "María De la..."), con la pregunta "¿Desea transferir a María Sala...?". Regla modificada el 2026-09-28; ver «Nombre parcial del destinatario». El número no es el elemento principal de la confirmación.
+- La búsqueda solo afirma que **existe una cuenta Nayra asociada a ese número**. No valida la titularidad de la línea (sin OSIPTEL ni operadores).
+- **Agenda del teléfono:** sigue fuera del primer entregable (se mantiene lo anterior de esta decisión).
+- Una cuenta de acceso no activa, o sin cuenta financiera activa, se informa igual que un número sin cuenta (`DESTINATARIO_NO_ENCONTRADO`), para no revelar el estado de la cuenta.
+
 ### D-043 — Número de celular
-**Estado:** APROBADA
+**Estado:** APROBADA — ampliada el 2026-09-28 (G-1)
 
 El número de celular forma parte del registro y se almacena como **dato de contacto** para procesos de atención y recuperación. **No** se implementan SMS reales, proveedores OTP, WhatsApp ni llamadas automáticas. Una eventual simulación de validación del número no es dependencia del primer entregable.
+
+**Actualización del 2026-09-28 (G-1):** el celular también **localiza al destinatario** de una transferencia. Por eso es **único** (`UNIQUE`, migración V012) y se guarda y se busca en un único formato canónico: celular de Perú, 9 dígitos que empiezan por 9; el prefijo `+51` se quita antes de validar. El registro rechaza un número ya asociado a otro usuario (`CELULAR_REGISTRADO`). Sin validación de titularidad.
 
 ### D-044 — Política de 3 intentos
 **Estado:** APROBADA — valor (AG-01) y qué cuenta como intento (modelo de datos v4, 2026-09-27). Reinicio del contador con el PIN correcto (**H-01**, cerrada el 2026-09-27); límite propio de los fallos biométricos PENDIENTE (**P-8**); efecto del desbloqueo administrativo PENDIENTE (**P-11**).
@@ -1092,7 +1104,7 @@ Estos mecanismos pueden usarse en el prototipo, pero son **PROVISIONALES**: no s
 | Código de registro de un solo uso para pasar del representante al celular de la persona | D-052 (registro técnico pendiente, categoría B) | Los 13 pasos del flujo |
 | Solo un ADMIN actúa como representante | D-052 | D-052 admite un administrador u otra persona autorizada; queda pendiente si puede ser otra persona |
 | Un ADMIN no puede bloquearse ni revocar su propio dispositivo (regla añadida para no dejar el prototipo sin administrador; no proviene de D-041) | — | — |
-| Formatos: DNI de 8 dígitos; CE alfanumérico de hasta 30 caracteres (modelo v4); celular de 9 a 15 dígitos con `+` opcional | D-035, D-043, P-2 (provisional) | Los datos, no el formato |
+| Formatos: DNI de 8 dígitos; CE alfanumérico de hasta 30 caracteres (modelo v4) | D-035, P-2 (provisional) | Los datos, no el formato |
 | Organización de rutas `/api/v1/...` para la API general (propuesta, no contrato) | D-014 (PENDIENTE) | — |
 | Cancelar el registro si la persona no confirma sus datos | D-052 | Que la persona confirma sus datos (paso 7) |
 | El primer ADMIN puede no tener cuenta financiera (no es una exención definitiva) | D-025 | Cada usuario tiene una única cuenta financiera |
@@ -1171,7 +1183,7 @@ Origen: `/mnt/project-files/analisis/MODELO_DATOS_NAYRA_COMPLETO_2026-09-27.md` 
 | Servicios | Tres servicios por responsabilidad: **Negocio** (usuarios, cuentas, entidades, registro de identidad, operaciones, notificaciones), **Autenticación** (`credenciales`, `dispositivos`, `sesiones`; desafíos y nonces en memoria; decisión final de autenticación, D-056) y **Biométrico** (Python/FastAPI, `biometria.perfiles_voz`). Hoy Negocio y Autenticación son **una sola aplicación Spring Boot**. Separación lógica: **no** sustituye a las 2 instancias de D-023 ni significa 3 réplicas. PostgreSQL compartido | D-023, D-002, D-010, D-056 |
 | Sesiones | JWT con `jti` = `sesiones.id`; tabla `sesiones` de 6 columnas; el token no se guarda; 5 min de inactividad; sin renovación ni refresh token; el servicio de autenticación es la autoridad de la sesión | D-018 |
 | Operaciones | Solo `TRANSFERENCIA`; estados `EXITOSO`/`FALLIDO`/`CANCELADO`; `codigo_referencia` de 6 dígitos único global; canal `MOVIL`; monto mayor que 0 y menor que 500 (0.01 a 499.99); origen y destino obligatorios y distintos | D-029, D-030 |
-| Destinatario (G-1, cerrada) | El backend usa el ID interno de la cuenta destino; el frontend lo usa para obtener y mostrar al destinatario. Transferencias todavía **no implementadas** | D-042 |
+| Destinatario (G-1, modificada el 2026-09-28) | ~~El backend usa el ID interno de la cuenta destino; el frontend lo usa para obtener y mostrar al destinatario.~~ Se busca por el **celular registrado en Nayra** (único, formato canónico de Perú); el ID interno de la cuenta destino solo lo usa el backend. Transferencias todavía **no implementadas** | D-042, D-043 |
 | Notificaciones | Solo tipo `OPERACION`; `operacion_id` obligatorio; texto "Nombres Ape... te realizó una transferencia de S/ …" | — |
 | Biometría | `biometria.perfiles_voz`: un perfil por usuario, embedding cifrado, sin audio (B-1 a B-13) | D-013 |
 | Administrador (D-050) | Aprobada funcionalmente: usuario y contraseña en el panel web. **No implementada**: el modelo y el almacenamiento de la credencial administrativa siguen pendientes. El prototipo mantiene provisionalmente el acceso ADMIN con dispositivo + PIN + voz | D-050, D-045 |
@@ -1202,10 +1214,59 @@ Pruebas en `ConcurrenciaPostgresTest`, `ModeloDatosV4Test` y `ModeloDatosV4Postg
 | B-4 | AAD definitiva del cifrado biométrico | No bloqueante |
 | B-5 | Frecuencia de rotación de claves | No bloqueante |
 | — | CHECK de 784 bytes de `embedding_cifrado` (tras ejecutar ECAPA real) | Deuda técnica, no es una decisión abierta |
-| — | Comentario SQL de V010 sobre `operaciones` que todavía dice "G-1 PENDIENTE BLOQUEANTE" (G-1 está cerrada; V010 no se edita ni se crea V012 por ello) | Deuda documental |
+| — | Comentario SQL de V010 sobre `operaciones` que todavía dice "G-1 PENDIENTE BLOQUEANTE" (G-1 está decidida; V010 no se edita y V012 no toca ese comentario) | Deuda documental |
 | D-050 | Modelo y almacenamiento de la credencial administrativa | Pendiente |
 
 Siguen también pendientes, sin cambios: D-047 (hash del PIN y *pepper*), D-014 (contrato de API), D-046 en lo que permanece abierto (comando "Iniciar sesión Nayra", tecnología definitiva del PIN dictado y del documento), D-060 (dataset y calibración), D-061 en el rechazo de PIN triviales y D-045 (panel web).
+
+## Destinatario por celular (G-1 modificada, 2026-09-28)
+
+Decidido por el equipo el 2026-09-28 (aprobado y cerrado ese mismo día) tras la auditoría `AUDITORIA_G1_DESTINATARIO_CELULAR_2026-09-28.md`. Actualiza D-042 y D-043 (ver sus secciones). Alcance: solo la búsqueda y resolución del destinatario; la transferencia sigue sin implementarse.
+
+| Tema | Decisión |
+|---|---|
+| Identificación | Celular registrado en Nayra; el ID interno de la cuenta destino queda en el backend |
+| Unicidad | `usuarios.numero_celular` `UNIQUE` (V012); el registro rechaza un número ya registrado (`CELULAR_REGISTRADO`) |
+| Formato | Perú: 9 dígitos que empiezan por 9; `+51` se quita antes de validar, guardar y buscar |
+| Ingreso | Teclado grande y accesible |
+| Confirmación | Primer nombre + primer apellido parcial con partículas (ver «Nombre parcial del destinatario»); "¿Desea transferir a María Sala...?"; botones **Sí** y **No, buscar otro número** |
+| Titularidad | No se valida con operadores ni OSIPTEL; solo se afirma que existe una cuenta Nayra asociada al número |
+| Agenda del teléfono | Fuera del primer entregable (D-042) |
+| Privacidad | Número sin cuenta, usuario bloqueado o inactivo y sin cuenta financiera activa responden igual: "No hay una cuenta Nayra asociada a ese número." (intencional; confirmado por Yuni el 2026-09-28) |
+| Estado | Aprobada y cerrada por Yuni el 2026-09-28 |
+
+Implementación **provisional** hasta el contrato de D-014: `POST /api/v1/destinatarios/busqueda {celular}` con sesión → `{nombreVisible}`; errores `CELULAR_INVALIDO` (400), `DESTINATARIO_NO_ENCONTRADO` (404), `CUENTAS_IGUALES` (409, número propio).
+
+### Nombre parcial del destinatario (Yuni, 2026-09-28)
+
+Sustituye a "primer nombre + tres primeras letras del primer apellido". Lo genera solo el backend (`OperacionesServiceImplement.nombreVisible`); la app lo muestra tal cual y el lector de pantalla lee la misma porción sin los puntos suspensivos.
+
+- Se usa el primer nombre y el **primer apellido**; el segundo apellido no se muestra.
+- El primer apellido incluye sus partículas iniciales **De, Del, La, Las, Los** (sin distinguir mayúsculas; se conserva la escritura original) y la palabra que las sigue.
+- Se muestran sus **cuatro primeras letras**, sin contar espacios, seguidas de "...". Si el corte cae dentro de una partícula, la partícula se muestra completa.
+- Si el primer apellido tiene **cinco letras o menos**, se muestra entero y sin "...".
+
+| Apellidos | Se muestra | Se lee |
+|---|---|---|
+| Pérez | María Pérez | María Pérez |
+| Salazar | María Sala... | María Sala |
+| De la Cruz | María De la... | María De la |
+| Del Río | Juan Del R... | Juan Del R |
+| De Los Santos | Ana De Los... | Ana De Los |
+
+Los cinco ejemplos son los de Yuni. Yuni confirmó la regla como definitiva el 2026-09-28 (cuatro letras significativas, entero con cinco letras o menos); un apellido de seis letras se acorta ("Torres" → "Torr..."). El texto de la notificación de transferencia recibida (`Notificaciones.contenidoTransferencia`) sigue con tres letras: queda fuera de este cambio y se alineará al implementar HU-77 y las transferencias.
+
+**Pendientes de esta decisión:**
+
+| Pendiente | Tipo |
+|---|---|
+| Dictado del número del destinatario (reconocimiento de voz) | Pendiente, junto con D-046 / Nayra-Voz |
+| Respuesta hablada "Sí/No" a la confirmación y voz propia de Nayra | Pendiente, junto con D-046 |
+| Medidas contra la enumeración de números (límite de búsquedas por sesión, auditoría de búsquedas). Hoy solo: sesión obligatoria y la misma respuesta para "sin cuenta" y "cuenta que no puede recibir" | Pendiente de decisión |
+| Qué dato identifica al destinatario en la solicitud de transferencia (el celular otra vez o una referencia devuelta por la búsqueda). Hoy la búsqueda no devuelve identificadores | Pendiente; con el contrato de transferencias (D-014) |
+| Apellidos compuestos ("De la Cruz") en el nombre parcial | Cerrado el 2026-09-28 (ver «Nombre parcial del destinatario») |
+| Alinear el nombre parcial de la notificación de transferencia recibida (hoy tres letras) | Pendiente; con HU-77 y las transferencias |
+| Tratamiento de datos existentes con celular repetido o fuera de formato: V012 se detiene y no los modifica | Se decide solo si aparecen |
 
 ## Agendas temáticas (AG)
 

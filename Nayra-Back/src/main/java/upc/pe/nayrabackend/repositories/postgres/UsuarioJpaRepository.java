@@ -10,5 +10,6 @@ import java.util.UUID;
 
 interface UsuarioJpaRepository extends JpaRepository<Usuario, UUID> {
     Optional<Usuario> findByTipoDocumentoIdentidadAndNumeroDocumento(TipoDocumentoIdentidad tipo, String numero);
+    Optional<Usuario> findByCelular(String celular);
     boolean existsByRol(Rol rol);
 }

@@ -88,6 +88,12 @@ public final class Soporte {
 
     public static final String PIN = "482913";
     public static final String CELULAR = "987654321";
+    private static final java.util.concurrent.atomic.AtomicInteger CELULARES = new java.util.concurrent.atomic.AtomicInteger(10000000);
+
+    /** Celular de Perú distinto en cada llamada: el celular es único (V012, G-1). No coincide con CELULAR. */
+    public static String celularNuevo() {
+        return "9" + CELULARES.incrementAndGet();
+    }
     /** DNI ficticios de entorno-simulado/datos-ficticios.json. 10000001 no tiene cuenta financiera. */
     public static final String DNI_ADMIN = "10000001";
     public static final String DNI_USUARIO = "10000002";
@@ -124,6 +130,7 @@ public final class Soporte {
             credenciales, dispositivos, auditoria, props, random, reloj);
     public final AdministracionServiceImplement admin = new AdministracionServiceImplement(usuariosRepo, dispositivosRepo,
             usuarios, dispositivos, sesiones, auditoria);
+    public final OperacionesServiceImplement operaciones = new OperacionesServiceImplement(usuariosRepo, entorno);
     public final DesafioServiceImplement desafios;
     public final AutenticacionVozServiceImplement autenticacion;
     public final EnrolamientoVozServiceImplement enrolamiento;
@@ -138,8 +145,12 @@ public final class Soporte {
 
     /** Pasos 7–13 del registro en el celular: confirma, datos, 3 muestras de voz y finalización. */
     public Persona completarRegistro(String codigo, String pin) throws Exception {
+        return completarRegistro(codigo, pin, celularNuevo());
+    }
+
+    public Persona completarRegistro(String codigo, String pin, String celular) throws Exception {
         KeyPair par = claveP256();
-        registro.completarDatos(codigo, new SolicitudDatosRegistro(true, CELULAR, pin, publica(par)));
+        registro.completarDatos(codigo, new SolicitudDatosRegistro(true, celular, pin, publica(par)));
         for (int i = 1; i <= 3; i++) {
             DesafioDTO d = enrolamiento.emitirDesafio(codigo);
             voz.respuestas.add(new IServicioVozCliente.ResultadoTecnico(true, null, List.of(), i));
