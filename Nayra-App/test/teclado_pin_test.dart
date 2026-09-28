@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nayra_app/pantallas/teclado_pin.dart';
+import 'package:nayra_app/componentes/teclado.dart';
 
 void main() {
   testWidgets('el teclado entrega el PIN al sexto dígito y solo expone el progreso', (tester) async {

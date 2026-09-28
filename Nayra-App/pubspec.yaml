@@ -1,5 +1,5 @@
 name: nayra_app
-description: "Nayra — aplicación móvil (prototipo AG-13: inicio de sesión por dispositivo, PIN y voz)."
+description: "Nayra — aplicación móvil accesible (registro asistido, inicio de sesión por dispositivo, PIN y voz, billetera)."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -21,3 +21,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # Atkinson Hyperlegible (Braille Institute, SIL OFL 1.1, licencia en assets/fuentes/OFL.txt): fuente de los
+  # mockups v3, diseñada para baja visión. Se incluye en la app; no se descarga en tiempo de ejecución.
+  fonts:
+    - family: AtkinsonHyperlegible
+      fonts:
+        - asset: assets/fuentes/AtkinsonHyperlegible-Regular.ttf
+        - asset: assets/fuentes/AtkinsonHyperlegible-Bold.ttf
+          weight: 700

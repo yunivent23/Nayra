@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-/// Campo de texto grande con etiqueta accesible y botón de envío.
+import '../tema/colores.dart';
+import 'botones.dart';
+
+/// Campo de texto grande con etiqueta accesible y botón de envío de ancho completo.
 class CampoTexto extends StatefulWidget {
   const CampoTexto({
     super.key,
@@ -8,12 +12,18 @@ class CampoTexto extends StatefulWidget {
     required this.textoBoton,
     required this.alEnviar,
     this.teclado = TextInputType.text,
+    this.iconoBoton = Icons.chevron_right,
+    this.formatos,
+    this.pista,
   });
 
   final String etiqueta;
   final String textoBoton;
   final ValueChanged<String> alEnviar;
   final TextInputType teclado;
+  final IconData iconoBoton;
+  final List<TextInputFormatter>? formatos;
+  final String? pista;
 
   @override
   State<CampoTexto> createState() => _CampoTextoState();
@@ -37,19 +47,19 @@ class _CampoTextoState extends State<CampoTexto> {
           TextField(
             controller: _controlador,
             keyboardType: widget.teclado,
+            inputFormatters: widget.formatos,
             autocorrect: false,
-            style: const TextStyle(fontSize: 22),
-            decoration: InputDecoration(labelText: widget.etiqueta, border: const OutlineInputBorder()),
+            enableSuggestions: false,
+            style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: ColoresNayra.textoPrincipal),
+            cursorColor: ColoresNayra.azulMarino,
+            cursorWidth: 4,
+            decoration: InputDecoration(labelText: widget.etiqueta, helperText: widget.pista,
+                helperStyle: const TextStyle(fontSize: 20, color: ColoresNayra.textoSecundarioSobreOscuro),
+                helperMaxLines: 3),
             onSubmitted: (_) => _enviar(),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 64,
-            child: FilledButton(
-              onPressed: _enviar,
-              child: Text(widget.textoBoton, style: const TextStyle(fontSize: 20)),
-            ),
-          ),
+          const SizedBox(height: 16),
+          BotonNayra(texto: widget.textoBoton, icono: widget.iconoBoton, alPulsar: _enviar),
         ],
       );
 }

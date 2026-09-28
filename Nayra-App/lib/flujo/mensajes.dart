@@ -1,4 +1,6 @@
-/// Mensajes comprensibles para lectores de pantalla (accesibilidad, 01 §HU-44).
+import '../api/cliente_http.dart';
+
+/// Mensajes comprensibles para lectores de pantalla (accesibilidad, HU-47, HU-64).
 /// Nunca incluyen el PIN, puntajes biométricos ni detalles técnicos.
 String mensajeMotivo(String? motivo, {int? intentosRestantes}) {
   final base = switch (motivo) {
@@ -16,10 +18,27 @@ String mensajeMotivo(String? motivo, {int? intentosRestantes}) {
   };
   if (intentosRestantes != null && intentosRestantes > 0 &&
       const {'PIN_INCORRECTO', 'CONTENIDO_INCORRECTO', 'POSIBLE_SPOOFING', 'NO_COINCIDE'}.contains(motivo)) {
-    return '$base Le quedan $intentosRestantes ${intentosRestantes == 1 ? 'intento' : 'intentos'}.';
+    return intentosRestantes == 1 ? '$base Le queda 1 intento.' : '$base Le quedan $intentosRestantes intentos.';
   }
   return base;
 }
 
 /// Texto del desafío para leerlo en voz alta: "llave, cuatro, siete, dos, mesa".
 String instruccionDesafio(String texto) => 'Diga en voz alta: $texto';
+
+/// Mensaje para cualquier fallo de comunicación. [porCodigo] permite textos propios de cada pantalla para los
+/// códigos de error del backend; el resto recibe un texto genérico.
+String mensajeFallo(Object error, {Map<String, String> porCodigo = const {}}) => switch (error) {
+      ErrorApi(:final codigo) when porCodigo.containsKey(codigo) => porCodigo[codigo]!,
+      ErrorApi(estadoHttp: 401) => 'Su sesión se cerró. Vuelva a iniciar sesión.',
+      ErrorApi(estadoHttp: 403) => 'No tiene permiso para esta acción.',
+      ErrorApi(codigo: 'CUENTA_BLOQUEADA') => 'Su cuenta está bloqueada.',
+      ErrorApi(codigo: 'CUENTA_INACTIVA') => 'Su cuenta no está activa.',
+      ErrorApi(estadoHttp: >= 500) => 'Nayra tuvo un problema. Inténtelo más tarde.',
+      ErrorApi() => 'No se pudo completar la operación.',
+      ErrorConexion() => 'No se pudo conectar con Nayra. Revise su conexión a internet e inténtelo otra vez.',
+      ErrorTiempoAgotado() => 'Nayra tardó demasiado en responder. Inténtelo otra vez.',
+      ErrorRespuesta() => 'Nayra respondió de una forma inesperada. Inténtelo más tarde.',
+      FuncionNoDisponible() => 'Esta función todavía no está disponible en Nayra.',
+      _ => 'Ocurrió un problema inesperado. Inténtelo otra vez.',
+    };

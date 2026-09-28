@@ -4,6 +4,7 @@
 ///   flutter run --dart-define=NAYRA_BACKEND_URL=http://10.0.2.2:8080
 /// 10.0.2.2 es el equipo anfitrión visto desde el emulador de Android. Sin TLS solo para el
 /// prototipo local; el transporte seguro de producción sigue pendiente (06_SEGURIDAD).
+/// No hay secretos en la app: la sesión es el JWT que entrega el backend y se guarda solo en memoria.
 class ConfiguracionApp {
   static const urlBackend = String.fromEnvironment(
     'NAYRA_BACKEND_URL',
@@ -15,4 +16,14 @@ class ConfiguracionApp {
 
   /// Formato que espera el servicio de voz (05 §27): WAV PCM 16 bits, 16 kHz, mono.
   static const frecuenciaMuestreo = 16000;
+
+  /// Cierre por inactividad (D-018): 5 minutos, controlado en el servidor, sin aviso previo ni opción de continuar.
+  /// La app solo lo refleja: cuenta desde la última petición con sesión, igual que el servidor, y al vencer
+  /// descarta el token y muestra que la sesión se cerró. No es configurable por el usuario.
+  static const inactividadSesion = Duration(minutes: 5);
+
+  /// PROVISIONAL (valores técnicos del cliente, sin decisión documentada): espera máxima de una petición y de una
+  /// petición con audio. La de audio supera el tiempo de espera del backend hacia el servicio de voz (30 s).
+  static const tiempoEsperaPeticion = Duration(seconds: 20);
+  static const tiempoEsperaAudio = Duration(seconds: 45);
 }
