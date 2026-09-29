@@ -1,0 +1,7 @@
+# Variables de entorno y secretos locales: nunca versionar
+.env
+.env.*
+!.env.example
+
+# Modelos biométricos descargados (Vosk, AASIST, ECAPA-TDNN)
+/Nayra-Voz/modelos/
