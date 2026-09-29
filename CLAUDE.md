@@ -129,6 +129,8 @@ No asumir ni recuperar automáticamente:
 
 Si alguno de estos elementos vuelve a ser necesario, debe existir una decisión documentada.
 
+**Decisión documentada (2026-09-29):** D-062 a D-074 aprueban, como **arquitectura objetivo futura en GCP**, la región `us-east1` y este recorrido: API Gateway → balanceador regional → firewall → VPC → subred de solo proxy (DMZ) → 2 instancias en zonas diferentes → Cloud SQL privado. Todavía no está desplegada. No añadir otros componentes ni cambiar esta topología sin una nueva decisión.
+
 ### 4.3 Arquitectura aprobada actualmente
 
 La documentación actual establece que Nayra contempla:
@@ -303,7 +305,7 @@ Tablas de referencia del entorno simulado:
 - ENTIDADES_BANCARIAS (AG-00, D-026: catálogo con `id` y `nombre`; sin gestión por el administrador)
 - REGISTRO_IDENTIDAD_SIMULADO (AG-01, D-035: DNI, nombres, apellidos)
 
-El modelo lógico vigente tras AG-01 está en `docs/03_BASE_DE_DATOS_NAYRA.md` §16. El modelo físico implementado (D-051, D-009 y modelo de datos v4) está en §17: migraciones Flyway V001–V012 en `Nayra-Back/src/main/resources/db/migration/nayra/` y V001–V003 de `biometria` en `Nayra-Voz/migraciones/biometria/`, `ddl-auto=validate`. No crear tablas fuera de §17 sin decisión explícita; en particular, **no** crear `roles`, `solicitudes_atencion`, tablas de desafíos o nonces, historial de embeddings ni tablas nuevas de auditoría. Los cambios de esquema van en migraciones nuevas (V013+); nunca editar una migración aplicada.
+El modelo lógico vigente tras AG-01 está en `docs/03_BASE_DE_DATOS_NAYRA.md` §16. El modelo físico implementado (D-051, D-009 y modelo de datos v4) está en §17: migraciones Flyway V001–V012 en `Nayra-Back/src/main/resources/db/migration/nayra/` y V001–V003 de `biometria` en `Nayra-Voz/migraciones/biometria/`, `ddl-auto=validate`. No crear tablas fuera de §17 sin decisión explícita; en particular, **no** crear `roles`, `solicitudes_atencion`, tablas de desafíos o nonces, historial de embeddings ni tablas nuevas de auditoría. Hay una excepción aprobada: el 2026-09-29, D-064 y D-065 autorizan, solo para compartir el estado entre las 2 instancias, las tablas temporales de V013 (`nonces_dispositivo`, `desafios`, `transacciones_autenticacion`, `registros_en_curso`) y `biometria.enrolamientos_pendientes` (cifrada, 900 s). Ninguna de estas tablas está implementada todavía. Los cambios de esquema van en migraciones nuevas (V013+); nunca editar una migración aplicada.
 
 Reglas:
 

@@ -264,11 +264,20 @@ No se deben asumir automáticamente:
 
 Estos elementos solo deben incorporarse cuando exista una decisión aprobada.
 
+**Actualización 2026-09-29:** API Gateway, el balanceador regional, la VPC, la DMZ (subred de solo proxy) y la región `us-east1` quedan **aprobados como arquitectura objetivo** en D-062 a D-074. Su estado es **no desplegado**: no se ha creado ningún recurso en GCP.
+
+Pendiente de implementar antes de la fase de 2 instancias activas:
+- D-064: tablas temporales V013;
+- D-065: `biometria.enrolamientos_pendientes`;
+- D-067: endpoint de salud.
+
 ### 7.3 Cloud
 
 GCP se encuentra como tecnología/plataforma considerada.
 
 La configuración física definitiva debe consultarse en la documentación de arquitectura y decisiones técnicas.
+
+**2026-09-29:** la configuración objetivo en GCP está aprobada (D-062 a D-074) y documentada en `02_ARQUITECTURA_NAYRA.md` §17 y en `docs/despliegue/`. El despliegue está **pendiente**: todavía no existe proyecto, red ni instancias.
 
 ---
 

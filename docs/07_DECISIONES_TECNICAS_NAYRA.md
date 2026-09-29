@@ -294,6 +294,8 @@ El contrato de API deberá documentarse posteriormente en:
 
 **Estado:** PENDIENTE
 
+**Actualización 2026-09-29:** la topología objetivo en GCP queda aprobada en D-063 (etapa futura, no desplegada).
+
 La arquitectura física definitiva todavía debe definirse.
 
 No asumir ninguna de las arquitecturas anteriormente descartadas.
@@ -305,6 +307,8 @@ La arquitectura aprobada deberá registrarse en `02_ARQUITECTURA_NAYRA.md`.
 ## D-016 — Despliegue cloud
 
 **Estado:** PENDIENTE
+
+**Actualización 2026-09-29:** región, topología, máquinas, migraciones, dominio y contenedores quedan aprobados en D-062 a D-074 (etapa futura, no desplegada). Monitoreo y almacenamiento siguen pendientes.
 
 Debe definirse:
 
@@ -391,6 +395,8 @@ Sin embargo, la estrategia integral de disponibilidad continúa pendiente y debe
 - componentes adicionales de infraestructura, si fueran necesarios.
 
 No asumir automáticamente regiones adicionales, balanceadores u otros mecanismos de alta disponibilidad sin una decisión técnica aprobada.
+
+**Actualización 2026-09-29:** la distribución del tráfico en GCP (API Gateway y balanceador regional hacia un grupo de instancias en 2 zonas) y los costos por fases quedan aprobados en D-063. La recuperación, el monitoreo y los criterios de disponibilidad siguen pendientes.
 
 **Aclaración (2026-09-27):** la separación en tres servicios del modelo de datos v4 (Negocio, Autenticación y Biométrico) es una separación **lógica, por responsabilidad**. No sustituye ni reinterpreta las 2 instancias de D-023, y "3 servicios" no significa "3 réplicas".
 
@@ -1268,6 +1274,131 @@ Los cinco ejemplos son los de Yuni. Yuni confirmó la regla como definitiva el 2
 | Alinear el nombre parcial de la notificación de transferencia recibida (hoy tres letras) | Pendiente; con HU-77 y las transferencias |
 | Tratamiento de datos existentes con celular repetido o fuera de formato: V012 se detiene y no los modifica | Se decide solo si aparecen |
 
+## Decisiones aprobadas el 2026-09-29 — Despliegue futuro en GCP
+
+Yuni aprobó estas decisiones el 2026-09-29, después de la auditoría final de despliegue (`docs/despliegue/AUDITORIA_FINAL_DESPLIEGUE_GCP_2026-09-29.md`).
+
+Alcance de estas decisiones:
+- Describen la **arquitectura objetivo en GCP, que es una etapa futura**. No se ha creado ningún recurso en GCP.
+- Aprobar una decisión **no** equivale a implementarla. Las que exigen código (D-064, D-065, D-067) siguen **sin implementar**.
+- El entorno local de desarrollo (Docker Compose en una PC) es solo una forma de ejecutar el sistema y **no modifica** estas decisiones.
+
+### D-062 — Región de despliegue
+
+**Estado:** APROBADA (2026-09-29).
+
+Todo se despliega en **`us-east1`**.
+
+Motivo: API Gateway no está disponible en ninguna región de Sudamérica. Detalle en la auditoría, §D-2.
+
+### D-063 — Topología objetivo en GCP
+
+**Estado:** APROBADA (2026-09-29). Concreta D-015, D-016 y D-020 para GCP y es compatible con D-023. **No desplegada.**
+
+Recorrido de una petición:
+
+`Internet → API Gateway → balanceador de aplicaciones externo regional → firewall → VPC → subred de solo proxy (la DMZ) → grupo de instancias administrado regional en 2 zonas → Cloud SQL (PostgreSQL 16) con IP privada`.
+
+Reglas:
+- **2 instancias en zonas diferentes** (D-023). Nayra-Back y Nayra-Voz corren en la misma VM. Nayra-Voz solo es accesible por la red interna (D-010).
+- La separación entre Negocio, Autenticación y Biométrico sigue siendo **lógica**: no hay tres grupos de servidores.
+- **Costos:**
+  - En desarrollo (fase A) hay **1 instancia activa**. Esto es una configuración temporal y **no** permite afirmar alta disponibilidad.
+  - En las pruebas de disponibilidad (fase B) hay 2 instancias activas.
+  - La fase B requiere que D-064 y D-065 estén implementadas.
+- **Base de datos:** Cloud SQL se crea como una base nueva, **sin migrar datos locales**.
+
+Con esta decisión, API Gateway, el balanceador, la VPC y la DMZ dejan de ser «componentes no asumidos» (`CLAUDE.md` §4.2, `08` §7.2), pero **solo** en la forma que describe D-063.
+
+### D-064 — Estado temporal compartido en Nayra-Back (R-1)
+
+**Estado:** APROBADA (2026-09-29); **NO IMPLEMENTADA**. Modifica la exclusión de «tablas de desafíos o nonces» del modelo v4 (`CLAUDE.md` §8), solo para estas tablas.
+
+Problema: el estado que hoy vive en memoria del proceso no se comparte entre las 2 instancias.
+
+Solución aprobada: moverlo a PostgreSQL con **4 tablas temporales**, en la migración **V013** del esquema `nayra`:
+- `nonces_dispositivo`
+- `desafios`
+- `transacciones_autenticacion`
+- `registros_en_curso`
+
+Cada fila vence según los tiempos provisionales que ya están aprobados. No se usa afinidad de sesión.
+
+### D-065 — Enrolamiento pendiente compartido en Nayra-Voz (R-1)
+
+**Estado:** APROBADA (2026-09-29); **NO IMPLEMENTADA**.
+
+Se crea la tabla temporal **`biometria.enrolamientos_pendientes`** en la migración V004 del esquema `biometria`:
+- Guarda los embeddings **cifrados con AES-GCM**, con la misma clave que usa el perfil de voz.
+- Cada registro vive 900 s y se borra al finalizar el enrolamiento o al vencer.
+- **No** es un historial de embeddings y no guarda audio (D-013).
+
+### D-066 — Dominio y HTTPS
+
+**Estado:** APROBADA (2026-09-29).
+
+Ahora mismo **no** se compra ningún dominio. Yuni registrará uno en la etapa del balanceador y HTTPS, y el balanceador usará un **subdominio exclusivo** con un certificado administrado por Google.
+
+### D-067 — Endpoint de salud
+
+**Estado:** APROBADA (2026-09-29); **NO IMPLEMENTADA**.
+
+Nayra-Back tendrá un endpoint de salud que compruebe tres cosas: el propio Back, PostgreSQL y Nayra-Voz.
+
+Mientras no exista, en la fase A se acepta de forma temporal una comprobación TCP al puerto 8080.
+
+### D-068 — Rutas expuestas y protección del balanceador
+
+**Estado:** APROBADA (2026-09-29).
+
+- El mapa de URLs del balanceador funciona como **lista blanca** desde la fase A. No publica Swagger ni endpoints internos.
+- Antes de cualquier uso fuera de pruebas se debe **evaluar Cloud Armor**.
+
+### D-069 — Versión de Java
+
+**Estado:** APROBADA (2026-09-29).
+
+Nayra-Back usa **Java 21**. El `pom.xml` pasa de 25 a 21, y Spring Boot 4.1.1 es compatible con esa versión.
+
+### D-070 — Versión de Python y dependencias
+
+**Estado:** APROBADA (2026-09-29).
+
+Nayra-Voz usa **Python 3.11** con las versiones de dependencias **fijadas** en `requirements.txt`. PyTorch se instala en su versión para CPU.
+
+### D-071 — Ejecución de las migraciones en GCP
+
+**Estado:** APROBADA (2026-09-29). Resuelve la parte de P-4 que corresponde a **quién y dónde** se ejecutan las migraciones; los permisos definitivos siguen pendientes.
+
+- Flyway se ejecuta como **tarea puntual**, una para `nayra` y otra para `biometria`.
+- Se lanza desde la VM de la zona A, accediendo por IAP.
+- Las instancias arrancan con `SPRING_FLYWAY_ENABLED=false`.
+
+### D-072 — Tipo de máquina
+
+**Estado:** APROBADA (2026-09-29).
+
+Cada instancia es una VM **e2-standard-2**.
+
+### D-073 — Clave antigua de Gemini
+
+**Estado:** APROBADA (2026-09-29).
+
+- La clave de Gemini que aparece en el historial de Git pertenece a un proyecto anterior y no forma parte de NAYRA.
+- Yuni debe revocarla en la consola de Google.
+- NAYRA **no** añade ninguna dependencia de Gemini.
+- El resto de D-017 sigue como deuda técnica.
+
+### D-074 — Empaquetado en contenedores
+
+**Estado:** APROBADA (2026-09-29).
+
+- Nayra-Back y Nayra-Voz se empaquetan en imágenes Docker, que son las mismas en local y en GCP.
+- PostgreSQL corre en Docker **solo en local**; en GCP se usa Cloud SQL.
+- La app Flutter recibe la dirección del backend con `NAYRA_BACKEND_URL` mediante `--dart-define`, sin URL fija en el código.
+
+---
+
 ## Agendas temáticas (AG)
 
 Las agendas temáticas (AG) agrupan las decisiones por tema. Son distintas del **origen histórico** de cada decisión, es decir, la ronda en la que se decidió. AG-00 y AG-01 son **rondas históricas cerradas**: no se reabren y sus decisiones conservan su origen. El bloque aprobado el 2026-09-27 se denomina **revisión del 2026-09-27** y no tiene número de AG. La asignación temática no modifica el contenido, el estado ni la numeración de ninguna decisión.
@@ -1289,6 +1420,6 @@ Las agendas temáticas (AG) agrupan las decisiones por tema. Son distintas del *
 | AG-12 | Frontera/responsabilidades Java ↔ Python | D-010, D-056 | D-057 y D-059, cuando corresponda a la frontera entre servicios |
 | AG-13 | Biometría y autenticación por voz | D-005 (concretada en D-011), D-011, D-012, D-013, D-046 (solo la parte del desafío/reconocimiento de voz), D-054, D-055, D-057, D-058, D-059, D-060 | — |
 
-**Sin AG temático por ahora:** D-007 (aplicación móvil, Flutter) y D-045 (panel web del administrador).
+**Sin AG temático por ahora:** D-007 (aplicación móvil, Flutter), D-045 (panel web del administrador) y D-062 a D-074 (despliegue futuro en GCP, 2026-09-29).
 
 **Origen histórico en AG-01 sin referencias secundarias todavía:** D-040, D-041, D-044, D-049, D-050 y D-052.

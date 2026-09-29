@@ -407,6 +407,18 @@ No asumir automáticamente:
 
 Todos estos elementos deberán documentarse cuando formen parte de la arquitectura final.
 
+**Actualización 2026-09-29 — arquitectura objetivo en GCP (etapa futura, no desplegada).**
+
+Las decisiones D-062 a D-074 (`07_DECISIONES_TECNICAS_NAYRA.md`) fijan la región `us-east1` y este recorrido:
+
+`Internet → API Gateway → balanceador de aplicaciones externo regional → firewall → VPC → subred de solo proxy (DMZ) → grupo de instancias administrado regional con **2 instancias en zonas diferentes** (D-023) → Cloud SQL PostgreSQL 16 con IP privada`.
+
+Cada instancia es una VM e2-standard-2 que ejecuta Nayra-Back y Nayra-Voz en contenedores. Nayra-Voz solo es accesible desde la red interna.
+
+En desarrollo hay 1 instancia activa. Es una configuración temporal: con una sola instancia no se afirma alta disponibilidad. Las 2 instancias se activan en las pruebas de disponibilidad, y para eso primero hay que implementar el estado compartido (D-064 y D-065).
+
+Estas decisiones no autorizan otros componentes. El análisis completo está en `docs/despliegue/AUDITORIA_FINAL_DESPLIEGUE_GCP_2026-09-29.md`.
+
 ---
 
 # 18. Alta disponibilidad
