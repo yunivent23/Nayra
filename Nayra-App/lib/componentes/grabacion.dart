@@ -30,24 +30,40 @@ class BotonGrabacion extends StatefulWidget {
 class _BotonGrabacionState extends State<BotonGrabacion> {
   bool _grabando = false;
 
+  /// Evita una segunda pulsación mientras el micrófono arranca o se detiene.
+  bool _ocupado = false;
+
   Future<void> _alternar() async {
-    if (_grabando) {
-      final wav = await widget.grabador.detener();
+    if (_ocupado) return;
+    _ocupado = true;
+    try {
+      if (_grabando) {
+        final wav = await widget.grabador.detener();
+        if (!mounted) return;
+        setState(() => _grabando = false);
+        anunciar(context, 'Grabación terminada. Enviando.');
+        widget.alTerminar(wav);
+        return;
+      }
+      if (!await widget.grabador.tienePermiso()) {
+        if (mounted) anunciar(context, 'Nayra necesita permiso para usar el micrófono.');
+        return;
+      }
+      await widget.grabador.iniciar();
+      if (!mounted) return;
+      setState(() => _grabando = true);
+      Senales.aviso();
+      anunciar(context, 'Grabando. Hable ahora y toque de nuevo al terminar.');
+    } catch (_) {
+      // Micrófono ocupado o error del sistema al grabar: la app no se cierra; se descarta lo grabado
+      // y se puede volver a intentar.
+      await widget.grabador.cancelar().catchError((_) {});
       if (!mounted) return;
       setState(() => _grabando = false);
-      anunciar(context, 'Grabación terminada. Enviando.');
-      widget.alTerminar(wav);
-      return;
+      anunciar(context, 'No se pudo usar el micrófono. Inténtelo otra vez.');
+    } finally {
+      _ocupado = false;
     }
-    if (!await widget.grabador.tienePermiso()) {
-      if (mounted) anunciar(context, 'Nayra necesita permiso para usar el micrófono.');
-      return;
-    }
-    await widget.grabador.iniciar();
-    if (!mounted) return;
-    setState(() => _grabando = true);
-    Senales.aviso();
-    anunciar(context, 'Grabando. Hable ahora y toque de nuevo al terminar.');
   }
 
   @override

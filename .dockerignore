@@ -1,0 +1,21 @@
+# Contexto de build de Nayra-Back/Dockerfile y Nayra-Voz/Dockerfile (raíz del repositorio).
+# Solo entran el código de los servicios y el vocabulario compartido; nunca secretos ni artefactos locales.
+.git
+.env
+.env.*
+!.env.example
+**/.DS_Store
+**/.idea
+**/.vscode
+docs
+Nayra-App
+Nayra-Back/target
+Nayra-Back/.mvn/wrapper/maven-wrapper.jar
+Nayra-Voz/modelos
+Nayra-Voz/tests
+Nayra-Voz/migraciones
+**/.venv
+**/venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache

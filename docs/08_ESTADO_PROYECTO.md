@@ -277,6 +277,11 @@ GCP se encuentra como tecnología/plataforma considerada.
 
 La configuración física definitiva debe consultarse en la documentación de arquitectura y decisiones técnicas.
 
+**2026-10-01 — entorno local (no es GCP):**
+- Docker Compose levanta PostgreSQL 16, Nayra-Voz (modelos reales: Vosk, WebRTC VAD, AASIST y ECAPA-TDNN) y Nayra-Back (Java 21). Verificado en un entorno de pruebas, con migraciones V001–V012 y biometria V001–V003 aplicadas.
+- Ruta Back → Voz verificada: el pipeline real se ejecuta etapa por etapa. La voz sintética se rechaza por anti-spoofing y una frase distinta, por contenido.
+- **Pendiente en el celular físico:** registro y autenticación con voces humanas reales (casos 1 a 5 de la guía). Ver `docs/entorno-local/GUIA_ENTORNO_LOCAL.md`.
+
 **2026-09-29:** la configuración objetivo en GCP está aprobada (D-062 a D-074) y documentada en `02_ARQUITECTURA_NAYRA.md` §17 y en `docs/despliegue/`. El despliegue está **pendiente**: todavía no existe proyecto, red ni instancias.
 
 ---

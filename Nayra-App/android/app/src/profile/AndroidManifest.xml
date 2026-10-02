@@ -4,4 +4,8 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- SOLO ENTORNO LOCAL (2026-10-01): HTTP sin TLS hacia el backend de la PC en las compilaciones "profile".
+         Profile compila AOT como release y es mucho más ligera que debug en celulares de gama baja/media, por eso
+         es la recomendada para las pruebas funcionales en un celular físico. La compilación release NO lo permite. -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>

@@ -1399,6 +1399,25 @@ Cada instancia es una VM **e2-standard-2**.
 
 ---
 
+## Configuración del entorno local (2026-10-01)
+
+Esta sección **no contiene decisiones de arquitectura** y no modifica D-062 a D-074. Registra solo la configuración que hizo falta para ejecutar NAYRA en una PC y probarlo desde un celular físico. Guía de uso: `docs/entorno-local/GUIA_ENTORNO_LOCAL.md`.
+
+| ID | Tipo | Qué | Por qué | Impacto |
+|---|---|---|---|---|
+| LOC-01 | Configuración exclusiva del entorno local | En local, la tarea de migraciones usa la red de Compose: `NAYRA_RED_MIGRACIONES=nayra_default` y `NAYRA_DB_HOST=postgres` | En Docker Desktop (Windows), la red `host` es la de la máquina virtual de WSL2, no la de Windows | Ninguno en GCP: allí sigue la red `host` hacia Cloud SQL (D-071) |
+| LOC-02 | Configuración exclusiva del entorno local | La compilación `profile` de Nayra-App permite HTTP sin TLS hacia la PC, igual que `debug` | `profile` compila AOT y es mucho más ligera que `debug`. Así se puede probar en celulares de gama baja o media sin el costo del modo depuración | La compilación `release` sigue sin permitir HTTP. El transporte seguro de producción sigue pendiente (06) |
+| LOC-03 | Mejora de implementación, permanente | El botón de grabación captura los fallos del micrófono: descarta lo grabado, anuncia el error al lector de pantalla y permite reintentar. También ignora una segunda pulsación mientras el micrófono arranca o se detiene | Que la app no quede bloqueada ni se cierre por un error del sistema de audio (HU-47, HU-64) | No cambia el flujo ni la API |
+| LOC-04 | Verificación, sin cambio | Java 21 se mantiene (D-069). El `pom.xml` declaraba 25 desde el primer commit (`af02e8b`), sin ninguna API de Java 22 o posterior en el código. Con 21 pasan 122 pruebas (1 omitida) contra PostgreSQL 16 | Estabilidad: 21 es LTS y es la versión de las imágenes | Ninguno |
+
+**Hallazgo previo a las pruebas con voces reales (no es una decisión).**
+- Una medición informal con los modelos reales (`GUIA_ENTORNO_LOCAL.md` §7) sugiere que los umbrales provisionales de D-055 pueden rechazar a usuarios legítimos:
+  - ECAPA, mismo locutor: 0.70–0.73, frente al umbral de 0.80.
+  - AASIST, voz real de corpus comprimido: 0.00–0.60, frente al umbral de 0.90.
+- Los umbrales **no** se modificaron. Cualquier cambio corresponde a D-060 (calibración) y requiere una decisión.
+
+---
+
 ## Agendas temáticas (AG)
 
 Las agendas temáticas (AG) agrupan las decisiones por tema. Son distintas del **origen histórico** de cada decisión, es decir, la ronda en la que se decidió. AG-00 y AG-01 son **rondas históricas cerradas**: no se reabren y sus decisiones conservan su origen. El bloque aprobado el 2026-09-27 se denomina **revisión del 2026-09-27** y no tiene número de AG. La asignación temática no modifica el contenido, el estado ni la numeración de ninguna decisión.

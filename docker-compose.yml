@@ -1,0 +1,145 @@
+# Nayra — contenedores de Nayra-Back y Nayra-Voz (misma VM, D-010: Voz solo en la red interna) y, SOLO en local,
+# PostgreSQL 16. En GCP la base es Cloud SQL con IP privada y no se levanta el servicio `postgres`.
+#
+# Variables: copiar .env.example a .env (nunca se versiona) y completar. En GCP el .env se genera en la VM a partir
+# de Secret Manager.
+#
+# Local, en orden:
+#   docker compose --profile local up -d postgres           # 1. PostgreSQL con los roles ya creados
+#   docker compose --profile migraciones run --rm migraciones  # 2. Flyway una sola vez: nayra y biometria (P-4)
+#   docker compose up -d                                   # 3. nayra-voz y nayra-back
+# GCP (VM de la zona A, por IAP): paso 2 una sola vez contra Cloud SQL y luego el paso 3 en cada instancia.
+# Las instancias NUNCA migran al arrancar (SPRING_FLYWAY_ENABLED=false).
+
+name: nayra
+
+services:
+  postgres:
+    profiles: ["local"]
+    image: postgres:16-bookworm@sha256:efedf3595f1d6f415c08568ba171029bf54052e754cc9f030e3f2412b21f3d67
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definir en .env (solo local)}
+      NAYRA_DB_NOMBRE: ${NAYRA_DB_NOMBRE:-nayra}
+      NAYRA_DB_USUARIO_MIGRACION: ${NAYRA_DB_USUARIO_MIGRACION:-nayra_migracion}
+      NAYRA_DB_PASSWORD_MIGRACION: ${NAYRA_DB_PASSWORD_MIGRACION:?}
+      NAYRA_DB_USUARIO_APP: ${NAYRA_DB_USUARIO_APP:-nayra_app}
+      NAYRA_DB_PASSWORD_APP: ${NAYRA_DB_PASSWORD_APP:?}
+      NAYRA_DB_ROL_NEGOCIO: ${NAYRA_DB_ROL_NEGOCIO:-nayra_negocio}
+      NAYRA_DB_ROL_AUTENTICACION: ${NAYRA_DB_ROL_AUTENTICACION:-nayra_autenticacion}
+      NAYRA_DB_USUARIO_BIOMETRIA_MIGRACION: ${NAYRA_DB_USUARIO_BIOMETRIA_MIGRACION:-biometria_migracion}
+      NAYRA_DB_PASSWORD_BIOMETRIA_MIGRACION: ${NAYRA_DB_PASSWORD_BIOMETRIA_MIGRACION:?}
+      NAYRA_DB_USUARIO_BIOMETRIA: ${NAYRA_DB_USUARIO_BIOMETRIA:-nayra_biometria}
+      NAYRA_DB_PASSWORD_BIOMETRIA: ${NAYRA_DB_PASSWORD_BIOMETRIA:?}
+    configs:
+      - source: crear-roles
+        target: /docker-entrypoint-initdb.d/01-roles.sh
+        mode: 0755
+    volumes:
+      - datos-postgres:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d $${NAYRA_DB_NOMBRE}"]
+      interval: 5s
+      retries: 20
+
+  # Tarea puntual (P-4). Los roles deben existir ANTES: V004, V011 y biometria V003 omiten los GRANT si faltan.
+  migraciones:
+    profiles: ["migraciones"]
+    image: flyway/flyway:12.4.0@sha256:5be18367a9b3979a9f37234c371b80da457a448fb9577bd94d4bf24d923fafac
+    # Local: red de Compose (nayra_default) con NAYRA_DB_HOST=postgres. GCP: host, hacia Cloud SQL (ver .env.example).
+    network_mode: ${NAYRA_RED_MIGRACIONES:-host}
+    volumes:
+      - ./Nayra-Back/src/main/resources/db/migration/nayra:/flyway/nayra:ro
+      - ./Nayra-Voz/migraciones/biometria:/flyway/biometria:ro
+    environment:
+      URL: jdbc:postgresql://${NAYRA_DB_HOST:-127.0.0.1}:${NAYRA_DB_PORT:-5432}/${NAYRA_DB_NOMBRE:-nayra}?sslmode=${NAYRA_DB_SSLMODE:-disable}
+      MIGRACION_USUARIO: ${NAYRA_DB_USUARIO_MIGRACION:-nayra_migracion}
+      MIGRACION_PASSWORD: ${NAYRA_DB_PASSWORD_MIGRACION:?}
+      BIOMETRIA_USUARIO: ${NAYRA_DB_USUARIO_BIOMETRIA_MIGRACION:-biometria_migracion}
+      BIOMETRIA_PASSWORD: ${NAYRA_DB_PASSWORD_BIOMETRIA_MIGRACION:?}
+      ROL_EJECUCION: ${NAYRA_DB_USUARIO_APP:-nayra_app}
+      ROL_NEGOCIO: ${NAYRA_DB_ROL_NEGOCIO:-nayra_negocio}
+      ROL_AUTENTICACION: ${NAYRA_DB_ROL_AUTENTICACION:-nayra_autenticacion}
+      ROL_BIOMETRIA: ${NAYRA_DB_USUARIO_BIOMETRIA:-nayra_biometria}
+    entrypoint: ["bash", "-ec"]
+    command:
+      - |
+        flyway -url="$$URL" -user="$$MIGRACION_USUARIO" -password="$$MIGRACION_PASSWORD" -connectRetries=10 \
+          -schemas=nayra -defaultSchema=nayra -locations=filesystem:/flyway/nayra \
+          -placeholders.rol_ejecucion="$$ROL_EJECUCION" -placeholders.rol_negocio="$$ROL_NEGOCIO" \
+          -placeholders.rol_autenticacion="$$ROL_AUTENTICACION" migrate
+        flyway -url="$$URL" -user="$$BIOMETRIA_USUARIO" -password="$$BIOMETRIA_PASSWORD" -connectRetries=10 \
+          -schemas=biometria -defaultSchema=biometria -locations=filesystem:/flyway/biometria \
+          -placeholders.rol_biometria="$$ROL_BIOMETRIA" migrate
+
+  nayra-voz:
+    build:
+      context: .
+      dockerfile: Nayra-Voz/Dockerfile
+    image: ${NAYRA_IMAGEN_VOZ:-nayra-voz:local}
+    restart: unless-stopped
+    # Sin `ports`: solo accesible desde nayra-back por la red interna de Compose (D-010).
+    environment:
+      NAYRA_VOZ_TOKEN_SERVICIO: ${NAYRA_VOZ_TOKEN_SERVICIO:?}
+      NAYRA_VOZ_CLAVE_EMBEDDINGS: ${NAYRA_VOZ_CLAVE_EMBEDDINGS:?}
+      NAYRA_VOZ_CLAVE_EMBEDDINGS_VERSION: ${NAYRA_VOZ_CLAVE_EMBEDDINGS_VERSION:-1}
+      NAYRA_VOZ_BD: host=${NAYRA_DB_HOST_CONTENEDORES:-postgres} port=${NAYRA_DB_PORT:-5432} dbname=${NAYRA_DB_NOMBRE:-nayra} user=${NAYRA_DB_USUARIO_BIOMETRIA:-nayra_biometria} password=${NAYRA_DB_PASSWORD_BIOMETRIA:?} sslmode=${NAYRA_DB_SSLMODE:-disable}
+    mem_limit: 3g
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8001/prototipo/v1/salud', headers={'Authorization': 'Bearer ' + os.environ['NAYRA_VOZ_TOKEN_SERVICIO']}), timeout=5)"]
+      interval: 10s
+      retries: 12
+      start_period: 20s
+
+  nayra-back:
+    build:
+      context: .
+      dockerfile: Nayra-Back/Dockerfile
+    image: ${NAYRA_IMAGEN_BACK:-nayra-back:local}
+    restart: unless-stopped
+    depends_on:
+      nayra-voz:
+        condition: service_healthy
+    ports:
+      - "${NAYRA_BACK_PUERTO_HOST:-8080}:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${NAYRA_DB_HOST_CONTENEDORES:-postgres}:${NAYRA_DB_PORT:-5432}/${NAYRA_DB_NOMBRE:-nayra}?sslmode=${NAYRA_DB_SSLMODE:-disable}
+      SPRING_DATASOURCE_USERNAME: ${NAYRA_DB_USUARIO_APP:-nayra_app}
+      SPRING_DATASOURCE_PASSWORD: ${NAYRA_DB_PASSWORD_APP:?}
+      SPRING_FLYWAY_ENABLED: "false"
+      SPRING_JPA_SHOW_SQL: "false"
+      NAYRA_DB_ROL_EJECUCION: ${NAYRA_DB_USUARIO_APP:-nayra_app}
+      NAYRA_DB_ROL_NEGOCIO: ${NAYRA_DB_ROL_NEGOCIO:-nayra_negocio}
+      NAYRA_DB_ROL_AUTENTICACION: ${NAYRA_DB_ROL_AUTENTICACION:-nayra_autenticacion}
+      NAYRA_JWT_CLAVE: ${NAYRA_JWT_CLAVE:?misma clave en las 2 instancias}
+      NAYRA_VOZ_URL: http://nayra-voz:8001
+      NAYRA_VOZ_TOKEN_SERVICIO: ${NAYRA_VOZ_TOKEN_SERVICIO:?}
+    mem_limit: 1536m
+
+volumes:
+  datos-postgres:
+
+configs:
+  # Solo local: crea la base y los usuarios separados por función (D-051, D-013). En Cloud SQL se crean una vez
+  # como administrador, con las mismas sentencias.
+  crear-roles:
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+      psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
+        -v mig="$$NAYRA_DB_USUARIO_MIGRACION" -v mig_pw="$$NAYRA_DB_PASSWORD_MIGRACION" \
+        -v app="$$NAYRA_DB_USUARIO_APP" -v app_pw="$$NAYRA_DB_PASSWORD_APP" \
+        -v neg="$$NAYRA_DB_ROL_NEGOCIO" -v aut="$$NAYRA_DB_ROL_AUTENTICACION" \
+        -v bmig="$$NAYRA_DB_USUARIO_BIOMETRIA_MIGRACION" -v bmig_pw="$$NAYRA_DB_PASSWORD_BIOMETRIA_MIGRACION" \
+        -v bio="$$NAYRA_DB_USUARIO_BIOMETRIA" -v bio_pw="$$NAYRA_DB_PASSWORD_BIOMETRIA" \
+        -v db="$$NAYRA_DB_NOMBRE" <<'SQL'
+      CREATE ROLE :"mig" LOGIN PASSWORD :'mig_pw';
+      CREATE ROLE :"app" LOGIN PASSWORD :'app_pw';
+      CREATE ROLE :"neg" NOLOGIN;
+      CREATE ROLE :"aut" NOLOGIN;
+      CREATE ROLE :"bmig" LOGIN PASSWORD :'bmig_pw';
+      CREATE ROLE :"bio" LOGIN PASSWORD :'bio_pw';
+      CREATE DATABASE :"db" OWNER :"mig";
+      GRANT CREATE ON DATABASE :"db" TO :"bmig";
+      SQL

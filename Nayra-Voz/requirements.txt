@@ -1,17 +1,21 @@
-# Servicio de voz de Nayra (D-002, D-010). Versiones a fijar al validar el prototipo.
-fastapi
-uvicorn
-python-multipart
-numpy
-pyyaml
-cryptography
+# Servicio de voz de Nayra (D-002, D-010). Python 3.11.
+# Versiones fijadas el 2026-09-29: conjunto con el que el servicio arrancó con ECAPA-TDNN, AASIST y Vosk reales
+# (`pip check` sin conflictos). Informe: docs/despliegue/AUDITORIA_FINAL_DESPLIEGUE_GCP_2026-09-29.md.
+# torch y torchaudio se instalan desde el índice CPU de PyTorch (https://download.pytorch.org/whl/cpu) para no
+# arrastrar CUDA: Nayra no usa GPU. Ver Nayra-Voz/Dockerfile.
+fastapi==0.141.1
+uvicorn==0.54.0
+python-multipart==0.0.32
+numpy==2.4.6
+pyyaml==6.0.3
+cryptography==50.0.1
 # Persistencia de biometria.perfiles_voz (D-013, modelo de datos v4 §2.12)
-psycopg[binary]
+psycopg[binary]==3.3.6
 # Calidad de audio: WebRTC VAD — PROVISIONAL, candidato inicial pendiente de prueba técnica (D-058)
-webrtcvad-wheels
+webrtcvad-wheels==2.0.14
 # Contenido del desafío (D-046)
-vosk
+vosk==0.3.45
 # Verificación 1:1 (D-011) y anti-spoofing (D-012)
-torch
-torchaudio
-speechbrain
+torch==2.14.0
+torchaudio==2.11.0
+speechbrain==1.1.1
