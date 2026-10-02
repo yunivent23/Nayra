@@ -11,6 +11,8 @@
 > **Actualización AG-01 v6 (2026-09-26):** flujo de registro asistido definitivo en 13 pasos (D-052) y separación explícita entre registro inicial, inicio de sesión y cambio/recuperación de dispositivo; el DNI **no** forma parte del inicio de sesión habitual (D-053).
 >
 > **Actualización del 2026-09-27:** decisiones técnicas del módulo de voz (D-010 a D-013, D-046 parcial, D-054 a D-060; AG-13, con D-010 y D-056 en AG-12) y cuatro decisiones que afectan la interpretación de las HUs: **PIN de 6 dígitos** como credencial (D-061, modifica D-037; origen AG-01; aprobada el 2026-09-27), **par de claves del dispositivo** (D-048; origen AG-01; aprobada el 2026-09-27), **cierre de sesión tras 5 minutos de inactividad** (D-018, parcial; AG-02) y **Flutter** para la aplicación móvil (D-007; sin AG temático). No se agregan HUs ni se modifica la redacción de las existentes; las interpretaciones están en la sección 13.
+>
+> **Actualización del 2026-10-02:** Nayra es **voice-first** (D-075 a D-080): la voz es el mecanismo principal de interacción, con TTS propio, botón de voz fijo, captura delimitada por la persona, diálogo guiado con gramáticas cerradas, **registro autónomo** además del registro con ayuda, validación posterior del enrolamiento y confirmación explícita "Sí, confirmo". No se agregan HUs ni se modifica la redacción de las existentes; las interpretaciones y los criterios de interacción están en la sección 15.
 
 ## 1. Propósito
 
@@ -42,7 +44,7 @@ Este documento constituye la referencia de requisitos para el desarrollo de Nayr
 | **Entidad bancaria** | Banco simulado del entorno controlado (D-021). Corresponde a la tabla de referencia `ENTIDADES_BANCARIAS` (D-026). |
 | **Billetera** | Término usado en las HUs sin definición formal. Su relación exacta con la cuenta financiera queda **pendiente de confirmación** (ver sección 11.5). |
 | **Registro de identidad simulado** | Fuente de identidad del entorno controlado que relaciona DNI, nombres y apellidos; se consulta durante el registro (D-035). No es una API real. Consultarlo **no** prueba la titularidad ni la identidad (D-052). |
-| **Representante autorizado** | Administrador u otra persona autorizada de la organización que, en el registro asistido, asiste a la persona y valida su identidad (D-052). Es parte de una **regla de negocio**, no un rol de la aplicación. |
+| **Representante autorizado** | Administrador u otra persona autorizada de la organización que, en el registro asistido, asiste a la persona y valida su identidad (D-052). Es parte de una **regla de negocio**, no un rol de la aplicación. _(2026-10-02, D-077: su participación es **opcional**; el registro también puede ser autónomo.)_ |
 | **Dispositivo vinculado** | Único dispositivo activo asociado a una cuenta de acceso; determina qué cuenta intenta iniciar sesión (D-039). Se identifica mediante un par de claves cuya clave privada no sale del teléfono (D-048). |
 | **PIN** | Credencial de conocimiento de 6 dígitos que concreta la "contraseña" de D-037 y de HU-118 (D-061). |
 | **Contacto** (para transferencias) | Otro usuario registrado en Nayra, localizado por su número de celular registrado (G-1, 2026-09-28). No incluye la agenda del teléfono (D-042). |
@@ -54,7 +56,7 @@ Regla: el término "cuenta" en una HU debe interpretarse según su contexto como
 | HU | Interpretación |
 |---|---|
 | HU-01, HU-04, HU-09, HU-12, HU-13, HU-14, HU-15, HU-16, HU-17, HU-18, HU-19, HU-20, HU-21, HU-24, HU-51, HU-78, HU-81, HU-83, HU-99, HU-101 | Cuenta de acceso |
-| HU-03 | La verificación de identidad la realiza un **representante autorizado** (D-052), apoyado en los datos del registro de identidad simulado. La consulta del DNI por sí sola **no** prueba la titularidad ni la identidad, y la biometría **no** se usa para validar la identidad en el registro. | D-035, D-052 |
+| HU-03 | La verificación de identidad la realiza un **representante autorizado** (D-052), apoyado en los datos del registro de identidad simulado. La consulta del DNI por sí sola **no** prueba la titularidad ni la identidad, y la biometría **no** se usa para validar la identidad en el registro. _(2026-10-02, D-077: aplica a la modalidad **con ayuda**, que es opcional; en el registro autónomo la identidad queda solo **declarada** y no se presenta como validada. Ver §15.)_ | D-035, D-052, D-077 |
 | HU-67, HU-77 | Cuenta financiera |
 | HU-93 | Cuenta de acceso para bloqueos/desbloqueos; si "modificaciones relevantes" incluye la cuenta financiera queda **pendiente** |
 | HU-104 | **Pendiente** (duplicado dudoso D1) |
@@ -68,7 +70,7 @@ Regla: el término "cuenta" en una HU debe interpretarse según su contexto como
 | ID | Actor | Historia de usuario | Prioridad | Tipo |
 |---|---|---|---|---|
 | HU-01 | Usuario | Como usuario, quiero registrarme en Nayra para crear una cuenta y utilizar los servicios de la billetera digital. | Alta | F |
-| HU-02 | Los datos de identidad (nombres, apellidos) se obtienen del registro de identidad simulado a partir del DNI y la **persona confirma sus datos** tras la validación del representante; el celular y la contraseña se cubren en HU-117 y HU-118. | D-035, D-052 |
+| HU-02 | Los datos de identidad (nombres, apellidos) se obtienen del registro de identidad simulado a partir del DNI y la **persona confirma sus datos** tras la validación del representante; el celular y la contraseña se cubren en HU-117 y HU-118. _(2026-10-02, D-077: en el registro autónomo la persona confirma sus datos sin validación de un representante; la identidad queda declarada.)_ | D-035, D-052, D-077 |
 | HU-03 | Usuario | Como usuario, quiero verificar mi identidad durante el registro para asegurar que la cuenta corresponde a mi persona. | Alta | F |
 | HU-04 | La confirmación de la cuenta de acceso se entrega al **finalizar el registro**, después de la vinculación del dispositivo, el enrolamiento de voz y el tutorial. | D-052 |
 | HU-09 | Usuario | Como usuario, quiero consultar mis datos personales para verificar la información asociada a mi cuenta. | Media | F |
@@ -199,7 +201,7 @@ Regla: el término "cuenta" en una HU debe interpretarse según su contexto como
 | HU-96 | Personal de atención | **[SIN OBJETO — D-041: cubierta por HU-97]** Como personal de atención, quiero iniciar sesión en el panel de atención para acceder a las funcionalidades que corresponden a mi rol. | Alta | F |
 | HU-97 | Administrador | Como administrador, quiero iniciar sesión en el panel administrativo para gestionar y supervisar la plataforma. | Alta | F |
 | HU-98 | Personal de atención | **[SIN OBJETO — D-041: cubierta por HU-21 y HU-22]** Como personal de atención, quiero buscar y consultar los datos básicos de un usuario para brindarle asistencia. | Alta | F |
-| HU-99 | Administrador | **[INCLUIDA — D-052: registro asistido por un representante autorizado (administrador u otra persona autorizada); sin nuevo rol]** Como administrador, quiero iniciar y gestionar un registro asistido para ayudar a un usuario a crear su cuenta de acceso. _(Reasignada de Personal de atención — D-041)_ | Alta | F |
+| HU-99 | Administrador | **[INCLUIDA — D-052: registro asistido por un representante autorizado (administrador u otra persona autorizada); sin nuevo rol. 2026-10-02, D-077: modalidad opcional, junto al registro autónomo]** Como administrador, quiero iniciar y gestionar un registro asistido para ayudar a un usuario a crear su cuenta de acceso. _(Reasignada de Personal de atención — D-041)_ | Alta | F |
 | HU-100 | Personal de atención | **[SIN OBJETO — D-041: cubierta por HU-23]** Como personal de atención, quiero corregir determinados datos personales de un usuario cuando este solicite asistencia para mantener su información actualizada. | Alta | F |
 | HU-101 | Administrador | Como administrador, quiero consultar el estado de una cuenta de acceso para conocer si se encuentra activa, bloqueada, suspendida o desactivada. _(Reasignada de Personal de atención — D-041; los estados definitivos quedan pendientes)_ | Alta | F |
 | HU-102 | Administrador | Como administrador, quiero registrar, consultar y gestionar las solicitudes de atención o incidencias reportadas por los usuarios, incluidas las solicitudes de recuperación, para darles seguimiento. _(Reasignada de Personal de atención — D-041; ampliada por D-040)_ | Media | F |
@@ -602,7 +604,7 @@ Se mantienen **separados y sin modificar** hasta una decisión explícita:
 - **Cuenta financiera única (D-025):** cada usuario tiene una sola cuenta financiera, asociada a una entidad bancaria simulada (D-026).
 - **Asociación por DNI (D-028):** durante el registro, el DNI se utiliza para localizar la cuenta financiera simulada; la relación persistente entre `CUENTAS` y `USUARIOS` es una FK con restricción de unicidad.
 - **Transferencias (D-030):** el emisor opera con su única cuenta financiera y el sistema identifica la única cuenta financiera del destinatario; no existe selección entre cuentas. Las operaciones referencian la cuenta financiera de origen y la de destino (D-029).
-- **Registro con voz (D-032):** el registro de Nayra incluye el registro de la voz del usuario (HU-26 a HU-33) para su uso posterior en la autenticación biométrica. HU-01 y HU-26 se mantienen como HUs independientes en sus épicas. El mecanismo exacto de identificación durante el registro quedó pendiente para AG-01 y fue **resuelto por D-035, D-036 y D-052** (registro asistido: un representante autorizado valida el DNI y la identidad con apoyo del registro de identidad simulado; ver sección 12).
+- **Registro con voz (D-032):** el registro de Nayra incluye el registro de la voz del usuario (HU-26 a HU-33) para su uso posterior en la autenticación biométrica. HU-01 y HU-26 se mantienen como HUs independientes en sus épicas. El mecanismo exacto de identificación durante el registro quedó pendiente para AG-01 y fue **resuelto por D-035, D-036 y D-052** (registro asistido: un representante autorizado valida el DNI y la identidad con apoyo del registro de identidad simulado; ver sección 12). _(2026-10-02: D-077 agrega el registro autónomo por voz; el registro asistido queda como alternativa opcional. Ver §15.)_
 - **Exclusiones (D-033):** no se incorporan funcionalidades de apertura de cuentas bancarias, múltiples cuentas por usuario, transferencias entre cuentas propias ni gestión de entidades bancarias por parte del administrador.
 
 ### 11.5 Pendientes derivados de AG-00
@@ -627,9 +629,9 @@ Estas aclaraciones precisan cómo se interpretan las HUs bajo las decisiones de 
 
 | HU | Aclaración | Decisión |
 |---|---|---|
-| HU-01 | El registro es **asistido** (D-052): la persona solicita registrarse → un representante autorizado (administrador u otra persona autorizada) la asiste → se proporciona el DNI → el sistema consulta el registro de identidad simulado y muestra los datos → el representante valida la identidad → la persona confirma sus datos → celular (HU-117) → contraseña (HU-118) → vinculación del dispositivo (HU-119) → enrolamiento de voz con anti-spoofing → tutorial (HU-122) → fin del registro. Si el DNI ya tiene cuenta de acceso, no se crea otra y se deriva a recuperación/cambio de dispositivo. | D-052, D-053 |
+| HU-01 | El registro es **asistido** (D-052): la persona solicita registrarse → un representante autorizado (administrador u otra persona autorizada) la asiste → se proporciona el DNI → el sistema consulta el registro de identidad simulado y muestra los datos → el representante valida la identidad → la persona confirma sus datos → celular (HU-117) → contraseña (HU-118) → vinculación del dispositivo (HU-119) → enrolamiento de voz con anti-spoofing → tutorial (HU-122) → fin del registro. Si el DNI ya tiene cuenta de acceso, no se crea otra y se deriva a recuperación/cambio de dispositivo. _(2026-10-02, D-077: este es el flujo de la modalidad **con ayuda**, que pasa a ser opcional; también existe el registro autónomo por voz. En ambas, el enrolamiento termina con una validación posterior, D-078. Ver §15.)_ | D-052, D-053, D-077, D-078 |
 | HU-02 | Los datos de identidad (nombres, apellidos) se obtienen del registro de identidad simulado a partir del DNI; el celular y la contraseña se cubren en HU-117 y HU-118. | D-035, D-043 |
-| HU-03 | La verificación de identidad la realiza un **representante autorizado** (D-052), apoyado en los datos del registro de identidad simulado. La consulta del DNI por sí sola **no** prueba la titularidad ni la identidad. | D-035, D-052 |
+| HU-03 | La verificación de identidad la realiza un **representante autorizado** (D-052), apoyado en los datos del registro de identidad simulado. La consulta del DNI por sí sola **no** prueba la titularidad ni la identidad. _(2026-10-02, D-077: aplica a la modalidad **con ayuda**, que es opcional; en el registro autónomo la identidad queda solo **declarada** y no se presenta como validada. Ver §15.)_ | D-035, D-052, D-077 |
 | HU-04 | La confirmación de la cuenta de acceso se entrega después de la vinculación del dispositivo y del enrolamiento de voz. | D-052 |
 | HU-12 | El acceso requiere: comando "Iniciar sesión Nayra" → dispositivo vinculado → contraseña → desafío de voz variable → comprobación del contenido → anti-spoofing → verificación 1:1. El DNI **no** forma parte del inicio de sesión habitual (D-053). | D-037, D-039, D-053 |
 | HU-14 | Con un único dispositivo activo por cuenta, la HU se refiere a la sesión y al dispositivo vinculado de la cuenta; su reformulación queda pendiente. | D-039 |
@@ -669,7 +671,7 @@ La prioridad **Alta** de las HUs nuevas se asignó por su inclusión en el prime
 | HU-94 | Como administrador, quiero consultar las acciones realizadas por el personal autorizado, incluido el personal de atención, para supervisar y verificar el uso adecuado de sus permisos. | Reformulada: acciones de los administradores | Auditoría de acciones administrativas (D-041) |
 | HU-96 | Como personal de atención, quiero iniciar sesión en el panel de atención para acceder a las funcionalidades que corresponden a mi rol. | **SIN OBJETO** | Cubierta por HU-97 |
 | HU-98 | Como personal de atención, quiero buscar y consultar los datos básicos de un usuario para brindarle asistencia. | **SIN OBJETO** | Cubierta por HU-21 y HU-22 |
-| HU-99 | Como personal de atención, quiero iniciar y gestionar un registro asistido para ayudar a un usuario a crear su cuenta. | Reasignada; **INCLUIDA** por D-052 (AG-01 v5) | El registro es asistido por un representante autorizado; que puede ser un administrador u otra persona autorizada; sin crear un nuevo rol. Registro técnico y auditoría de quién validó: pendiente |
+| HU-99 | Como personal de atención, quiero iniciar y gestionar un registro asistido para ayudar a un usuario a crear su cuenta. | Reasignada; **INCLUIDA** por D-052 (AG-01 v5) | El registro es asistido por un representante autorizado; que puede ser un administrador u otra persona autorizada; sin crear un nuevo rol. Registro técnico y auditoría de quién validó: pendiente. Desde el 2026-10-02 es una modalidad opcional (D-077) |
 | HU-100 | Como personal de atención, quiero corregir determinados datos personales de un usuario cuando este solicite asistencia para mantener su información actualizada. | **SIN OBJETO** | Cubierta por HU-23 |
 | HU-101 | Como personal de atención, quiero consultar el estado de una cuenta para conocer si se encuentra activa, bloqueada, suspendida o desactivada. | Reasignada al administrador | Consulta de estado en el panel (D-041) |
 | HU-102 | Como personal de atención, quiero registrar y consultar las solicitudes o incidencias reportadas por los usuarios para darles seguimiento. | Reasignada al administrador y ampliada a solicitudes de recuperación | Gestión de solicitudes en el panel (D-040, D-041) |
@@ -695,11 +697,11 @@ Clasificación según D-034 y el diagnóstico AG-01 aprobado. Las HUs **secundar
 
 **H-03 (cerrada, 2026-09-27):** se mantiene el alcance actual de esta sección. HU-80, HU-89, HU-93, HU-94, HU-102 y HU-121 siguen en el primer entregable, y las consultas administrativas de auditoría que ya existen en el código permanecen. El modelo de datos v4 no crea tablas nuevas de auditoría ni `solicitudes_atencion`.
 
-Funcionalidades **fuera del primer entregable sin HU**: retiro asistido por administrador, eliminación de cuenta, chatbot, OTP/SMS/WhatsApp, contacto de confianza (posible evolución futura), agenda del teléfono, múltiples dispositivos activos.
+Funcionalidades **fuera del primer entregable sin HU**: retiro asistido por administrador, eliminación de cuenta, chatbot (el diálogo guiado de D-076 no lo es), OTP/SMS/WhatsApp, contacto de confianza (posible evolución futura), agenda del teléfono, múltiples dispositivos activos.
 
 ### 12.5 Pendientes funcionales derivados de AG-01
 
-- ~~Dato con el que el emisor busca/selecciona al destinatario de una transferencia (HU-69).~~ **Resuelto (G-1):** ~~ID interno de la cuenta destino (2026-09-27)~~; desde el 2026-09-28, **número de celular registrado en Nayra** (el ID interno queda en el backend). Siguen pendientes el dictado del número y la respuesta hablada Sí/No (D-046).
+- ~~Dato con el que el emisor busca/selecciona al destinatario de una transferencia (HU-69).~~ **Resuelto (G-1):** ~~ID interno de la cuenta destino (2026-09-27)~~; desde el 2026-09-28, **número de celular registrado en Nayra** (el ID interno queda en el backend). Siguen pendientes el dictado del número y la respuesta hablada Sí/No (D-046). _(2026-10-02: dictado del número y respuesta hablada definidos a nivel de experiencia en D-075 y D-079; la tecnología depende de la prueba de D-076.)_
 - Identificador que codifica el QR (ver `03_BASE_DE_DATOS_NAYRA.md` §16) — no bloquea el primer entregable (QR en siguiente entregable). _(Modelo v4: existe `codigo_qr` provisional; formato definitivo pendiente, P-3.)_
 - Estados de la cuenta de acceso (al menos ACTIVA y BLOQUEADA por D-044/D-040; "registro incompleto", "suspendida", "desactivada" pendientes). _(Modelo v4: `ACTIVO`, `BLOQUEADO` e `INACTIVO`.)_
 - Detalle de la política de 3 intentos (D-044) y procedimiento de recuperación asistida (D-049). _(Modelo v4: solo cuenta el PIN; el contador vuelve a 0 con el PIN correcto (H-01, cerrada); siguen pendientes el límite biométrico (P-8), el desbloqueo administrativo (P-11) y D-049.)_
@@ -744,3 +746,42 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, «Decisiones del mo
 | HU-97 | El administrador se autenticará en el panel web con **usuario y contraseña** (D-050, aprobada funcionalmente). **No está implementado**: el modelo de la credencial administrativa sigue pendiente y el prototipo mantiene provisionalmente el acceso ADMIN con dispositivo + PIN + voz. Tecnología del panel: D-045 (pendiente) | D-050, D-045 |
 | HU-80, HU-89, HU-93, HU-94 | Se mantienen en el primer entregable (§12.4); las consultas administrativas de auditoría existentes permanecen, sin tablas nuevas de auditoría (H-03, cerrada) | H-03 |
 | HU-119, HU-120 | Solo dispositivos Android | D-048, modelo v4 |
+
+## 15. Interpretación de HUs por las decisiones voice-first (2026-10-02)
+
+Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-075 a D-080. No se agregan HUs, no se cambia su redacción ni el alcance de §12.4.
+
+### 15.1 Interpretación de HUs
+
+| HU | Interpretación | Decisión |
+|---|---|---|
+| HU-01, HU-03 | El registro tiene dos modalidades: **autónomo por voz** y **con ayuda** de un representante (opcional). El autónomo distingue identidad declarada, datos verificados, voz registrada y voz validada; declarar un documento no valida la identidad | D-077 |
+| HU-99 | El registro asistido sigue incluido, ahora como modalidad opcional | D-077 |
+| HU-37 | Sigue fuera del primer entregable; la ayuda de un representante en el registro está cubierta por HU-99 | D-077 |
+| HU-12, HU-40 | "Iniciar sesión Nayra" se dice por voz (o se toca el botón) y solo activa el proceso; luego PIN y desafío variable | D-037, D-075 |
+| HU-118 | Si el PIN se dicta, Nayra responde solo "Recibí seis dígitos" y nunca lo repite | D-061, D-075 |
+| HU-26, HU-33 | El registro de voz termina con una verificación posterior con una frase nueva; el perfil se confirma después de superarla. Aplica a las dos modalidades de registro | D-078 |
+| HU-28, HU-42, HU-62 | **Todas** las capturas de audio usan el mismo ciclo manual: tocar, "Te escucho", hablar, tocar. Silencio, ausencia de voz y tiempo máximo solo son respaldo | D-075 |
+| HU-27, HU-41, HU-54, HU-57, HU-59 | Las instrucciones, preguntas, estados, resultados, errores y advertencias se comunican con la **voz propia de Nayra**, sin depender de TalkBack | D-075 |
+| HU-55 | La navegación principal es por **comandos de voz**; los controles táctiles y TalkBack siguen disponibles | D-075, D-076 |
+| HU-58 | "Repetir" es un comando de voz disponible siempre y un botón fijo junto al botón de voz | D-075 |
+| HU-44, HU-47, HU-49, HU-50 | Los fallos de comparación de voz y de anti-spoofing se comunican con un mismo mensaje ("No pude verificar tu identidad"); solo la calidad del audio tiene mensajes propios. HU-49 se cumple informando que la muestra fue rechazada, sin indicar la causa | D-075, D-058 |
+| HU-60, HU-61, HU-70, HU-71, HU-72 | Nayra lee el resumen y la operación solo se ejecuta con "Sí, confirmo"; un "sí" aislado vuelve a preguntar; "cancelar" funciona antes de confirmar | D-079 |
+| HU-69 | El celular del destinatario se dicta dígito a dígito, se lee de vuelta y se confirma con el nombre parcial; no hay búsqueda por nombre | D-079, D-042 |
+| HU-13 | El cierre por inactividad se anuncia en voz alta cuando ocurre (sin aviso previo) | D-018 |
+| HU-122 | El tutorial guiado por voz forma parte del final del registro | D-080 |
+| HU-53, HU-65 | Las funciones principales deben poder usarse **sin mirar la pantalla** | D-075 |
+
+### 15.2 Criterios de interacción voice-first
+
+Criterios de aceptación transversales que se derivan de D-075 a D-080. No son HUs nuevas.
+
+| ID | Criterio |
+|---|---|
+| CV-01 | Registro, inicio de sesión, saldo, movimientos, transferencia y cierre de sesión se completan sin mirar la pantalla, con TalkBack activado y desactivado |
+| CV-02 | Toda instrucción, pregunta, resultado y error tiene versión hablada; ningún texto funcional existe solo en pantalla |
+| CV-03 | El botón de voz conserva posición, tamaño, forma y comportamiento en todas las pantallas y muestra su estado |
+| CV-04 | El micrófono solo se abre con un toque y permanece cerrado mientras Nayra habla |
+| CV-05 | Cada captura se procesa sola, en el modo que fija el flujo; el audio de un comando, un dictado o el PIN nunca entra al pipeline biométrico |
+| CV-06 | Ninguna operación se ejecuta con baja confianza, ambigüedad o sin "Sí, confirmo" |
+| CV-07 | Todas las locuciones usan el trato de "tú" |

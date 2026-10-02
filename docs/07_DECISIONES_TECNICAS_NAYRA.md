@@ -500,6 +500,14 @@ Registro:
 | H-01 | Reinicio del contador de PIN | Contradicción abierta | CERRADA — PIN correcto → 0, inmediatamente | Decisión del equipo; coincide con el código | 2026-09-27 |
 | H-02 | Seis reglas de BD "(a confirmar)" | Aplicadas sin confirmación formal | CERRADA — confirmadas | Decisión del equipo | 2026-09-27 |
 | H-03 | Alcance de auditoría | Pendiente | CERRADA — se mantiene `01` §12.4 | Decisión del equipo | 2026-09-27 |
+| D-075 | Nayra voice-first: ciclo de captura, modos y botón de voz | — (nueva) | APROBADA | Decisión de Yuni (Y-1, Y-7, Y-9, Y-11) | 2026-10-02 |
+| D-076 | Diálogo guiado con gramáticas cerradas; Vosk en servidor como propuesta a probar | — (nueva) | APROBADA (tecnología de comandos a probar) | Decisión de Yuni (Y-6, Y-8) | 2026-10-02 |
+| D-077 | Registro autónomo y registro con ayuda; cuatro niveles del registro | — (nueva) | APROBADA | Decisión de Yuni (Y-3) | 2026-10-02 |
+| D-052 | Registro asistido | APROBADA | APROBADA — MODIFICADA POR D-077 (una de dos modalidades) | Decisión de Yuni (Y-3) | 2026-10-02 |
+| D-078 | Validación posterior del enrolamiento | — (nueva) | APROBADA | Decisión de Yuni (Y-10) | 2026-10-02 |
+| D-079 | Confirmación explícita "Sí, confirmo" de operaciones financieras | — (nueva) | APROBADA | Decisión de Yuni (Y-4, Y-5) | 2026-10-02 |
+| D-080 | Tema claro, alto contraste y tutorial guiado por voz | — (nueva) | APROBADA | Decisión de Yuni (Y-12, Y-13) | 2026-10-02 |
+| D-018 | Estrategia de sesiones | PARCIAL | PARCIAL — se agrega el anuncio hablado del cierre; sigue sin aviso previo | Decisión de Yuni (Y-9) | 2026-10-02 |
 
 Esto permitirá mantener trazabilidad de las decisiones de diseño.
 
@@ -700,14 +708,14 @@ La consulta de identidad durante el registro utiliza un **registro de identidad 
 
 Flujo: DNI dictado → búsqueda en el registro simulado → datos encontrados → Nayra comunica los datos necesarios → el usuario confirma.
 
-**Precisión AG-01 v5 (D-052):** la consulta del DNI en el registro simulado **solo recupera los datos asociados**; **no** constituye por sí sola prueba de titularidad ni de identidad. La validación de identidad la realiza un **representante autorizado** en el registro asistido (D-052).
+**Precisión AG-01 v5 (D-052):** la consulta del DNI en el registro simulado **solo recupera los datos asociados**; **no** constituye por sí sola prueba de titularidad ni de identidad. La validación de identidad la realiza un **representante autorizado** en el registro asistido (D-052). _(2026-10-02, D-077: en el registro autónomo no participa un representante y la identidad queda solo declarada.)_
 
 Esta decisión **resuelve el pendiente de D-028**: la cuenta financiera simulada referencia a su titular en el registro de identidad simulado, lo que permite localizarla por DNI durante el registro.
 
 ### D-036 — Flujo de registro del usuario
 **Estado:** APROBADA — **MODIFICADA POR D-052** (AG-01 v5, 2026-09-26)
 
-El flujo vigente es el de **D-052** (registro asistido por un representante autorizado). Se conserva abajo el flujo original para trazabilidad; sus pasos 1 a 3 (DNI por voz y confirmación de identidad solo por el usuario) y el orden entre enrolamiento y vinculación quedan reemplazados por D-052. Se mantiene la regla del DNI ya registrado.
+El flujo vigente es el de **D-052** (registro asistido por un representante autorizado). Se conserva abajo el flujo original para trazabilidad; sus pasos 1 a 3 (DNI por voz y confirmación de identidad solo por el usuario) y el orden entre enrolamiento y vinculación quedan reemplazados por D-052. Se mantiene la regla del DNI ya registrado. _(2026-10-02: D-052 fue a su vez modificada por D-077; el registro con representante es una de dos modalidades.)_
 
 Flujo original:
 
@@ -828,6 +836,8 @@ Tras **3 intentos fallidos** de autenticación la cuenta de acceso se bloquea.
 ### D-052 — Registro asistido con validación de identidad por un representante autorizado
 **Estado:** APROBADA (regla de negocio — AG-01 v5, 2026-09-26; flujo actualizado en AG-01 v6, 2026-09-26). **Modifica D-036.**
 
+> **Actualización del 2026-10-02: MODIFICADA POR D-077.** El registro con representante es ahora una de dos modalidades; también existe el registro autónomo por voz. El flujo de abajo sigue vigente para la modalidad con ayuda.
+
 El registro inicial es un proceso **asistido** por un **representante autorizado de la organización**. El representante puede ser un **administrador o una persona autorizada** para asistir en el registro. La consulta del DNI en el registro de identidad simulado recupera los datos asociados, pero **no es prueba suficiente** de titularidad o identidad: la validación de identidad corresponde al representante.
 
 Flujo conceptual vigente (AG-01 v6):
@@ -863,7 +873,7 @@ _Resueltos en AG-01 v6:_ momento del registro del celular (paso 8) y posición d
 
 | Flujo | Decisión | ¿Usa DNI? | Validación de identidad |
 |---|---|---|---|
-| **Registro inicial** | D-052 | **Sí** — para consultar el registro de identidad simulado | Representante autorizado (regla de negocio); la persona confirma sus datos. Sin biometría |
+| **Registro inicial** | D-052, D-077 | **Sí** — para consultar el registro de identidad simulado | Con ayuda: representante autorizado (regla de negocio); la persona confirma sus datos. Autónomo (D-077): la identidad queda solo declarada. Sin biometría para validar la identidad |
 | **Inicio de sesión habitual** | D-037 | **No** — el DNI **no** forma parte del inicio de sesión habitual | Dispositivo vinculado → contraseña → desafío variable → comprobación del contenido → verificación biométrica 1:1 y anti-spoofing → sesión; 3 intentos (D-044) |
 | **Cambio o pérdida de dispositivo / recuperación** | D-040 | **Sí** — para localizar la cuenta existente | Validación de titularidad mediante el proceso de recuperación correspondiente (procedimiento asistido pendiente, D-049). Nunca se crea una cuenta nueva ni se reemplaza la voz sin validar la titularidad |
 
@@ -874,7 +884,7 @@ _Resueltos en AG-01 v6:_ momento del registro del celular (paso 8) y posición d
 | ID | Decisión | Estado |
 |---|---|---|
 | D-045 | Tecnología del panel web del administrador | PENDIENTE |
-| D-046 | Reconocimiento del habla (comando, DNI, contraseña dictada, contenido del desafío): tecnología y ubicación (dispositivo o servidor) | **PARCIAL (AG-13):** contenido del desafío APROBADO (Vosk en servidor); comando, tecnología del PIN dictado (dictado aprobado por D-061) y DNI PENDIENTES |
+| D-046 | Reconocimiento del habla (comando, DNI, contraseña dictada, contenido del desafío): tecnología y ubicación (dispositivo o servidor) | **PARCIAL (AG-13):** contenido del desafío APROBADO (Vosk en servidor); comando, tecnología del PIN dictado (dictado aprobado por D-061) y DNI PENDIENTES. _(2026-10-02: Vosk en servidor para comandos y dictados es una propuesta a probar, D-076.)_ |
 | D-047 | Algoritmo de hash, política de contraseña compatible con dictado y normalización de la contraseña dictada | PENDIENTE — **AG-11** (2026-09-27): se aplica al **PIN de 6 dígitos** (D-061); el análisis A-K (Argon2id + pepper + límite de intentos) queda como insumo, no aprobado |
 | D-048 | Mecanismo técnico de vinculación del dispositivo | **APROBADA:** par de claves del dispositivo (origen histórico: AG-01; aprobada el 2026-09-27; impacto secundario: AG-11 por anti-replay) (ver sección de decisiones del 2026-09-27) |
 | D-049 | Procedimiento de recuperación asistida | PENDIENTE |
@@ -895,7 +905,7 @@ Una deuda técnica pendiente **no** se convierte automáticamente en un bloqueo 
 
 | Categoría | Decisiones | Estado de la clasificación |
 |---|---|---|
-| **A** | D-045 (panel web), D-046 (resto del reconocimiento del habla: comando y tecnología del PIN dictado, cuyo dictado ya aprobó D-061) | Propuesta para revisión (actualizada el 2026-09-27) |
+| **A** | D-045 (panel web), D-046 (resto del reconocimiento del habla: comando y tecnología del PIN dictado, cuyo dictado ya aprobó D-061; 2026-10-02: propuesta a probar en D-076) | Propuesta para revisión (actualizada el 2026-09-27) |
 | **B** | D-047 (hash del PIN), D-018 (mecanismo técnico de sesión), D-044 (detalle de intentos), D-050 (autenticación del administrador), D-049 (recuperación asistida), D-052 (registro técnico y auditoría de quién realizó la validación asistida), D-014 (API; incluye el contrato interno del servicio de voz), D-019 (auditoría detallada), D-058 (herramienta de VAD), D-054 (lista de palabras y TTL del desafío), D-060 (dataset y consentimiento), D-016 (despliegue del servicio de voz) | Propuesta para revisión (actualizada el 2026-09-27) |
 | **Cerradas el 2026-09-27** | D-007 (app móvil), D-009 (representación de roles), D-010, D-011, D-012, D-013, D-048, D-051 (migraciones e identificadores), D-056 (responsable de aplicar los umbrales técnicos), umbral biométrico (solo la estrategia, en D-055; los valores siguen pendientes de calibración) | APROBADAS (2026-09-27) |
 | **C** | **D-017** (secretos y credenciales) | **Aprobada** (AG-01 v5) |
@@ -977,6 +987,7 @@ Defensa en capas:
 - **Descartado para verificar el desafío:** reconocedor del sistema operativo del teléfono (no controlable por el backend y el audio puede salir a servidores de terceros).
 - **PENDIENTE:** reconocimiento del comando "Iniciar sesión Nayra", tecnología definitiva de reconocimiento del PIN dictado (el dictado está aprobado por D-061) y del DNI en recuperación/cambio de dispositivo. Al procesar el PIN dictado no se almacena ni registra el audio ni la transcripción (`05_BIOMETRIA_NAYRA.md` §26.6), y ese audio **nunca** entra al pipeline biométrico.
 - **PIN dictado — candidata PROVISIONAL del prototipo (2026-09-27):** el dictado quedó permitido (D-061). Para el prototipo se usa Vosk en el servicio Python con una gramática restringida a los diez dígitos, que exige exactamente 6 dígitos. Es una candidata **no definitiva, PENDIENTE DE VALIDACIÓN**; el comando "Iniciar sesión Nayra" y el DNI siguen PENDIENTES.
+- **Actualización del 2026-10-02 (D-076):** para comandos, dictados (documento, celular, monto) y respuestas del diálogo guiado, la **propuesta a probar** es Vosk en el servidor con una gramática cerrada por estado del diálogo. No es definitiva hasta medir precisión, latencia, gramáticas, estados y accesibilidad; el resultado se registrará aquí. D-046 sigue PARCIAL.
 
 ### D-048 — Vinculación del dispositivo mediante par de claves
 **Estado:** APROBADA
@@ -1047,6 +1058,7 @@ Defensa en capas:
 
 - Orden en el servicio Python: **calidad → contenido del desafío → anti-spoofing → verificación 1:1**. En operación se detiene en la primera etapa fallida (ahorra cómputo y no ofrece un "oráculo" biométrico a un atacante). En modo de evaluación se registran todos los puntajes de forma anonimizada.
 - Enrolamiento (D-052, paso 11): **3 muestras válidas** como valor inicial (hasta 5 si alguna falla), cada una con calidad, contenido y anti-spoofing; se descartan muestras muy alejadas del resto; se guarda el centroide (D-013).
+- **Actualización del 2026-10-02:** el enrolamiento se aplica en las dos modalidades de registro (con ayuda, D-052; autónomo, D-077) y termina con la **validación posterior** de D-078.
 
 ### D-060 — Dataset de calibración y consentimiento
 **Estado:** PENDIENTE DE DECISIÓN
@@ -1066,7 +1078,7 @@ Debe definirse: número de voluntarios (incluidas personas con discapacidad visu
 - El texto de HU-118 se conserva sin cambios; su interpretación bajo esta decisión consta en `01_REQUISITOS_NAYRA.md` §13.
 
 ### D-018 — Sesiones (actualización parcial)
-Ver la actualización en la sección D-018: **cierre automático tras 5 minutos de inactividad**, controlado en el servidor, sin aviso por voz previo, sin opción de continuar y con tiempo no ajustable por el usuario. Mecanismo técnico pendiente. _(Actualización del modelo de datos v4, 2026-09-27: mecanismo JWT con `jti` = `sesiones.id`, sin renovación; P-5 pendiente. Ver la sección D-018.)_
+Ver la actualización en la sección D-018: **cierre automático tras 5 minutos de inactividad**, controlado en el servidor, sin aviso por voz previo, sin opción de continuar y con tiempo no ajustable por el usuario. Mecanismo técnico pendiente. _(2026-10-02, Y-9: Nayra anuncia por voz el cierre cuando ocurre.)_ _(Actualización del modelo de datos v4, 2026-09-27: mecanismo JWT con `jti` = `sesiones.id`, sin renovación; P-5 pendiente. Ver la sección D-018.)_
 
 ### D-016 — Despliegue del servicio de voz (sin cambio de estado)
 **Estado:** PENDIENTE. Estimación del análisis A–K, a medir: contenedor o VM solo CPU (2–4 vCPU, 4 GB RAM). Falta decidir si el servicio Python se replica en las 2 instancias de D-023.
@@ -1266,8 +1278,8 @@ Los cinco ejemplos son los de Yuni. Yuni confirmó la regla como definitiva el 2
 
 | Pendiente | Tipo |
 |---|---|
-| Dictado del número del destinatario (reconocimiento de voz) | Pendiente, junto con D-046 / Nayra-Voz |
-| Respuesta hablada "Sí/No" a la confirmación y voz propia de Nayra | Pendiente, junto con D-046 |
+| Dictado del número del destinatario (reconocimiento de voz) | Definido a nivel de experiencia el 2026-10-02 (D-075, D-079: se dicta dígito a dígito y se lee de vuelta); la tecnología depende de la prueba de D-076 |
+| Respuesta hablada "Sí/No" a la confirmación y voz propia de Nayra | Definido a nivel de experiencia el 2026-10-02 (voz propia, D-075; "Sí, confirmo", D-079); la tecnología depende de la prueba de D-076 |
 | Medidas contra la enumeración de números (límite de búsquedas por sesión, auditoría de búsquedas). Hoy solo: sesión obligatoria y la misma respuesta para "sin cuenta" y "cuenta que no puede recibir" | Pendiente de decisión |
 | Qué dato identifica al destinatario en la solicitud de transferencia (el celular otra vez o una referencia devuelta por la búsqueda). Hoy la búsqueda no devuelve identificadores | Pendiente; con el contrato de transferencias (D-014) |
 | Apellidos compuestos ("De la Cruz") en el nombre parcial | Cerrado el 2026-09-28 (ver «Nombre parcial del destinatario») |
@@ -1418,6 +1430,119 @@ Esta sección **no contiene decisiones de arquitectura** y no modifica D-062 a D
 
 ---
 
+## Decisiones aprobadas el 2026-10-02 — Interacción voice-first
+
+Yuni aprobó estas decisiones el 2026-10-02 (Y-1 a Y-13) después de revisar la propuesta `UX_VOICE_FIRST_PROPUESTA_2026-10-02.md` y los mockups v5 (`NAYRA_MOCKUPS_V5_VOICE_FIRST_2026-10-02.png`), ambos en la carpeta compartida del proyecto.
+
+Alcance de estas decisiones:
+- Definen **cómo interactúa la persona con Nayra**. No cambian el modelo biométrico, los umbrales, el modelo de datos ni la topología.
+- Aprobar una decisión **no** equivale a implementarla. Ninguna está implementada todavía.
+- Los valores de tiempo que aparecen aquí son **propuestos y PENDIENTES DE VALIDACIÓN**; no forman parte de la tabla «Parámetros provisionales del prototipo» hasta que se implementen y se registren allí.
+
+### D-075 — Nayra es voice-first: ciclo de captura y botón de voz
+
+**Estado:** APROBADA (2026-10-02; Y-1, Y-7, Y-9, Y-11 y principio UX central).
+
+**Principio.** Nayra es una billetera **voice-first**: la voz es el mecanismo principal para navegar, consultar, operar y recibir instrucciones, confirmaciones y errores. La pantalla es apoyo. Ninguna instrucción importante existe solo como texto.
+
+**Captura ≠ comando ≠ autenticación.** Capturar audio no lo convierte en un comando ni en una muestra biométrica. El **estado del flujo** fija el **modo** de cada captura y el servidor lo verifica por la ruta y el contexto, nunca por el contenido del audio:
+
+| Modo | Uso del audio | Nunca |
+|---|---|---|
+| Comando | Reconocer la petición en una gramática cerrada | Entra al pipeline biométrico |
+| Dictado | DNI/CE, celular o monto, con lectura de vuelta | Entra al pipeline biométrico |
+| PIN | Seis dígitos (D-061) | Se muestra, se repite en voz alta, se registra o entra al pipeline biométrico |
+| Registro de voz / Verificación de voz | Respuesta a un desafío variable de un solo uso (D-054, D-059) | Se usa una frase fija |
+
+**Ciclo de una captura.**
+1. La persona toca el botón de voz.
+2. Nayra dice "Te escucho" y abre el micrófono al terminar de decirlo (con un tono corto).
+3. La persona habla.
+4. La persona vuelve a tocar el botón; la captura se cierra.
+5. Se procesa **solo ese segmento**. Lo dicho después no existe para Nayra.
+6. Nayra responde con su propia voz (TTS).
+
+**Delimitación.** El inicio siempre es explícito (toque). El fin principal es el segundo toque. Como respaldo, y nunca como mecanismo único: fin por silencio después de haber hablado, cancelación si no se detecta voz y tiempo máximo por modo. Valores propuestos (PENDIENTES DE VALIDACIÓN): silencio 3 s tras hablar; sin voz 6 s; máximo 10 s (comando), 15 s (dictado) y 20 s (voz, igual al valor provisional de D-057).
+
+**Semidúplex.** Mientras Nayra habla, el micrófono está cerrado. Tocar el botón mientras habla la interrumpe y abre la captura. Las capturas biométricas no usan cancelación de eco ni supresión de ruido del sistema, porque alteran la señal que usa el anti-spoofing (D-012, D-057).
+
+**Botón de voz.** Mismo lugar (abajo al centro), tamaño, forma y comportamiento en **todas** las pantallas, con "Repetir" a la izquierda y "Atrás", "Cancelar" o "Menú" a la derecha. Siete estados visibles y hablados: Esperando, Nayra habla, Capturando, Procesando, Resultado, Error y Cancelado. El color nunca es la única señal (icono, texto, sonido y vibración).
+
+**Voz propia.** Nayra tiene su propio TTS en el dispositivo. **TalkBack no es requisito** para la experiencia principal, aunque la app sigue siendo compatible con él.
+
+**Comandos siempre disponibles** en modo comando: repetir, ayuda, cancelar, atrás, menú y cerrar sesión.
+
+**Comunicación.** Todas las locuciones usan el trato de **"tú"** (Y-11). Los errores de autenticación no revelan qué control falló: comparación de voz y anti-spoofing comparten el mensaje "No pude verificar tu identidad. Inténtalo nuevamente."; solo la calidad del audio tiene mensajes propios (D-058).
+
+### D-076 — Diálogo guiado y reconocimiento de comandos
+
+**Estado:** APROBADA (2026-10-02; Y-6 y Y-8). La tecnología de reconocimiento de comandos queda como **PROPUESTA TÉCNICA A PROBAR**; D-046 sigue PARCIAL.
+
+- La conversación es una **máquina de estados** con gramáticas cerradas por estado (frases esperadas, sinónimos, ranuras como número o monto). **No** es un chatbot ni usa IA generativa, de modo que no contradice la exclusión de D-034.
+- Ante baja confianza, frase fuera de la gramática, falta de un dato o dos peticiones en una sola captura, Nayra **pregunta**; nunca elige ni ejecuta con duda.
+- **Propuesta a probar (Y-6):** reconocimiento de comandos y dictados con **Vosk en el servidor** (servicio Python), con la gramática del estado del diálogo, igual que el desafío. La app sigue hablando solo con Spring Boot (D-010). No se considera la solución definitiva hasta probar: precisión, latencia, funcionamiento con gramáticas restringidas, comportamiento en cada estado del diálogo y compatibilidad con los requisitos de accesibilidad y voice-first. El resultado se registrará en D-046.
+- D-046 descarta el reconocedor del sistema operativo para verificar el desafío; la propuesta a probar para comandos y dictados es Vosk en el servidor.
+
+### D-077 — Registro autónomo y registro con ayuda
+
+**Estado:** APROBADA (2026-10-02; Y-3). **Modifica D-052:** el registro con representante deja de ser el único flujo.
+
+- Existen dos modalidades, ambas iniciadas por voz:
+  - **Autónomo:** la persona hace todo el registro con su voz. Debe poder demostrarse en el prototipo.
+  - **Con ayuda (opcional):** un representante autorizado acompaña a la persona y **valida su identidad**, como en D-052.
+- Para no confundir declarar un DNI con validar la identidad, el registro distingue **cuatro niveles** y la app los comunica por voz y en pantalla:
+
+| Nivel | Qué significa | Qué no significa |
+|---|---|---|
+| Identidad declarada | La persona dicta su DNI/CE | Que sea su titular |
+| Datos verificados | El documento existe en el registro de identidad simulado y la persona confirma sus datos (D-035) | Que la persona sea quien dice ser |
+| Voz registrada | Enrolamiento con frases distintas (D-059) | Que la voz identifique a la persona en el registro |
+| Voz validada | Verificación posterior con una frase nueva (D-078) | — |
+
+- En el registro con ayuda, el primer nivel es "identidad validada por un representante".
+- Flujo autónomo: tipo y número de documento → lectura de vuelta → consulta al registro simulado → confirmación de datos → celular → PIN → vinculación del dispositivo → enrolamiento de voz → validación posterior → tutorial guiado por voz (HU-122) → registro completado.
+- Se mantienen: documento ya registrado → recuperación/cambio de dispositivo (D-040); la biometría **no** valida la identidad en el registro; sin rol nuevo (D-041).
+- **PENDIENTE:** cómo se guarda la modalidad y el nivel de validación de la identidad de cada cuenta (dato del modelo; no se crea un campo sin decisión) y si las cuentas con identidad solo declarada tendrán límites en un entregable posterior. **Riesgo aceptado del prototipo:** el registro autónomo no prueba la titularidad del documento.
+
+### D-078 — Validación posterior del enrolamiento
+
+**Estado:** APROBADA (2026-10-02; Y-10). Amplía D-059.
+
+- Después de guardar la referencia de voz, Nayra pide una **verificación completa con un desafío nuevo** (contenido, anti-spoofing y comparación 1:1) antes de dar el registro por terminado.
+- Si falla, se repite el enrolamiento una vez; si vuelve a fallar, el registro no se completa y se ofrece ayuda de un representante.
+- No suma intentos fallidos (D-044 cuenta solo el PIN).
+- **PENDIENTE:** estado de la cuenta mientras la validación no se supere y número exacto de reintentos (a definir al implementar).
+
+### D-079 — Confirmación explícita de operaciones financieras
+
+**Estado:** APROBADA (2026-10-02; Y-4 y Y-5).
+
+- Antes de ejecutar una operación financiera, Nayra lee el resumen (destinatario con nombre parcial y monto) y pide **"Sí, confirmo"**. Un "sí" aislado no ejecuta la operación: Nayra vuelve a pedir la confirmación explícita.
+- La confirmación **autoriza** la operación y es distinta de la **autenticación**: no reutiliza el audio como muestra biométrica.
+- **Destinatario (G-1, sin cambios de fondo):** la persona dicta el número de celular dígito a dígito, Nayra lo lee de vuelta y confirma con el nombre parcial. No hay búsqueda libre por nombre, para evitar problemas de privacidad y enumeración.
+
+### D-080 — Presentación visual
+
+**Estado:** APROBADA (2026-10-02; Y-12 y Y-13).
+
+- **Tema claro** como principal (azul, celeste, blanco y dorado, con el ojo de Nayra en la billetera) y alternativa de **alto contraste** cuando el sistema la tenga activada.
+- Tutorial inicial guiado por voz al final del registro (HU-122).
+- Referencia visual: mockups v5 del 2026-10-02.
+
+### Actualizaciones de decisiones existentes (2026-10-02)
+
+| Decisión | Actualización |
+|---|---|
+| D-018 | Se mantiene el cierre tras 5 minutos de inactividad **sin aviso previo**. Nuevo: Nayra **dice en voz alta** que la sesión se cerró (Y-9) |
+| D-037 | Sin cambios. Se reafirma que "Iniciar sesión Nayra" solo activa el proceso y que la muestra biométrica es el desafío variable (Y-1) |
+| D-046 | Sigue PARCIAL. Comando, dictados y respuestas Sí/No: propuesta de Vosk en el servidor **a probar** (D-076) |
+| D-052 | **MODIFICADA POR D-077**: el registro con representante pasa a ser una de dos modalidades |
+| D-059 | Ampliada por D-078 (validación posterior del enrolamiento) |
+| D-061 | Si el PIN se dicta, Nayra solo dice "Recibí seis dígitos"; nunca lo repite (Y-2) |
+| G-1 | Los pendientes "dictado del número" y "respuesta hablada Sí/No" quedan definidos a nivel de experiencia (D-075, D-079); la tecnología depende de la prueba de D-076 |
+
+---
+
 ## Agendas temáticas (AG)
 
 Las agendas temáticas (AG) agrupan las decisiones por tema. Son distintas del **origen histórico** de cada decisión, es decir, la ronda en la que se decidió. AG-00 y AG-01 son **rondas históricas cerradas**: no se reabren y sus decisiones conservan su origen. El bloque aprobado el 2026-09-27 se denomina **revisión del 2026-09-27** y no tiene número de AG. La asignación temática no modifica el contenido, el estado ni la numeración de ninguna decisión.
@@ -1439,6 +1564,6 @@ Las agendas temáticas (AG) agrupan las decisiones por tema. Son distintas del *
 | AG-12 | Frontera/responsabilidades Java ↔ Python | D-010, D-056 | D-057 y D-059, cuando corresponda a la frontera entre servicios |
 | AG-13 | Biometría y autenticación por voz | D-005 (concretada en D-011), D-011, D-012, D-013, D-046 (solo la parte del desafío/reconocimiento de voz), D-054, D-055, D-057, D-058, D-059, D-060 | — |
 
-**Sin AG temático por ahora:** D-007 (aplicación móvil, Flutter), D-045 (panel web del administrador) y D-062 a D-074 (despliegue futuro en GCP, 2026-09-29).
+**Sin AG temático por ahora:** D-007 (aplicación móvil, Flutter), D-045 (panel web del administrador), D-062 a D-074 (despliegue futuro en GCP, 2026-09-29) y D-075 a D-080 (interacción voice-first, 2026-10-02).
 
 **Origen histórico en AG-01 sin referencias secundarias todavía:** D-040, D-041, D-044, D-049, D-050 y D-052.

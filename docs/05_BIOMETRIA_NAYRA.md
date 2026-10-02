@@ -10,6 +10,8 @@ Este documento **no fija todavía un modelo biométrico, algoritmo, umbral o arq
 
 > **Actualización AG-13 (2026-09-27):** el modelo biométrico, la estrategia anti-spoofing, el reconocimiento del contenido del desafío, el almacenamiento biométrico y la comunicación con Java quedaron aprobados (D-010 a D-013, D-046 parcial, D-054 a D-059); la comunicación con Java (D-010) y D-056 pertenecen a AG-12. El diseño técnico vigente está en la **sección 27**. Los **valores** de umbrales siguen sin definir hasta la calibración (D-055). _(2026-09-27: D-055 fijó provisionalmente similitud 0.80 y bona fide 0.90, escala [0,1], hasta la calibración de D-060; el modelo de datos v4 implementó `biometria.perfiles_voz`, §27.6. La biometría real no se ha validado en el entorno actual.)_
 
+> **Actualización del 2026-10-02 (voice-first, D-075 a D-078):** captura ≠ comando ≠ autenticación: solo el modo de registro o verificación de voz entra al pipeline biométrico, siempre con un desafío variable; comandos, dictados, confirmaciones y PIN nunca. El registro puede ser autónomo o con ayuda (D-077) y el enrolamiento termina con una validación posterior (D-078, §27.5). Para comandos y dictados, Vosk en el servidor es una propuesta a probar (D-076).
+
 ---
 
 # 2. Objetivo del componente biométrico
@@ -536,7 +538,7 @@ Registradas en `07_DECISIONES_TECNICAS_NAYRA.md` (D-036 a D-040, D-044, D-052). 
 
 ## 26.1 Enrolamiento
 
-- El enrolamiento de voz forma parte del registro asistido y se realiza **después** de que un representante autorizado valida el DNI y la identidad de la persona, y después de la creación de la contraseña y la vinculación del dispositivo (D-052, que modifica D-036). La biometría **no** se usa para validar la identidad en el registro.
+- El enrolamiento de voz forma parte del registro asistido y se realiza **después** de que un representante autorizado valida el DNI y la identidad de la persona, y después de la creación de la contraseña y la vinculación del dispositivo (D-052, que modifica D-036). La biometría **no** se usa para validar la identidad en el registro. _(2026-10-02, D-077: también existe el registro autónomo por voz, en el que la identidad queda solo declarada; en las dos modalidades el enrolamiento termina con una validación posterior con desafío nuevo, D-078.)_
 - Se aplica **anti-spoofing durante el enrolamiento**, para impedir que se registre una voz sintética, manipulada o reproducida.
 - Se aplican las HUs de captura existentes (instrucciones, control manual, frase de desafío, calidad, condiciones del entorno, repetición: HU-27 a HU-32).
 
@@ -546,7 +548,7 @@ Registradas en `07_DECISIONES_TECNICAS_NAYRA.md` (D-036 a D-040, D-044, D-052). 
 - La verificación biométrica ocurre **después** de validar la contraseña. _(2026-09-27: la contraseña se concreta como **PIN de 6 dígitos**, D-061; origen AG-01; aprobada el 2026-09-27.)_
 - La muestra biométrica es la respuesta a una **frase de desafío variable** propuesta en cada autenticación. Se debe **comprobar que el contenido** de la respuesta corresponde al desafío; sin esa comprobación, una grabación de la voz del usuario podría superar la verificación.
 - Orden conceptual (se mantiene §10): respuesta al desafío → comprobación del contenido → **anti-spoofing** → **verificación 1:1** → resultado → el backend aplica las reglas (3 intentos, D-044). _(Modelo v4, 2026-09-27: los 3 intentos corresponden solo al PIN; los fallos de calidad, contenido, anti-spoofing o similitud no suman al contador, P-8.)_
-- **No** son muestras biométricas: el comando de activación "Iniciar sesión Nayra" ni la contraseña dictada. La contraseña dictada se descarta tras calcular su hash y nunca se almacena como audio.
+- **No** son muestras biométricas: el comando de activación "Iniciar sesión Nayra" ni la contraseña dictada. La contraseña dictada se descarta tras calcular su hash y nunca se almacena como audio. _(2026-10-02, D-075: tampoco lo son los comandos, dictados ni confirmaciones del diálogo guiado.)_
 
 ## 26.3 Referencia biométrica
 
@@ -568,7 +570,7 @@ No se asume ninguna solución fiable para validar voces alteradas por enfermedad
 
 El prototipo necesita reconocimiento del habla (distinto de la verificación del locutor) para el comando de activación, el DNI (si se dicta; forma de ingreso pendiente, D-052), la contraseña dictada y la comprobación del contenido del desafío. Su tecnología y ubicación (dispositivo o servidor) están **pendientes (D-046)**. Si procesa la contraseña dictada, no debe almacenar ni registrar el audio ni la transcripción.
 
-_(2026-09-27: el contenido del desafío se reconoce con Vosk en el servidor (D-046, parcial; AG-13); la contraseña se concreta como PIN de 6 dígitos (D-061; origen AG-01; aprobada el 2026-09-27) y si puede dictarse sigue pendiente; el comando y el DNI siguen pendientes.)_ _(Actualización posterior del 2026-09-27: el dictado del PIN quedó aprobado por D-061; su tecnología de reconocimiento sigue pendiente en D-046.)_
+_(2026-09-27: el contenido del desafío se reconoce con Vosk en el servidor (D-046, parcial; AG-13); la contraseña se concreta como PIN de 6 dígitos (D-061; origen AG-01; aprobada el 2026-09-27) y si puede dictarse sigue pendiente; el comando y el DNI siguen pendientes.)_ _(Actualización posterior del 2026-09-27: el dictado del PIN quedó aprobado por D-061; su tecnología de reconocimiento sigue pendiente en D-046.)_ _(2026-10-02, D-076: para comandos, dictados y respuestas del diálogo guiado, la propuesta a probar es Vosk en el servidor con una gramática cerrada por estado del diálogo; D-046 sigue parcial.)_
 
 ---
 
@@ -589,7 +591,7 @@ Todas corren en el **servicio Python** (D-002), en CPU, expuesto solo al backend
 
 ## 27.2 Formato de audio
 
-WAV PCM 16 kHz, mono, 16 bits, sin compresión con pérdida (D-057). Captura manual por el usuario (HU-28, HU-42, HU-62). Duraciones mínima y máxima: a calibrar.
+WAV PCM 16 kHz, mono, 16 bits, sin compresión con pérdida (D-057). Captura manual por el usuario (HU-28, HU-42, HU-62). Duraciones mínima y máxima: a calibrar. _(2026-10-02, D-075: la persona delimita cada captura con dos toques del botón de voz; las capturas biométricas no usan cancelación de eco ni supresión de ruido del sistema.)_
 
 ## 27.3 Desafío
 
@@ -618,13 +620,14 @@ Resultado por etapa → Spring Boot aplica las reglas de autenticación (D-056; 
 
 ## 27.5 Enrolamiento
 
-Dentro del registro asistido (D-052, paso 11), con dispositivo ya vinculado y PIN creado:
+Dentro del registro, en cualquiera de sus dos modalidades (con ayuda, D-052 paso 11; autónomo, D-077), con dispositivo ya vinculado y PIN creado:
 
 1. Spring Boot emite un desafío distinto por muestra.
 2. Por cada muestra: calidad → contenido → **anti-spoofing** (obligatorio en el enrolamiento, §26.1) → embedding.
 3. **3 muestras válidas** como valor inicial (hasta 5 si alguna falla); se descartan muestras muy alejadas del resto (HU-30).
 4. Se guarda el **centroide** cifrado con nombre y versión del modelo (D-013). El audio se descarta.
 5. Spring Boot recibe solo "enrolamiento correcto" o el motivo del fallo; confirmación accesible (HU-33).
+6. **Validación posterior (D-078, 2026-10-02):** Spring Boot emite un desafío nuevo y se hace una verificación completa (contenido → anti-spoofing → 1:1) contra la referencia recién guardada antes de dar el registro por terminado. Si falla, se repite el enrolamiento una vez; si vuelve a fallar, el registro no se completa y se ofrece ayuda de un representante. No suma intentos (D-044). Estado de la cuenta mientras tanto y número exacto de reintentos: PENDIENTES.
 
 ## 27.6 Referencia biométrica
 

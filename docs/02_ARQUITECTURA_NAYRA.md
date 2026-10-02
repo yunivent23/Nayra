@@ -323,6 +323,8 @@ La accesibilidad debe considerarse en:
 
 La arquitectura no debe introducir una dependencia visual innecesaria para las funciones destinadas al usuario objetivo.
 
+_(2026-10-02: la interacción es **voice-first** (D-075 a D-080): TTS propio en la app, botón de voz fijo que delimita cada captura, semidúplex y diálogo guiado con gramáticas cerradas. Ver «Interacción voice-first» en la arquitectura lógica del módulo de voz y `09_REGLAS_DESARROLLO_NAYRA.md` §28.)_
+
 ---
 
 # 15. ArchiMate
@@ -522,7 +524,7 @@ Antes de considerar este documento como arquitectura definitiva, deberán defini
 - estructura definitiva del backend;
 - división exacta de responsabilidades Java/Python (_AG-12: definida en la arquitectura lógica del módulo de voz y en D-056_);
 - protocolo de comunicación Java-Python (_AG-12: REST interno, D-010_);
-- reconocimiento del habla: tecnología y ubicación (D-046) — _AG-13: contenido del desafío resuelto; resto pendiente_;
+- reconocimiento del habla: tecnología y ubicación (D-046) — _AG-13: contenido del desafío resuelto; resto pendiente. 2026-10-02: para comandos y dictados, Vosk en el servidor es una propuesta a probar (D-076)_;
 - mecanismo técnico de autenticación (el flujo funcional del usuario está aprobado en D-037; siguen pendientes hash D-047, dispositivo D-048 y autenticación del administrador D-050); _(2026-09-27: D-048 aprobada; D-050 aprobada funcionalmente —usuario y contraseña en el panel web— y no implementada)_;
 - mecanismo técnico de autorización (roles aprobados en D-041);
 - estrategia de sesiones (_modelo de datos v4: JWT con `jti` y tabla `sesiones`, 5 min de inactividad, sin renovación; P-5 pendiente_);
@@ -605,22 +607,22 @@ El primer entregable es un **prototipo funcional**. Su arquitectura lógica cont
 
 | Componente | Responsabilidad en el prototipo | Tecnología |
 |---|---|---|
-| **Aplicación móvil** | _(Modelo v4: solo Android, instalada mediante APK; iOS fuera de alcance.)_ Interfaz principal del usuario: interacción por voz, registro, autenticación, tutorial, saldo, movimientos, transferencias a otros usuarios (el QR queda para un siguiente entregable, D-042). Genera y custodia el par de claves del dispositivo (D-048) | **Flutter** (D-007) + canal de plataforma Kotlin para el almacén de claves |
+| **Aplicación móvil** | _(Modelo v4: solo Android, instalada mediante APK; iOS fuera de alcance.)_ Interfaz principal del usuario: interacción por voz, registro, autenticación, tutorial, saldo, movimientos, transferencias a otros usuarios (el QR queda para un siguiente entregable, D-042). Genera y custodia el par de claves del dispositivo (D-048). _(2026-10-02, D-075: interacción voice-first con TTS propio y un botón de voz fijo que delimita cada captura.)_ | **Flutter** (D-007) + canal de plataforma Kotlin para el almacén de claves |
 | **Backend principal** | _(Modelo v4: contiene los servicios lógicos Negocio y Autenticación en una sola aplicación.)_ Lógica de negocio, cuentas de acceso, PIN (hash en `credenciales`, D-061), dispositivos (clave pública y verificación de firma, D-048), desafíos y nonces (en memoria), sesiones (JWT con `jti` = `sesiones.id`, 5 min de inactividad, sin renovación, D-018), autorización, operaciones simuladas, solicitudes, auditoría, decisión de autenticación y coordinación con el componente biométrico | Java + Spring Boot (D-001) |
 | **Procesamiento biométrico de voz** | Calidad de audio, contenido del desafío, anti-spoofing, enrolamiento, verificación 1:1 y custodia de la referencia biométrica cifrada | Python (D-002) + FastAPI (D-010) + SpeechBrain ECAPA-TDNN (D-011) + AASIST (D-012) + Vosk (D-046, parcial); referencia en esquema `biometria` (D-013) |
-| **Reconocimiento del habla** | Contenido del desafío (APROBADO: Vosk en el servicio Python); comando de activación, tecnología del PIN dictado (el dictado está aprobado por D-061; en el prototipo, candidata provisional) y DNI en recuperación (PENDIENTES) | D-046 (parcial) |
+| **Reconocimiento del habla** | Contenido del desafío (APROBADO: Vosk en el servicio Python); comando de activación, tecnología del PIN dictado (el dictado está aprobado por D-061; en el prototipo, candidata provisional) y DNI en recuperación (PENDIENTES). _(2026-10-02: comandos, dictados y respuestas Sí/No con Vosk en el servicio Python y gramática por estado del diálogo, como **propuesta a probar**, D-076.)_ | D-046 (parcial) |
 | **Base de datos** | Persistencia estructurada | PostgreSQL (D-003) |
 | **Entorno financiero simulado** | Entidades bancarias, cuentas financieras, operaciones y registro de identidad simulado | Dentro del modelo de datos (D-021, D-035) |
 | **Panel web del administrador** | Usuarios, estado, bloqueo/desbloqueo, dispositivo, solicitudes, auditoría, métricas básicas. Autenticación con usuario y contraseña (D-050, aprobada funcionalmente, **no implementada**; el prototipo usa provisionalmente dispositivo + PIN + voz para el ADMIN). Las consultas de auditoría existentes se mantienen en el alcance de `01` §12.4 (H-03, cerrada) | PENDIENTE (D-045) |
 
-No se incorporan en el primer entregable: APIs externas de identidad, SMS/OTP, WhatsApp, chatbot, bancos o pagos reales, múltiples dispositivos activos ni infraestructura cloud compleja (D-034, D-043).
+No se incorporan en el primer entregable: APIs externas de identidad, SMS/OTP, WhatsApp, chatbot (el diálogo guiado de D-076 no lo es), bancos o pagos reales, múltiples dispositivos activos ni infraestructura cloud compleja (D-034, D-043).
 
 ### Flujos lógicos aprobados
 
 Estos flujos son **conceptuales**; no definen protocolo, endpoints, ubicación física ni tecnología.
 
 ```text
-REGISTRO INICIAL ASISTIDO (D-052, modifica D-036) — usa DNI
+REGISTRO INICIAL CON AYUDA (D-052, modifica D-036; desde el 2026-10-02 modalidad opcional, D-077) — usa DNI
 Persona solicita registrarse → representante autorizado (administrador u otra persona autorizada) asiste
     → se proporciona el DNI → Backend consulta el registro de identidad simulado → se muestran los datos
     → el representante valida la identidad  [registro técnico y auditoría de quién validó: pendiente]
@@ -630,6 +632,16 @@ Persona solicita registrarse → representante autorizado (administrador u otra 
     → tutorial → fin del registro
 La consulta del DNI por sí sola no prueba la identidad. La biometría no valida la identidad en el registro.
 DNI ya registrado → flujo de cambio de dispositivo / recuperación
+
+REGISTRO INICIAL AUTÓNOMO (D-077, D-078; 2026-10-02) — usa DNI/CE declarado
+Persona inicia el registro por voz → dicta tipo y número de documento → lectura de vuelta   [identidad declarada]
+    → Backend consulta el registro de identidad simulado → la persona confirma sus datos   [datos verificados]
+    → celular → PIN (Backend guarda solo hash) → vinculación del dispositivo
+    → enrolamiento de voz: App → Backend → componente biométrico   [voz registrada]
+    → validación posterior con desafío nuevo (contenido → anti-spoofing → 1:1)   [voz validada]
+    → tutorial guiado por voz → registro completado
+No prueba la titularidad del documento (riesgo aceptado del prototipo). Cómo se guardan la modalidad y el nivel: pendiente.
+Documento ya registrado → flujo de cambio de dispositivo / recuperación
 
 INICIO DE SESIÓN HABITUAL (D-037, D-053) — NO usa DNI
 "Iniciar sesión Nayra" → dispositivo vinculado → cuenta
@@ -682,6 +694,8 @@ APP (Flutter)                         SPRING BOOT                               
 | Guardar y leer la referencia biométrica | Servicio Python (D-013) |
 | Auditoría (sin audio, embeddings ni PIN) | Spring Boot |
 
-**Enrolamiento (registro asistido, D-052 paso 11):** App → Spring Boot (emite un desafío por muestra) → servicio Python (calidad, contenido, anti-spoofing, embedding; guarda el centroide cifrado) → Spring Boot recibe solo el resultado.
+**Interacción voice-first (D-075, D-076, 2026-10-02):** la app habla con TTS propio del dispositivo y el botón de micrófono fijo delimita cada captura (toca para empezar, toca para terminar). Los comandos y el dictado viajan App → Spring Boot → servicio de voz, que los reconoce con una gramática cerrada según el estado del diálogo (Vosk en servidor, propuesta a probar). El audio de comandos, dictado y PIN nunca entra al pipeline biométrico; solo el modo verificación o registro de voz usa la cadena calidad → contenido → anti-spoofing → 1:1. El enrolamiento puede ser autónomo o asistido (D-077) y termina con una validación posterior con desafío nuevo (D-078).
+
+**Enrolamiento (registro asistido, D-052 paso 11; autónomo, D-077):** App → Spring Boot (emite un desafío por muestra) → servicio Python (calidad, contenido, anti-spoofing, embedding; guarda el centroide cifrado) → Spring Boot recibe solo el resultado.
 
 **Cambio de dispositivo (D-040):** mismo pipeline; la cuenta se localiza por DNI y el desafío se liga a la solicitud de cambio y al dispositivo nuevo; la verificación es contra la referencia existente; si todo pasa, Spring Boot registra la nueva clave pública y revoca el dispositivo anterior. La jerarquía **Servicio → Función → Componente** y su representación en ArchiMate se aplicarán a estos componentes cuando se modele la arquitectura lógica.

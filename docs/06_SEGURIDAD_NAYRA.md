@@ -704,7 +704,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-034 a D-044.
 - El DNI existente **no** permite crear una segunda cuenta; se deriva a recuperación/cambio de dispositivo (D-036).
 - El rol **nunca** lo elige el cliente; los usuarios registrados desde la aplicación reciben el rol `USER`.
 - La consulta de identidad usa un **registro simulado** (D-035): no se envían datos a terceros.
-- **Registro asistido (D-052):** la consulta del DNI solo recupera datos y **no** prueba la titularidad ni la identidad. Un **representante autorizado** (administrador u otra persona autorizada) valida la identidad de la persona y luego la persona confirma sus datos. La biometría no se usa para validar la identidad en el registro. Es una regla de negocio: **no** se crea un rol del sistema para el representante (roles: `USER`, `ADMIN`).
+- **Registro asistido (D-052):** la consulta del DNI solo recupera datos y **no** prueba la titularidad ni la identidad. Un **representante autorizado** (administrador u otra persona autorizada) valida la identidad de la persona y luego la persona confirma sus datos. La biometría no se usa para validar la identidad en el registro. Es una regla de negocio: **no** se crea un rol del sistema para el representante (roles: `USER`, `ADMIN`). _(2026-10-02, D-077: el registro con representante es opcional; ver §36.10 para el registro autónomo.)_
 - Pendiente: cómo se registra técnicamente quién realizó la validación asistida y cómo se audita, sin crear un rol nuevo.
 - **Usos del DNI (D-053):** registro inicial, recuperación, cambio o pérdida del dispositivo y otros procesos excepcionales para localizar la cuenta. El DNI **no** forma parte del inicio de sesión habitual.
 
@@ -793,7 +793,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-010 a D-013, D-01
 
 **Sesión**
 
-- Cierre automático tras 5 minutos de inactividad, controlado en el servidor. No hay aviso previo ni opción de continuar, y el tiempo no es configurable por el usuario.
+- Cierre automático tras 5 minutos de inactividad, controlado en el servidor. No hay aviso previo ni opción de continuar, y el tiempo no es configurable por el usuario. _(2026-10-02, Y-9: Nayra anuncia por voz el cierre cuando ocurre.)_
 - Modelo de datos v4: JWT con `jti` = `sesiones.id`; el token no se guarda y la validez depende de la tabla `sesiones`; sin renovación ni refresh token. Algoritmo (HS256 en el prototipo) y custodia de la clave (`NAYRA_JWT_CLAVE`) PROVISIONALES (P-5, D-017).
 
 **Riesgos aceptados en el prototipo**
@@ -801,3 +801,15 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-010 a D-013, D-01
 - Replay en tiempo real del desafío.
 - Voces sintéticas o convertidas modernas no representadas en el entrenamiento de AASIST.
 - No se afirma que el anti-spoofing detecte todos los ataques (§15).
+
+## 36.10 Controles de la interacción voice-first (2026-10-02)
+
+Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, D-075 a D-080. Reglas de implementación en `09_REGLAS_DESARROLLO_NAYRA.md` §28.
+
+- **Captura ≠ comando ≠ autenticación (D-075).** El estado del flujo fija el modo de cada captura y el servidor lo verifica por la ruta y el contexto, nunca por el contenido del audio. Solo el registro o la verificación de voz entran al pipeline biométrico, siempre con un desafío variable de un solo uso (D-054). "Iniciar sesión Nayra" es solo un comando.
+- **PIN (D-061).** Sigue siendo de 6 dígitos. Si se dicta, Nayra solo dice "Recibí seis dígitos": nunca lo repite, lo muestra ni lo registra.
+- **Mensajes de error.** Los fallos de comparación de voz y de anti-spoofing comparten el mensaje "No pude verificar tu identidad. Inténtalo nuevamente." para no revelar qué control falló (§36.9).
+- **Registro autónomo (D-077).** La identidad queda **declarada**: la consulta al registro simulado verifica que el documento existe, pero no prueba la titularidad. Riesgo aceptado del prototipo. La app no presenta una identidad declarada como validada. PENDIENTE: cómo se guarda la modalidad y el nivel de validación, y si habrá límites para cuentas con identidad solo declarada.
+- **Validación posterior del enrolamiento (D-078).** El registro no termina sin una verificación completa con un desafío nuevo; no suma intentos de PIN (D-044).
+- **Confirmación de operaciones (D-079).** Ninguna operación financiera se ejecuta sin "Sí, confirmo"; un "sí" aislado no basta. La confirmación autoriza, no autentica, y su audio no es una muestra biométrica. Sin búsqueda de destinatarios por nombre.
+- **Diálogo guiado (D-076).** Gramáticas cerradas por estado; ante baja confianza o ambigüedad, Nayra pregunta y nunca ejecuta.

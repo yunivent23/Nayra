@@ -383,7 +383,7 @@ Esta sección es la **referencia vigente** del modelo lógico para las tablas in
 |---|---|---|
 | Identificador | PK | §13 |
 | DNI | Obligatorio y **único**: un DNI no puede tener dos cuentas de acceso. _(Modelo v4: documento de identidad `DNI` o `CE`, único por tipo y número; validación local/simulada provisional, P-2)_ | D-036 |
-| Nombres, apellidos | Obtenidos del registro de identidad simulado una vez que el representante autorizado confirma la validación de identidad | D-035, D-052 |
+| Nombres, apellidos | Obtenidos del registro de identidad simulado una vez que el representante autorizado confirma la validación de identidad. _(2026-10-02, D-077: en el registro autónomo, tras confirmar la persona sus datos, sin representante; cómo se guardan la modalidad y el nivel de validación sigue PENDIENTE.)_ | D-035, D-052, D-077 |
 | Número de celular | Dato de contacto; sin validación OTP en el primer entregable. _(2026-09-28, G-1: también localiza al destinatario de una transferencia; único y en formato canónico de Perú; no prueba la titularidad de la línea)_ | D-043 |
 | Hash del PIN | PIN de 6 dígitos (D-061). Solo el hash (con *pepper* fuera de la BD); nunca texto plano ni audio. Algoritmo y parámetros pendientes. _(Modelo v4: se trasladó a `CREDENCIALES`, junto con el contador de intentos; ya no está en `USUARIOS`)_ | D-037, D-061, D-047 |
 | Rol | `USER` o `ADMIN` (valor fijo, sin tabla `ROLES`, D-009) | D-041 |
