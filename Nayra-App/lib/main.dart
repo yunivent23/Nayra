@@ -6,6 +6,7 @@ import 'app/nayra_app.dart';
 import 'config.dart';
 import 'servicios/dispositivo.dart';
 import 'servicios/grabador.dart';
+import 'servicios/voz_nayra.dart';
 
 void main() {
   runApp(NayraApp(
@@ -13,6 +14,7 @@ void main() {
       http: ClienteHttp(ConfiguracionApp.urlBackend),
       dispositivo: CanalClaveDispositivo(),
       grabador: GrabadorMicrofono(),
+      voz: VozTts(),
     ),
   ));
 }

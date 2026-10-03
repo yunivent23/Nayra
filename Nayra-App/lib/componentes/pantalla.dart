@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import '../tema/colores.dart';
 import '../tema/tema.dart';
 import 'anuncio.dart';
+import 'boton_voz.dart';
 
 /// Estructura común de las pantallas de los mockups v3:
 /// - título grande y, en el registro, "Paso N de 8";
 /// - contenido desplazable (se adapta al tamaño de letra del sistema);
-/// - barra fija inferior con "Atrás" y "Repetir", siempre en el mismo lugar.
+/// - barra fija inferior con "Atrás" y "Repetir", siempre en el mismo lugar, o el botón de voz fijo (D-075).
 ///
-/// [textoVoz] es lo que "Nayra dice": se anuncia al mostrarse la pantalla y cada vez que se toca "Repetir"
+/// [textoVoz] es lo que "Nayra dice" con su propia voz (D-075): se dice al mostrarse la pantalla y cada vez que se toca "Repetir"
 /// (HU-54, HU-58, HU-59). Nunca debe contener el PIN.
 class PantallaNayra extends StatefulWidget {
   const PantallaNayra({
@@ -21,6 +22,8 @@ class PantallaNayra extends StatefulWidget {
     this.mostrarAtras = true,
     this.alVolver,
     this.cabecera,
+    this.botonVoz,
+    this.hablarAlMostrar = true,
   });
 
   final String textoVoz;
@@ -35,6 +38,13 @@ class PantallaNayra extends StatefulWidget {
   /// Contenido fijo encima del título (logo de las pantallas de inicio).
   final Widget? cabecera;
 
+  /// Botón de voz fijo (D-075). Si se indica, reemplaza la barra inferior: el dock incluye «Repetir» y «Atrás».
+  final BotonVoz? botonVoz;
+
+  /// false si la pantalla dice [textoVoz] por su cuenta (por ejemplo, después de cargar un dato); «Repetir» lo
+  /// sigue diciendo.
+  final bool hablarAlMostrar;
+
   @override
   State<PantallaNayra> createState() => _PantallaNayraState();
 }
@@ -43,6 +53,7 @@ class _PantallaNayraState extends State<PantallaNayra> {
   @override
   void initState() {
     super.initState();
+    if (!widget.hablarAlMostrar) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) anunciar(context, widget.textoVoz);
     });
@@ -52,7 +63,7 @@ class _PantallaNayraState extends State<PantallaNayra> {
   void didUpdateWidget(PantallaNayra anterior) {
     super.didUpdateWidget(anterior);
     // La misma pantalla cambia de estado (p. ej. PIN incorrecto): se lee el nuevo mensaje.
-    if (anterior.textoVoz != widget.textoVoz) {
+    if (widget.hablarAlMostrar && anterior.textoVoz != widget.textoVoz) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) anunciar(context, widget.textoVoz);
       });
@@ -100,10 +111,17 @@ class _PantallaNayraState extends State<PantallaNayra> {
                   children: [for (final h in widget.hijos) Padding(padding: const EdgeInsets.only(bottom: 12), child: h)],
                 ),
               ),
-              _BarraInferior(
-                atras: widget.mostrarAtras ? _volver : null,
-                repetir: () => anunciar(context, widget.textoVoz),
-              ),
+              if (widget.botonVoz != null)
+                DockVoz(
+                  boton: widget.botonVoz!,
+                  atras: widget.mostrarAtras ? _volver : null,
+                  repetir: () => anunciar(context, widget.textoVoz),
+                )
+              else
+                _BarraInferior(
+                  atras: widget.mostrarAtras ? _volver : null,
+                  repetir: () => anunciar(context, widget.textoVoz),
+                ),
             ],
           ),
         ),

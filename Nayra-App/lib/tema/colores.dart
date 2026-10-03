@@ -26,6 +26,12 @@ abstract final class ColoresNayra {
   static const advertencia = Color(0xFFB45309);
   static const error = Color(0xFFB42318);
 
+  /// Botón de voz capturando (D-075); icono azul marino encima: 8.2:1.
+  static const celeste = Color(0xFF4FC3F7);
+
+  /// Botón de voz en estado Cancelado; blanco encima: 5.4:1.
+  static const cancelado = Color(0xFF5B6B7E);
+
   /// Acción principal y foco del lector de pantalla / teclado.
   static const foco = Color(0xFFFFD600);
   static const accionPrincipal = foco;

@@ -9,6 +9,7 @@ import '../api/representante_api.dart';
 import '../api/usuario_api.dart';
 import '../servicios/dispositivo.dart';
 import '../servicios/grabador.dart';
+import '../servicios/voz_nayra.dart';
 import '../sesion/gestor_sesion.dart';
 
 /// Servicios de la app, creados una vez y compartidos por las pantallas. Las pantallas nunca hacen peticiones
@@ -18,6 +19,7 @@ class Dependencias {
     required this.http,
     required this.dispositivo,
     required this.grabador,
+    required this.voz,
     BilleteraApi? billetera,
   })  : autenticacion = AutenticacionApi(http),
         registro = RegistroApi(http),
@@ -31,6 +33,9 @@ class Dependencias {
   final ClienteHttp http;
   final ClaveDispositivo dispositivo;
   final GrabadorVoz grabador;
+
+  /// Voz propia de Nayra (D-075).
+  final VozNayra voz;
   final AutenticacionApi autenticacion;
   final RegistroApi registro;
   final UsuarioApi usuarios;
@@ -47,6 +52,10 @@ class ProveedorNayra extends InheritedWidget {
 
   static Dependencias de(BuildContext context) =>
       context.getInheritedWidgetOfExactType<ProveedorNayra>()!.dependencias;
+
+  /// Igual que [de], pero null fuera de la app (pruebas de componentes sueltos).
+  static Dependencias? quizas(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<ProveedorNayra>()?.dependencias;
 
   @override
   bool updateShouldNotify(ProveedorNayra oldWidget) => dependencias != oldWidget.dependencias;

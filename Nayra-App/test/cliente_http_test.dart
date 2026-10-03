@@ -75,10 +75,10 @@ void main() {
     });
 
     test('mensajes comprensibles para cada fallo, sin detalles técnicos', () {
-      expect(mensajeFallo(const ErrorConexion()), contains('No se pudo conectar'));
+      expect(mensajeFallo(const ErrorConexion()), contains('No pude conectarme'));
       expect(mensajeFallo(const ErrorTiempoAgotado()), contains('tardó demasiado'));
       expect(mensajeFallo(const ErrorApi(401, 'NO_AUTENTICADO')), contains('sesión se cerró'));
-      expect(mensajeFallo(const ErrorApi(403, 'ACCESO_DENEGADO')), contains('No tiene permiso'));
+      expect(mensajeFallo(const ErrorApi(403, 'ACCESO_DENEGADO')), contains('No tienes permiso'));
       expect(mensajeFallo(const ErrorApi(500, 'ERROR_INTERNO')), isNot(contains('ERROR_INTERNO')));
       expect(mensajeFallo(const FuncionNoDisponible('saldo')), contains('todavía no está disponible'));
     });

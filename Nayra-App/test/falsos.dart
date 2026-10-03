@@ -1,7 +1,8 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 import 'package:nayra_app/servicios/dispositivo.dart';
 import 'package:nayra_app/servicios/grabador.dart';
+import 'package:nayra_app/servicios/voz_nayra.dart';
 
 class DispositivoFalso implements ClaveDispositivo {
   Map<String, String> ids = {};
@@ -41,4 +42,20 @@ class GrabadorFalso implements GrabadorVoz {
 
   @override
   Future<void> cancelar() async => grabando = false;
+}
+
+/// Voz de Nayra sin audio: registra lo que dice y termina de inmediato.
+class VozFalsa implements VozNayra {
+  final dichos = <String>[];
+  int interrupciones = 0;
+  final _hablando = ValueNotifier(false);
+
+  @override
+  ValueListenable<bool> get hablando => _hablando;
+
+  @override
+  Future<void> decir(String texto) async => dichos.add(texto);
+
+  @override
+  Future<void> callar() async => interrupciones++;
 }

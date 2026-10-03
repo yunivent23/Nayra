@@ -30,6 +30,9 @@ class FlujoInicioSesion extends ChangeNotifier {
   String? _sesion;
   String? _transaccion;
 
+  /// true si el último PIN se dictó: Nayra confirma «Recibí seis dígitos» sin repetirlos (D-061, D-075).
+  bool _pinDictado = false;
+
   /// JWT recibido con AUTENTICADO (solo en memoria).
   String? get sesion => _sesion;
 
@@ -48,48 +51,59 @@ class FlujoInicioSesion extends ChangeNotifier {
   }
 
   static const _errores = {
-    'CUENTA_BLOQUEADA': 'Su cuenta está bloqueada.',
-    'CUENTA_INACTIVA': 'Su cuenta no está activa.',
-    'DISPOSITIVO_NO_VERIFICADO': 'No se pudo verificar este celular.',
-    'TRANSACCION_NO_VALIDA': 'La operación venció. Vuelva a iniciar sesión.',
-    'PASO_NO_VALIDO': 'La operación venció. Vuelva a iniciar sesión.',
-    'USUARIO_NO_ENCONTRADO': 'No se encontró su cuenta. Vuelva a registrarse con un representante.',
+    'CUENTA_BLOQUEADA': 'Tu cuenta está bloqueada.',
+    'CUENTA_INACTIVA': 'Tu cuenta no está activa.',
+    'DISPOSITIVO_NO_VERIFICADO': 'No pude verificar este celular.',
+    'TRANSACCION_NO_VALIDA': 'La operación venció. Vuelve a iniciar sesión.',
+    'PASO_NO_VALIDO': 'La operación venció. Vuelve a iniciar sesión.',
+    'USUARIO_NO_ENCONTRADO': 'No encontré tu cuenta. Vuelve a registrarte.',
   };
 
   Future<void> iniciar() async {
-    _ir(PasoInicioSesion.verificando, 'Verificando su celular.');
+    _ir(PasoInicioSesion.verificando, 'Estoy verificando este celular.');
     desafio = null;
     intentosRestantes = null;
     try {
       final ids = await _dispositivo.leerIdentificadores();
       final dispositivoId = ids['dispositivoId'];
       if (dispositivoId == null) {
-        _ir(PasoInicioSesion.terminado, 'Este celular no está vinculado a una cuenta. Primero regístrese con un representante.',
+        _ir(PasoInicioSesion.terminado, 'Este celular todavía no tiene una cuenta. Primero regístrate.',
             error: true);
         return;
       }
       final nonce = await _api.nonce(dispositivoId);
       final firma = await _dispositivo.firmar(mensajeAFirmar(nonce, dispositivoId, proposito));
       _transaccion = await _api.abrirTransaccion(dispositivoId, nonce, firma);
-      _ir(PasoInicioSesion.pin, 'Celular verificado. Ingrese su PIN de 6 dígitos o díctelo.');
+      _ir(PasoInicioSesion.pin, mensajePin);
     } on ErrorApi catch (e) {
       _terminarPorError(e);
     } on FalloNayra catch (e) {
       _ir(PasoInicioSesion.terminado, mensajeFallo(e), error: true);
     } on PlatformException {
-      _ir(PasoInicioSesion.terminado, 'No se pudo usar la clave de seguridad de este celular.', error: true);
+      _ir(PasoInicioSesion.terminado, 'No pude usar la clave de seguridad de este celular.', error: true);
     }
   }
 
-  Future<void> enviarPin(String pin) => _paso(() => _api.verificarPin(_transaccion!, pin));
+  /// Lo que Nayra dice al pedir el PIN. Nunca contiene los dígitos.
+  static const mensajePin = 'Escribe tu PIN de seis dígitos en el teclado, o toca el botón de voz y díctalo. '
+      'Si hay personas cerca, usa el teclado.';
 
-  Future<void> enviarPinDictado(Uint8List wav) => _paso(() => _api.verificarPinDictado(_transaccion!, wav));
+  Future<void> enviarPin(String pin) {
+    _pinDictado = false;
+    return _paso(() => _api.verificarPin(_transaccion!, pin));
+  }
+
+  Future<void> enviarPinDictado(Uint8List wav) {
+    _pinDictado = true;
+    return _paso(() => _api.verificarPinDictado(_transaccion!, wav));
+  }
 
   Future<void> enviarVoz(Uint8List wav) => _paso(() => _api.verificarVoz(_transaccion!, wav));
 
   Future<void> _paso(Future<ResultadoPaso> Function() llamada) async {
     final anterior = paso;
-    _ir(PasoInicioSesion.verificando, anterior == PasoInicioSesion.voz ? 'Verificando su voz. Espere, por favor.' : 'Verificando.');
+    _ir(PasoInicioSesion.verificando,
+        anterior == PasoInicioSesion.voz ? 'Estoy verificando tu identidad.' : 'Estoy verificando tu PIN.');
     try {
       aplicar(await llamada(), anterior);
     } on ErrorApi catch (e) {
@@ -113,7 +127,8 @@ class FlujoInicioSesion extends ChangeNotifier {
     intentosRestantes = r.intentosRestantes;
     switch (r.estado) {
       case EstadoPaso.continuar:
-        _ir(PasoInicioSesion.voz, 'PIN correcto. ${instruccionDesafio(desafio!.texto)}');
+        final recibido = _pinDictado ? 'Recibí seis dígitos. ' : '';
+        _ir(PasoInicioSesion.voz, '${recibido}PIN correcto. Ahora verificaré tu voz. ${pedirDesafio(desafio!.texto)}');
       case EstadoPaso.autenticado:
         desafio = null;
         _transaccion = null;
@@ -122,7 +137,7 @@ class FlujoInicioSesion extends ChangeNotifier {
       case EstadoPaso.bloqueada:
         desafio = null;
         _transaccion = null;
-        _ir(PasoInicioSesion.bloqueada, 'Se agotaron los intentos. Su cuenta está bloqueada.', error: true);
+        _ir(PasoInicioSesion.bloqueada, 'Se agotaron los intentos. Por seguridad, tu cuenta está bloqueada.', error: true);
       case EstadoPaso.rechazado:
         desafio = null;
         _transaccion = null;
@@ -130,8 +145,11 @@ class FlujoInicioSesion extends ChangeNotifier {
       default: // REINTENTAR o SERVICIO_NO_DISPONIBLE: se repite el mismo paso.
         final texto = mensajeMotivo(r.motivo, intentosRestantes: r.intentosRestantes);
         _ir(anterior, anterior == PasoInicioSesion.voz && desafio != null
-            ? '$texto ${instruccionDesafio(desafio!.texto)}'
+            ? '$texto ${pedirDesafio(desafio!.texto)}'
             : texto, error: true);
     }
   }
 }
+
+/// Pide repetir la frase de desafío con el botón de voz: «Toca el botón y repite: sol, nueve, tres, uno, taza».
+String pedirDesafio(String texto) => 'Toca el botón y repite: $texto';

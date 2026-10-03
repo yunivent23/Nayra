@@ -119,16 +119,19 @@ class _TecladoPinState extends State<TecladoPin> {
       return;
     }
     if (!await grabador.tienePermiso()) {
-      if (mounted) anunciar(context, 'Nayra necesita permiso para usar el micrófono.');
+      if (mounted) anunciar(context, 'Necesito permiso para usar el micrófono.');
       return;
     }
+    if (!mounted) return;
+    // Semidúplex (D-075): Nayra termina de hablar antes de abrir el micrófono.
+    await prepararEscucha(context, aviso: 'Dicta tu PIN dígito por dígito y toca Detener al terminar. Te escucho.');
+    if (!mounted) return;
     await grabador.iniciar();
     if (!mounted) return;
     setState(() {
       _dictando = true;
       _digitos.clear();
     });
-    anunciar(context, 'Dicte su PIN dígito por dígito y toque Detener al terminar.');
   }
 
   @override

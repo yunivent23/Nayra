@@ -56,6 +56,9 @@ Map<String, List<(int, Object?)>> loginCorrecto({String rol = 'USER'}) => {
       'DELETE /api/v1/sesiones/actual': [(204, null)],
     };
 
+late VozFalsa voz;
+final botonVoz = find.byKey(const Key('botonVoz'));
+
 Future<void> abrir(WidgetTester tester, BackendFalso backend) async {
   tester.view.physicalSize = const Size(1236, 2745); // 412 × 915 dp
   tester.view.devicePixelRatio = 3;
@@ -66,6 +69,7 @@ Future<void> abrir(WidgetTester tester, BackendFalso backend) async {
       http: ClienteHttp('http://x', cliente: backend.cliente),
       dispositivo: dispositivo,
       grabador: GrabadorFalso(),
+      voz: voz = VozFalsa(),
     ),
   ));
   await tester.pumpAndSettle();
@@ -84,19 +88,23 @@ Future<void> tocar(WidgetTester tester, Finder f) async {
   await tester.pumpAndSettle();
 }
 
-/// Bienvenida → «Iniciar sesión Nayra» → PIN → frase → voz → identidad verificada.
+/// Bienvenida → botón de voz («Iniciar sesión Nayra») → PIN → frase → voz → saludo → billetera (D-075).
 Future<void> iniciarSesion(WidgetTester tester) async {
   await tocar(tester, find.text('Iniciar sesión'));
-  await tocar(tester, find.text('Iniciar sesión Nayra'));
-  expect(find.text('Ingrese su PIN'), findsOneWidget);
+  await tocar(tester, botonVoz);
+  expect(find.text('Ingresa tu PIN'), findsOneWidget);
   for (final d in ['4', '8', '2', '9', '1', '3']) {
     await tocar(tester, find.bySemanticsLabel(d));
   }
-  await tocar(tester, find.text('Escuchar la frase'));
+  expect(find.text('Verifiquemos tu voz'), findsOneWidget);
   expect(find.bySemanticsLabel('Frase a decir: barco, cinco, uno, ocho, luna'), findsOneWidget);
-  await tocar(tester, find.text('Toque para grabar'));
-  await tocar(tester, find.text('Toque para detener'));
-  expect(find.text('Identidad verificada'), findsOneWidget);
+  expect(voz.dichos.last,
+      'PIN correcto. Ahora verificaré tu voz. Toca el botón y repite: barco, cinco, uno, ocho, luna');
+  await tocar(tester, botonVoz);
+  expect(find.text('Te escucho'), findsOneWidget);
+  await tocar(tester, botonVoz);
+  expect(voz.dichos, contains('Identidad verificada. ¡Hola, Ana!'));
+  expect(find.text('Menú'), findsOneWidget);
 }
 
 void main() {
@@ -108,12 +116,11 @@ void main() {
     expect(find.text('Registrarme'), findsOneWidget);
 
     await iniciarSesion(tester);
-    expect(find.text('Le damos la bienvenida, Ana.'), findsOneWidget);
-    // El PIN viaja una sola vez al backend y nunca aparece en la interfaz.
+    // El PIN viaja una sola vez al backend y nunca aparece en la interfaz ni en lo que dice Nayra.
     expect(find.textContaining('482913'), findsNothing);
-
-    await tocar(tester, find.text('Ir a mi billetera'));
-    expect(find.text('Menú'), findsOneWidget);
+    expect(voz.dichos.where((d) => d.contains('482913')), isEmpty);
+    // Semidúplex: «Te escucho» se dice una vez, antes de abrir el micrófono de la verificación de voz.
+    expect(voz.dichos.where((d) => d == 'Te escucho.'), hasLength(1));
     expect(find.text('Registro asistido'), findsNothing, reason: 'solo para ADMIN');
 
     await tocar(tester, find.text('Saldo'));
@@ -134,7 +141,6 @@ void main() {
     final backend = BackendFalso(loginCorrecto());
     await abrir(tester, backend);
     await iniciarSesion(tester);
-    await tocar(tester, find.text('Ir a mi billetera'));
     expect(find.text('Menú'), findsOneWidget);
     // El plazo se cuenta desde la última petición con sesión (unidad: cliente_http_test.dart).
     await tester.pump(const Duration(minutes: 5, seconds: 1));
@@ -156,7 +162,6 @@ void main() {
     rutas['GET /api/v1/usuarios/me'] = [(200, yo()), (401, {'error': 'NO_AUTENTICADO'})];
     await abrir(tester, BackendFalso(rutas));
     await iniciarSesion(tester);
-    await tocar(tester, find.text('Ir a mi billetera'));
     await tocar(tester, find.text('Mis datos'));
     expect(find.text('Su sesión se cerró'), findsOneWidget);
     expect(find.text('Su sesión ya no es válida.'), findsOneWidget);
@@ -170,17 +175,17 @@ void main() {
     ];
     await abrir(tester, BackendFalso(rutas));
     await tocar(tester, find.text('Iniciar sesión'));
-    await tocar(tester, find.text('Iniciar sesión Nayra'));
+    await tocar(tester, botonVoz);
     for (var i = 0; i < 6; i++) {
       await tocar(tester, find.bySemanticsLabel('0'));
     }
-    expect(find.text('El PIN no es correcto. Le queda 1 intento.'), findsOneWidget);
-    expect(find.text('Ingrese su PIN'), findsOneWidget);
+    expect(find.textContaining('Te queda 1 intento'), findsWidgets);
+    expect(find.text('Ingresa tu PIN'), findsOneWidget);
     for (var i = 0; i < 6; i++) {
       await tocar(tester, find.bySemanticsLabel('0'));
     }
-    expect(find.text('Cuenta bloqueada'), findsOneWidget);
-    expect(find.text('Se agotaron los intentos. Su cuenta está bloqueada.'), findsOneWidget);
+    expect(find.text('Cuenta bloqueada'), findsWidgets);
+    expect(find.text('Se agotaron los intentos. Por seguridad, tu cuenta está bloqueada.'), findsOneWidget);
   });
 
   testWidgets('sin conexión al iniciar sesión: mensaje comprensible y opción de reintentar', (tester) async {
@@ -192,11 +197,12 @@ void main() {
         http: ClienteHttp('http://x', cliente: MockClient((r) async => throw http.ClientException('sin red'))),
         dispositivo: DispositivoFalso()..ids = {'dispositivoId': 'disp1'},
         grabador: GrabadorFalso(),
+        voz: VozFalsa(),
       ),
     ));
     await tocar(tester, find.text('Iniciar sesión'));
-    await tocar(tester, find.text('Iniciar sesión Nayra'));
-    expect(find.textContaining('No se pudo conectar con Nayra'), findsWidgets);
+    await tocar(tester, botonVoz);
+    expect(find.textContaining('No pude conectarme con Nayra'), findsWidgets);
     expect(find.text('Intentar de nuevo'), findsOneWidget);
   });
 
@@ -207,7 +213,6 @@ void main() {
     final backend = BackendFalso(rutas);
     await abrir(tester, backend);
     await iniciarSesion(tester);
-    await tocar(tester, find.text('Ir a mi billetera'));
     await tocar(tester, find.text('Registro asistido'));
     expect(find.text('Paso 1 de 8'), findsOneWidget);
     await tester.enterText(find.byType(TextField), '45781236');
@@ -230,7 +235,6 @@ void main() {
     final backend = BackendFalso(rutas);
     await abrir(tester, backend);
     await iniciarSesion(tester);
-    await tocar(tester, find.text('Ir a mi billetera'));
     await tocar(tester, find.text('Transferir'));
 
     expect(find.text('¿A quién transfiere?'), findsOneWidget);
@@ -286,16 +290,16 @@ void main() {
       await abrir(tester, BackendFalso(loginCorrecto()));
       await revisar(tester);
       await tocar(tester, find.text('Iniciar sesión'));
-      await tocar(tester, find.text('Iniciar sesión Nayra'));
+      await revisar(tester);
+      await tocar(tester, botonVoz);
       await revisar(tester);
       for (final d in ['4', '8', '2', '9', '1', '3']) {
         await tocar(tester, find.bySemanticsLabel(d));
       }
-      await tocar(tester, find.text('Escuchar la frase'));
       await revisar(tester);
-      await tocar(tester, find.text('Toque para grabar'));
-      await tocar(tester, find.text('Toque para detener'));
-      await tocar(tester, find.text('Ir a mi billetera'));
+      await tocar(tester, botonVoz);
+      await revisar(tester);
+      await tocar(tester, botonVoz);
       await revisar(tester);
       await tocar(tester, find.text('Transferir'));
       await revisar(tester);
@@ -308,15 +312,23 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       await abrir(tester, BackendFalso(loginCorrecto()));
       await tocar(tester, find.text('Iniciar sesión'));
-      await tocar(tester, find.text('Iniciar sesión Nayra'));
       expect(tester.takeException(), isNull);
+      await tocar(tester, botonVoz);
+      expect(tester.takeException(), isNull);
+      for (final d in ['4', '8', '2', '9', '1', '3']) {
+        await tocar(tester, find.bySemanticsLabel(d));
+      }
+      expect(tester.takeException(), isNull);
+      await tocar(tester, botonVoz);
+      expect(tester.takeException(), isNull);
+      await tocar(tester, botonVoz);
+      await vencerSesion(tester);
     });
 
     testWidgets('la búsqueda del destinatario no se desborda con la letra al 200 %', (tester) async {
       final rutas = loginCorrecto()..['POST /api/v1/destinatarios/busqueda'] = [(200, {'nombreVisible': 'María De la...'})];
       await abrir(tester, BackendFalso(rutas));
       await iniciarSesion(tester);
-      await tocar(tester, find.text('Ir a mi billetera'));
       // La letra se agranda desde aquí: esta prueba cubre solo las pantallas del destinatario.
       tester.platformDispatcher.textScaleFactorTestValue = 2.0;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);

@@ -13,7 +13,7 @@ class PantallaBienvenida extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => PantallaNayra(
-        textoVoz: 'Le damos la bienvenida a Nayra. Botón 1 de 2: Iniciar sesión. Botón 2 de 2: Registrarme con un representante.',
+        textoVoz: 'Te doy la bienvenida a Nayra. Botón 1 de 2: Iniciar sesión. Botón 2 de 2: Registrarme con un representante.',
         mostrarAtras: false,
         cabecera: const LogoNayra(),
         hijos: [

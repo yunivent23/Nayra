@@ -78,7 +78,7 @@ void main() {
     await f.enviarVoz(await GrabadorFalso().detener());
     expect(f.paso, PasoInicioSesion.voz);
     expect(f.desafio!.texto, 'luna, cuatro, cinco, seis, pera');
-    expect(f.mensaje, contains('Le quedan 2 intentos'));
+    expect(f.mensaje, contains('Te quedan 2 intentos'));
     await f.enviarVoz(await GrabadorFalso().detener());
     expect(f.paso, PasoInicioSesion.bloqueada);
   });
@@ -93,7 +93,7 @@ void main() {
     await f.iniciar();
     await f.enviarPin('000000');
     expect(f.paso, PasoInicioSesion.pin);
-    expect(f.mensaje, 'El PIN no es correcto. Le quedan 2 intentos.');
+    expect(f.mensaje, 'El PIN no es correcto. Te quedan 2 intentos.');
     await f.iniciar();
     expect(f.paso, PasoInicioSesion.bloqueada);
   });
@@ -141,7 +141,7 @@ void main() {
     final audio = await GrabadorFalso().detener();
     await f.enviarMuestra(audio);
     await f.enviarMuestra(audio);
-    expect(f.mensaje, contains('No se escuchó con claridad'));
+    expect(f.mensaje, contains('No te escuché con claridad'));
     await f.enviarMuestra(audio);
     expect(dispositivo.ids, isEmpty, reason: 'Los identificadores se guardan al finalizar el registro');
     await f.enviarMuestra(audio);

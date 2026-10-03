@@ -46,21 +46,25 @@ class _BotonGrabacionState extends State<BotonGrabacion> {
         return;
       }
       if (!await widget.grabador.tienePermiso()) {
-        if (mounted) anunciar(context, 'Nayra necesita permiso para usar el micrófono.');
+        if (mounted) anunciar(context, 'Necesito permiso para usar el micrófono.');
         return;
       }
+      if (!mounted) return;
+      // Semidúplex (D-075): Nayra termina de hablar antes de abrir el micrófono.
+      await prepararEscucha(context, aviso: 'Te escucho. Habla y toca de nuevo al terminar.');
+      if (!mounted) return;
+      // Tono de inicio (no se espera: la llamada a la plataforma no indica cuándo termina el sonido).
+      Senales.aviso();
       await widget.grabador.iniciar();
       if (!mounted) return;
       setState(() => _grabando = true);
-      Senales.aviso();
-      anunciar(context, 'Grabando. Hable ahora y toque de nuevo al terminar.');
     } catch (_) {
       // Micrófono ocupado o error del sistema al grabar: la app no se cierra; se descarta lo grabado
       // y se puede volver a intentar.
       await widget.grabador.cancelar().catchError((_) {});
       if (!mounted) return;
       setState(() => _grabando = false);
-      anunciar(context, 'No se pudo usar el micrófono. Inténtelo otra vez.');
+      anunciar(context, 'No pude usar el micrófono. Inténtalo otra vez.');
     } finally {
       _ocupado = false;
     }

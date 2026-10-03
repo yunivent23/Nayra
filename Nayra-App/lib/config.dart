@@ -14,6 +14,12 @@ class ConfiguracionApp {
   /// PROVISIONAL — PENDIENTE DE VALIDACIÓN: igual que duracion_maxima_s del servicio de voz.
   static const duracionMaximaGrabacion = Duration(seconds: 20);
 
+  /// PROVISIONAL — PENDIENTE DE VALIDACIÓN (D-075): tiempo máximo de una captura según su modo. Es solo un respaldo:
+  /// la persona termina la captura con un segundo toque del botón de voz.
+  static const capturaMaximaComando = Duration(seconds: 10);
+  static const capturaMaximaDictado = Duration(seconds: 15);
+  static const capturaMaximaVoz = duracionMaximaGrabacion;
+
   /// Formato que espera el servicio de voz (05 §27): WAV PCM 16 bits, 16 kHz, mono.
   static const frecuenciaMuestreo = 16000;
 
