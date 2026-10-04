@@ -13,6 +13,7 @@ import '../../componentes/logo.dart';
 import '../../componentes/pantalla.dart';
 import '../../componentes/teclado.dart';
 import '../../flujo/flujo_inicio_sesion.dart';
+import '../../servicios/voz_nayra.dart';
 
 /// B1–B6 — Inicio de sesión (D-037 modificada por D-061; HU-12, HU-40 a HU-47) con la voz propia de Nayra y
 /// el botón de voz fijo (D-075): «Iniciar sesión Nayra» → celular vinculado → PIN → frase → voz → billetera.
@@ -72,7 +73,13 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
     }
     if (!mounted) return;
     setState(() {});
-    await _d.voz.decir(_saludo);
+    try {
+      await _d.voz.decir(_saludo);
+    } on FalloVoz catch (e, pila) {
+      // El saludo se ve en pantalla; el fallo del motor de voz se informa y la persona igual entra a su billetera.
+      FlutterError.reportError(FlutterErrorDetails(
+          exception: e, stack: pila, library: 'Nayra', context: ErrorDescription('al saludar tras iniciar sesión')));
+    }
     if (mounted && _d.sesion.activa) Navegacion.aBilletera();
   }
 
@@ -98,6 +105,7 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
       subtexto: estado == EstadoVoz.error ? 'toca para intentar otra vez' : null,
       alTocar: () => _ciclo.alternar(modo, destino),
       derecha: _ciclo.capturando ? AccionDock('Cancelar', Icons.close, _ciclo.cancelar) : null,
+      antesDeRepetir: _ciclo.cancelar,
     );
   }
 

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../servicios/grabador.dart';
+import '../servicios/voz_nayra.dart';
 import '../tema/colores.dart';
 import 'anuncio.dart';
 import 'botones.dart';
@@ -33,12 +34,25 @@ class _BotonGrabacionState extends State<BotonGrabacion> {
   /// Evita una segunda pulsación mientras el micrófono arranca o se detiene.
   bool _ocupado = false;
 
+  /// Voz con el micrófono reservado mientras se graba; se libera al detener o cancelar (semidúplex, D-075).
+  VozNayra? _voz;
+
+  void _liberar() {
+    _voz?.liberarMicrofono();
+    _voz = null;
+  }
+
   Future<void> _alternar() async {
     if (_ocupado) return;
     _ocupado = true;
     try {
       if (_grabando) {
-        final wav = await widget.grabador.detener();
+        final Uint8List wav;
+        try {
+          wav = await widget.grabador.detener();
+        } finally {
+          _liberar();
+        }
         if (!mounted) return;
         setState(() => _grabando = false);
         anunciar(context, 'Grabación terminada. Enviando.');
@@ -51,17 +65,21 @@ class _BotonGrabacionState extends State<BotonGrabacion> {
       }
       if (!mounted) return;
       // Semidúplex (D-075): Nayra termina de hablar antes de abrir el micrófono.
-      await prepararEscucha(context, aviso: 'Te escucho. Habla y toca de nuevo al terminar.');
-      if (!mounted) return;
+      _voz = await prepararEscucha(context, aviso: 'Te escucho. Habla y toca de nuevo al terminar.');
+      if (!mounted) return _liberar();
       // Tono de inicio (no se espera: la llamada a la plataforma no indica cuándo termina el sonido).
       Senales.aviso();
       await widget.grabador.iniciar();
-      if (!mounted) return;
+      if (!mounted) {
+        await widget.grabador.cancelar().whenComplete(_liberar);
+        return;
+      }
       setState(() => _grabando = true);
     } catch (_) {
       // Micrófono ocupado o error del sistema al grabar: la app no se cierra; se descarta lo grabado
       // y se puede volver a intentar.
       await widget.grabador.cancelar().catchError((_) {});
+      _liberar();
       if (!mounted) return;
       setState(() => _grabando = false);
       anunciar(context, 'No pude usar el micrófono. Inténtalo otra vez.');
@@ -72,7 +90,7 @@ class _BotonGrabacionState extends State<BotonGrabacion> {
 
   @override
   void dispose() {
-    if (_grabando) widget.grabador.cancelar();
+    if (_grabando) widget.grabador.cancelar().whenComplete(_liberar);
     super.dispose();
   }
 

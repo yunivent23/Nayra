@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../servicios/grabador.dart';
+import '../servicios/voz_nayra.dart';
 import '../tema/colores.dart';
 import '../tema/tema.dart';
 import 'anuncio.dart';
@@ -89,6 +90,14 @@ class _TecladoPinState extends State<TecladoPin> {
   final _digitos = <String>[];
   bool _dictando = false;
 
+  /// Voz con el micrófono reservado mientras se dicta; se libera al detener o cancelar (semidúplex, D-075).
+  VozNayra? _voz;
+
+  void _liberar() {
+    _voz?.liberarMicrofono();
+    _voz = null;
+  }
+
   void _pulsar(String d) {
     if (!widget.habilitado || _dictando || _digitos.length >= TecladoPin.longitud) return;
     setState(() => _digitos.add(d));
@@ -111,7 +120,12 @@ class _TecladoPinState extends State<TecladoPin> {
   Future<void> _dictar() async {
     final grabador = widget.grabador!;
     if (_dictando) {
-      final wav = await grabador.detener();
+      final Uint8List wav;
+      try {
+        wav = await grabador.detener();
+      } finally {
+        _liberar();
+      }
       if (!mounted) return;
       setState(() => _dictando = false);
       anunciar(context, 'Dictado terminado. Verificando.');
@@ -124,10 +138,29 @@ class _TecladoPinState extends State<TecladoPin> {
     }
     if (!mounted) return;
     // Semidúplex (D-075): Nayra termina de hablar antes de abrir el micrófono.
-    await prepararEscucha(context, aviso: 'Dicta tu PIN dígito por dígito y toca Detener al terminar. Te escucho.');
-    if (!mounted) return;
-    await grabador.iniciar();
-    if (!mounted) return;
+    try {
+      _voz = await prepararEscucha(context,
+          aviso: 'Dicta tu PIN dígito por dígito y toca Detener al terminar. Te escucho.');
+    } on FalloVoz catch (e, pila) {
+      // Nayra no confirmó que calló: no se abre el micrófono; se puede usar el teclado.
+      FlutterError.reportError(FlutterErrorDetails(
+          exception: e, stack: pila, library: 'Nayra', context: ErrorDescription('al dictar el PIN')));
+      return;
+    }
+    if (!mounted) {
+      _liberar();
+      return;
+    }
+    try {
+      await grabador.iniciar();
+    } catch (_) {
+      _liberar();
+      rethrow;
+    }
+    if (!mounted) {
+      await grabador.cancelar().whenComplete(_liberar);
+      return;
+    }
     setState(() {
       _dictando = true;
       _digitos.clear();
@@ -136,7 +169,7 @@ class _TecladoPinState extends State<TecladoPin> {
 
   @override
   void dispose() {
-    if (_dictando) widget.grabador?.cancelar();
+    if (_dictando) widget.grabador?.cancelar().whenComplete(_liberar);
     super.dispose();
   }
 

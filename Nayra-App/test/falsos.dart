@@ -53,9 +53,24 @@ class VozFalsa implements VozNayra {
   @override
   ValueListenable<bool> get hablando => _hablando;
 
+  /// Micrófono reservado: igual que [VozTts], no habla hasta que se libere.
+  bool microfono = false;
+
+  /// Frases que no se dijeron porque el micrófono estaba reservado o abierto.
+  final bloqueadas = <String>[];
+
   @override
-  Future<void> decir(String texto) async => dichos.add(texto);
+  Future<void> decir(String texto) async => (microfono ? bloqueadas : dichos).add(texto);
 
   @override
   Future<void> callar() async => interrupciones++;
+
+  @override
+  Future<void> reservarMicrofono() async {
+    microfono = true;
+    interrupciones++;
+  }
+
+  @override
+  void liberarMicrofono() => microfono = false;
 }

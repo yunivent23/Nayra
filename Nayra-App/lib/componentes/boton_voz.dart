@@ -52,6 +52,9 @@ class CicloCaptura extends ChangeNotifier {
 
   bool _abriendo = false;
   bool _capturando = false;
+
+  /// true tras [dispose]: una apertura que estaba en curso se deshace sin avisar a nadie.
+  bool _desechado = false;
   Timer? _limite;
   ValueChanged<Uint8List>? _destino;
 
@@ -68,24 +71,46 @@ class CicloCaptura extends ChangeNotifier {
     notifyListeners();
     try {
       if (!await _grabador.tienePermiso()) {
-        await _voz.decir('Necesito permiso para usar el micrófono.');
+        await _decir('Necesito permiso para usar el micrófono.');
         return;
       }
-      await _voz.callar();
-      await _voz.decir('Te escucho.');
-      Senales.aviso();
-      await _grabador.iniciar();
-      _capturando = true;
-      _destino = alCapturar;
-      _limite = Timer(modo.duracionMaxima, cerrar);
-    } catch (_) {
-      // Micrófono ocupado o error del sistema: se descarta lo grabado y se puede volver a intentar.
-      await _grabador.cancelar().catchError((_) {});
-      _capturando = false;
-      await _voz.decir('No pude usar el micrófono. Inténtalo otra vez.');
+      try {
+        await _voz.callar();
+        await _voz.decir('Te escucho.');
+        if (_desechado) return;
+        // Desde aquí Nayra no habla hasta liberar el micrófono; si no se confirma el silencio, no se abre.
+        await _voz.reservarMicrofono();
+        if (_desechado) return _voz.liberarMicrofono();
+      } on FalloVoz catch (e, pila) {
+        // El motor de voz no confirmó que calló: el micrófono no se abre y el botón vuelve a esperar.
+        _informar(e, pila);
+        return;
+      }
+      try {
+        Senales.aviso();
+        await _grabador.iniciar();
+        if (_desechado) {
+          // La pantalla se cerró mientras el micrófono se abría: se cierra antes de devolver la voz.
+          try {
+            await _grabador.cancelar();
+          } finally {
+            _voz.liberarMicrofono();
+          }
+          return;
+        }
+        _capturando = true;
+        _destino = alCapturar;
+        _limite = Timer(modo.duracionMaxima, cerrar);
+      } catch (_) {
+        // Micrófono ocupado o error del sistema: se descarta lo grabado y se puede volver a intentar.
+        await _grabador.cancelar().catchError((_) {});
+        _capturando = false;
+        _voz.liberarMicrofono();
+        if (!_desechado) await _decir('No pude usar el micrófono. Inténtalo otra vez.');
+      }
     } finally {
       _abriendo = false;
-      notifyListeners();
+      if (!_desechado) notifyListeners();
     }
   }
 
@@ -97,7 +122,13 @@ class CicloCaptura extends ChangeNotifier {
     notifyListeners();
     final destino = _destino;
     _destino = null;
-    final wav = await _grabador.detener();
+    final Uint8List wav;
+    try {
+      wav = await _grabador.detener();
+    } finally {
+      // Nayra vuelve a poder hablar solo cuando el micrófono ya se cerró.
+      _voz.liberarMicrofono();
+    }
     destino?.call(wav);
   }
 
@@ -108,15 +139,32 @@ class CicloCaptura extends ChangeNotifier {
     _capturando = false;
     _destino = null;
     notifyListeners();
-    await _grabador.cancelar();
+    try {
+      await _grabador.cancelar();
+    } finally {
+      _voz.liberarMicrofono();
+    }
   }
+
+  /// Mensajes del propio ciclo: si el motor de voz falla, el error se informa y el botón sigue disponible.
+  Future<void> _decir(String texto) async {
+    try {
+      await _voz.decir(texto);
+    } on FalloVoz catch (e, pila) {
+      _informar(e, pila);
+    }
+  }
+
+  void _informar(FalloVoz e, StackTrace pila) => FlutterError.reportError(FlutterErrorDetails(
+      exception: e, stack: pila, library: 'Nayra', context: ErrorDescription('en la captura de voz')));
 
   @override
   void dispose() {
+    _desechado = true;
     _voz.hablando.removeListener(notifyListeners);
     if (_capturando) {
       _limite?.cancel();
-      _grabador.cancelar();
+      _grabador.cancelar().whenComplete(_voz.liberarMicrofono);
     }
     super.dispose();
   }
@@ -124,7 +172,15 @@ class CicloCaptura extends ChangeNotifier {
 
 /// Lo que muestra y hace el botón de voz en una pantalla.
 class BotonVoz {
-  const BotonVoz({required this.estado, required this.alTocar, this.modo, this.texto, this.subtexto, this.derecha});
+  const BotonVoz({
+    required this.estado,
+    required this.alTocar,
+    this.modo,
+    this.texto,
+    this.subtexto,
+    this.derecha,
+    this.antesDeRepetir,
+  });
 
   final EstadoVoz estado;
   final VoidCallback? alTocar;
@@ -136,6 +192,9 @@ class BotonVoz {
 
   /// Botón secundario derecho (Cancelar, Menú…); por defecto, «Atrás» si la pantalla lo permite.
   final AccionDock? derecha;
+
+  /// Se espera antes de que «Repetir» haga hablar a Nayra: cierra una captura abierta (semidúplex, D-075).
+  final Future<void> Function()? antesDeRepetir;
 
   /// Estado que se muestra: «Nayra habla» y «Capturando» los decide el ciclo; el resto, el flujo.
   static EstadoVoz combinar(CicloCaptura ciclo, EstadoVoz delFlujo) {

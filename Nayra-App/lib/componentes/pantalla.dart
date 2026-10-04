@@ -70,6 +70,12 @@ class _PantallaNayraState extends State<PantallaNayra> {
     }
   }
 
+  /// «Repetir» del botón de voz: si hay una captura abierta, primero se cierra y recién después habla Nayra.
+  Future<void> _repetirConBoton() async {
+    await widget.botonVoz?.antesDeRepetir?.call();
+    if (mounted) anunciar(context, widget.textoVoz);
+  }
+
   void _volver() {
     if (widget.alVolver != null) {
       widget.alVolver!();
@@ -115,7 +121,7 @@ class _PantallaNayraState extends State<PantallaNayra> {
                 DockVoz(
                   boton: widget.botonVoz!,
                   atras: widget.mostrarAtras ? _volver : null,
-                  repetir: () => anunciar(context, widget.textoVoz),
+                  repetir: _repetirConBoton,
                 )
               else
                 _BarraInferior(
