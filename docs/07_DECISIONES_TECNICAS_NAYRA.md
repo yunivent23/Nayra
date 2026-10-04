@@ -507,6 +507,7 @@ Registro:
 | D-078 | Validación posterior del enrolamiento | — (nueva) | APROBADA | Decisión de Yuni (Y-10) | 2026-10-02 |
 | D-079 | Confirmación explícita "Sí, confirmo" de operaciones financieras | — (nueva) | APROBADA | Decisión de Yuni (Y-4, Y-5) | 2026-10-02 |
 | D-080 | Tema claro, alto contraste y tutorial guiado por voz | — (nueva) | APROBADA | Decisión de Yuni (Y-12, Y-13) | 2026-10-02 |
+| D-081 | Comando «Iniciar sesión Nayra» con Vosk en el celular y escucha automática en la primera pantalla del inicio de sesión (MVP del Paso 3) | — (nueva) | APROBADA (MVP implementado; no ejecutado en Android) | Decisión de Yuni (Paso 3) | 2026-10-04 |
 | D-018 | Estrategia de sesiones | PARCIAL | PARCIAL — se agrega el anuncio hablado del cierre; sigue sin aviso previo | Decisión de Yuni (Y-9) | 2026-10-02 |
 
 Esto permitirá mantener trazabilidad de las decisiones de diseño.
@@ -1540,6 +1541,38 @@ Alcance de estas decisiones:
 | D-059 | Ampliada por D-078 (validación posterior del enrolamiento) |
 | D-061 | Si el PIN se dicta, Nayra solo dice "Recibí seis dígitos"; nunca lo repite (Y-2) |
 | G-1 | Los pendientes "dictado del número" y "respuesta hablada Sí/No" quedan definidos a nivel de experiencia (D-075, D-079); la tecnología depende de la prueba de D-076 |
+
+## Decisión aprobada el 2026-10-04 — Comando de inicio de sesión (Paso 3)
+
+### D-081 — «Iniciar sesión Nayra» con Vosk en el celular
+
+**Estado:** APROBADA (2026-10-04, decisión de Yuni para el MVP del Paso 3). **Modifica D-075** (solo en la primera pantalla del inicio de sesión) y **D-076** (solo para este comando). Implementada en el código; **no se ha ejecutado en un teléfono Android**.
+
+**Decisión**
+
+- **Ubicación:** el comando «Iniciar sesión Nayra» se reconocerá con **Vosk en el celular** (`vosk_flutter_service`), con el modelo `vosk-model-small-es-0.42` y una gramática cerrada (el comando o «[unk]»). El audio no sale del teléfono ni entra al pipeline biométrico (captura ≠ comando ≠ autenticación, D-075). Para el resto de comandos y dictados sigue la propuesta de Vosk en el servidor (D-076).
+- **Inicio de la escucha:** en la primera pantalla del inicio de sesión, Vosk empieza a escuchar **solo cuando Nayra termina de hablar**, sin toque previo. Es la única excepción a «el inicio siempre es explícito (toque)» de D-075; el botón de voz sigue funcionando igual.
+- **Semidúplex:** mientras Vosk escucha, Nayra no habla; mientras Nayra habla, Vosk no escucha. Al reconocer el comando, Vosk se detiene y libera el micrófono antes de continuar el inicio de sesión del Paso 2. Al salir de la pantalla, al pasar la app a segundo plano o si Vosk falla, se detiene; un fallo se informa y el botón de voz sigue disponible.
+- **Comparación:** se ignoran mayúsculas, tildes, signos y espacios de más; no hay coincidencia aproximada. «Nayra» no está en el vocabulario del modelo pequeño, que lo escribe «Neyra»; por eso la gramática usa «iniciar sesión neyra».
+- **El comando no autentica:** solo inicia el flujo de inicio de sesión; la autenticación sigue siendo dispositivo + PIN + desafío de voz (D-037, D-061).
+- **Modelo:** no se versiona; se descarga con `Nayra-App/tool/descargar_modelo_vosk.sh` (huella SHA-256 comprobada) a `Nayra-App/assets/modelos/`. Sin el modelo, la app funciona solo con el botón.
+
+**Implementado (código en `Nayra-App`, sin ejecutar en Android):** integración de Vosk (`vosk_flutter_service`), gramática cerrada, flujo de escucha en la primera pantalla, liberación del micrófono antes de continuar, conexión con el mismo inicio del botón de voz y manejo de errores (un fallo se informa y el botón sigue disponible).
+
+**Validado:**
+- Pruebas automatizadas de Flutter con un Vosk **simulado** (comparación del comando, orden de detención, semidúplex, fallo de Vosk y liberación al destruir la pantalla).
+- Prueba del modelo `vosk-model-small-es-0.42` en el **entorno de desarrollo** (Vosk de Python, no Android) con **voz sintética**: «Iniciar sesión Nayra» se reconoció con tres acentos; «iniciar sesión», «abre Nayra», «quiero entrar» y «hola» no se reconocieron como el comando.
+
+**Limitación conocida:** en esa prueba, «Iniciar sesión Maira» también se transcribió como «iniciar sesión neyra», es decir, como el comando. Se acepta para la primera prueba real porque el comando solo inicia el flujo y no autentica; no se cambia el comparador.
+
+**PENDIENTE:**
+- Ejecución real en Android.
+- Voces humanas reales.
+- Ruido ambiental.
+- Falsos positivos.
+- Comportamiento real del micrófono (liberación antes de la captura del PIN y de la voz).
+- Latencia y tamaño del APK con el modelo.
+- Revisión del paquete `vosk_flutter_service` (mantenido por un tercero, derivado del oficial de Alpha Cephei).
 
 ---
 

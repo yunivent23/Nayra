@@ -14,6 +14,8 @@ dependencies:
   http: ^1.6.0
   # Captura de audio del micrófono como PCM 16 bits, 16 kHz, mono; el audio se mantiene solo en memoria (D-013).
   record: ^7.1.1
+  # Reconocimiento local del comando «Iniciar sesión Nayra» con Vosk en el celular (D-081, MVP del Paso 3).
+  vosk_flutter_service: ^0.1.3
 
 dev_dependencies:
   flutter_test:
@@ -22,6 +24,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # Modelo de Vosk en español (D-081). No está en el repositorio: se descarga con tool/descargar_modelo_vosk.sh.
+  assets:
+    - assets/modelos/
   # Atkinson Hyperlegible (Braille Institute, SIL OFL 1.1, licencia en assets/fuentes/OFL.txt): fuente de los
   # mockups v3, diseñada para baja visión. Se incluye en la app; no se descarga en tiempo de ejecución.
   fonts:

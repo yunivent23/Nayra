@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Modelo de Vosk (D-081): se descarga con tool/descargar_modelo_vosk.sh, no se versiona.
+/assets/modelos/*.zip

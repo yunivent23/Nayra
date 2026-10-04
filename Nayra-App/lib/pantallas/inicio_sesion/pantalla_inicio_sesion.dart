@@ -8,6 +8,7 @@ import '../../app/navegacion.dart';
 import '../../componentes/anuncio.dart';
 import '../../componentes/boton_voz.dart';
 import '../../componentes/botones.dart';
+import '../../componentes/comando_voz.dart';
 import '../../componentes/contenido.dart';
 import '../../componentes/logo.dart';
 import '../../componentes/pantalla.dart';
@@ -18,8 +19,8 @@ import '../../servicios/voz_nayra.dart';
 /// B1–B6 — Inicio de sesión (D-037 modificada por D-061; HU-12, HU-40 a HU-47) con la voz propia de Nayra y
 /// el botón de voz fijo (D-075): «Iniciar sesión Nayra» → celular vinculado → PIN → frase → voz → billetera.
 ///
-/// El comando hablado «Iniciar sesión Nayra» todavía no se reconoce (D-046 resto y D-076, PENDIENTES): en la
-/// primera pantalla el botón de voz inicia el proceso con un toque.
+/// En la primera pantalla, el proceso empieza al tocar el botón de voz o al decir «Iniciar sesión Nayra», que
+/// Vosk escucha en el celular cuando Nayra calla (D-081). Los dos caminos usan el mismo inicio.
 class PantallaInicioSesion extends StatefulWidget {
   const PantallaInicioSesion({super.key, this.flujo});
 
@@ -30,10 +31,12 @@ class PantallaInicioSesion extends StatefulWidget {
   State<PantallaInicioSesion> createState() => _PantallaInicioSesionState();
 }
 
-class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
+class _PantallaInicioSesionState extends State<PantallaInicioSesion> with WidgetsBindingObserver {
   late final FlujoInicioSesion _flujo;
   late final Dependencias _d;
   late final CicloCaptura _ciclo;
+  late final ComandoInicioSesion _comando;
+  bool _iniciando = false;
   String? _nombre;
   bool _entrando = false;
   bool _listo = false;
@@ -46,13 +49,60 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
     _d = ProveedorNayra.de(context);
     _flujo = widget.flujo ?? FlujoInicioSesion(_d.autenticacion, _d.dispositivo);
     _ciclo = CicloCaptura(_d.voz, _d.grabador);
+    _comando = ComandoInicioSesion(_d.comando, _d.voz, _d.grabador, alComando: _iniciarLogin);
     _flujo.addListener(_alCambiar);
+    _d.voz.hablando.addListener(_alCambiarVoz);
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _presentarse());
+  }
+
+  String get _textoInicial => _comando.disponible
+      ? 'Hola de nuevo. Di «Iniciar sesión Nayra» o toca el botón de voz.'
+      : 'Hola de nuevo. Toca el botón de voz para iniciar sesión.';
+
+  /// Nayra saluda y, cuando termina de hablar, Vosk empieza a escuchar el comando (D-081).
+  Future<void> _presentarse() async {
+    if (!mounted) return;
+    try {
+      await _d.voz.decir(_textoInicial);
+    } on FalloVoz catch (e, pila) {
+      FlutterError.reportError(FlutterErrorDetails(
+          exception: e, stack: pila, library: 'Nayra', context: ErrorDescription('al saludar en el inicio de sesión')));
+    }
+    if (mounted && _flujo.paso == PasoInicioSesion.inicial) _comando.escuchar();
+  }
+
+  /// Cuando Nayra calla en la primera pantalla (por ejemplo, tras «Repetir»), Vosk vuelve a escuchar.
+  void _alCambiarVoz() {
+    if (!_d.voz.hablando.value && _flujo.paso == PasoInicioSesion.inicial) _comando.escuchar();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    if (estado == AppLifecycleState.hidden || estado == AppLifecycleState.paused) _comando.detener();
+    if (estado == AppLifecycleState.resumed) _alCambiarVoz();
+  }
+
+  /// Único inicio del proceso, por el botón de voz o por el comando reconocido. Primero se detiene Vosk y se libera
+  /// el micrófono; luego sigue el flujo del Paso 2.
+  Future<void> _iniciarLogin() async {
+    if (_iniciando) return;
+    _iniciando = true;
+    try {
+      await _comando.detener();
+      if (!mounted || _flujo.paso != PasoInicioSesion.inicial) return;
+      _d.voz.callar();
+      _flujo.iniciar();
+    } finally {
+      _iniciando = false;
+    }
   }
 
   void _alCambiar() {
     final f = _flujo;
     // Una captura abierta solo tiene sentido en los pasos de PIN y de voz.
     if (f.paso != PasoInicioSesion.pin && f.paso != PasoInicioSesion.voz) _ciclo.cancelar();
+    if (f.paso != PasoInicioSesion.inicial) _comando.detener();
     if (f.paso == PasoInicioSesion.autenticado && !_entrando) _entrar();
     if (f.paso == PasoInicioSesion.bloqueada || (f.paso == PasoInicioSesion.terminado && f.mensajeEsError)) {
       Senales.error();
@@ -88,6 +138,9 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
   @override
   void dispose() {
     _flujo.removeListener(_alCambiar);
+    _d.voz.hablando.removeListener(_alCambiarVoz);
+    WidgetsBinding.instance.removeObserver(this);
+    _comando.dispose();
     _ciclo.dispose();
     super.dispose();
   }
@@ -111,23 +164,29 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-        listenable: Listenable.merge([_flujo, _ciclo]),
+        listenable: Listenable.merge([_flujo, _ciclo, _comando]),
         builder: (context, _) {
           final f = _flujo;
           return switch (f.paso) {
             PasoInicioSesion.inicial => PantallaNayra(
                 titulo: 'Hola de nuevo',
-                textoVoz: 'Hola de nuevo. Toca el botón de voz para iniciar sesión.',
+                textoVoz: _textoInicial,
+                // Lo dice _presentarse, para que Vosk empiece justo cuando Nayra termina.
+                hablarAlMostrar: false,
                 cabecera: const LogoNayra(tamano: 56),
-                hijos: const [TextoNayra('Toca el botón de voz para iniciar sesión.', centrado: true)],
+                hijos: [
+                  TextoNayra(
+                      _comando.disponible
+                          ? 'Di «Iniciar sesión Nayra» o toca el botón de voz.'
+                          : 'Toca el botón de voz para iniciar sesión.',
+                      centrado: true),
+                ],
                 botonVoz: BotonVoz(
                   estado: BotonVoz.combinar(_ciclo, EstadoVoz.esperando),
                   texto: 'Iniciar sesión Nayra',
-                  subtexto: 'toca el botón',
-                  alTocar: () {
-                    _d.voz.callar();
-                    f.iniciar();
-                  },
+                  subtexto: _comando.estado == EstadoComando.escuchando ? 'dilo o toca el botón' : 'toca el botón',
+                  alTocar: _iniciarLogin,
+                  antesDeRepetir: _comando.detener,
                 ),
               ),
             PasoInicioSesion.verificando => PantallaNayra(
