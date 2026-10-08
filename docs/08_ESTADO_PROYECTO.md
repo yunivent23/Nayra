@@ -21,7 +21,7 @@ Este documento **no reemplaza** los requisitos, la arquitectura ni el registro d
 > formato canónico de Perú), normalización de `+51` y rechazo de celular repetido en el registro, endpoint provisional
 > `POST /api/v1/destinatarios/busqueda` (solo devuelve el nombre parcial, p. ej. "María De la...") y, en `Nayra-App/`, la pantalla de búsqueda con
 > teclado grande y la confirmación **Sí** / **No, buscar otro número**. La transferencia sigue sin implementarse; el
-> dictado del número y la respuesta hablada quedan fuera. La agenda del teléfono se incorporó como decisión el 2026-10-08 (D-042) y no está implementada. Detalle en
+> dictado del número y la respuesta hablada quedan fuera. La agenda del teléfono se incorporó como decisión el 2026-10-08 (D-042): el backend ya tiene `POST /api/v1/destinatarios/busqueda-multiple` (máximo 500 números por solicitud, provisional D-014); la lectura de contactos en la app y la transferencia no están implementadas. Detalle en
 > `/mnt/project-files/analisis/G1_DESTINATARIO_CELULAR_IMPLEMENTACION_2026-09-28.md`.
 
 > **Actualización del 2026-09-27 (modelo de datos v4, commits `5bbd505` y `ca98bb3` en `yuniv`, todavía sin push):**

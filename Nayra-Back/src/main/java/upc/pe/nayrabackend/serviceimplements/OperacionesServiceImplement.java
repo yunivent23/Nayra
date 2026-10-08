@@ -1,7 +1,9 @@
 package upc.pe.nayrabackend.serviceimplements;
 
 import org.springframework.stereotype.Service;
+import upc.pe.nayrabackend.dtos.DestinatarioDTOs.DestinatarioDisponible;
 import upc.pe.nayrabackend.dtos.DestinatarioDTOs.DestinatarioEncontrado;
+import upc.pe.nayrabackend.dtos.DestinatarioDTOs.DestinatariosDisponibles;
 import upc.pe.nayrabackend.entities.Celular;
 import upc.pe.nayrabackend.entities.Cuentas;
 import upc.pe.nayrabackend.entities.Usuario;
@@ -12,9 +14,14 @@ import upc.pe.nayrabackend.serviceinterfaces.IOperacionesService;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Operaciones simuladas (v4 §2.8). Por ahora solo la búsqueda del destinatario por celular (G-1, 2026-09-28): la
@@ -53,12 +60,65 @@ public class OperacionesServiceImplement implements IOperacionesService {
         if (destino.getId().equals(usuarioId)) {
             throw NayraException.conflicto("CUENTAS_IGUALES");
         }
-        boolean puedeRecibir = destino.getEstado() == Usuario.Estado.ACTIVO
-                && cuentas.porPropietario(destino.getId()).map(Cuentas::getEstado).orElse(null) == Cuentas.Estado.ACTIVA;
-        if (!puedeRecibir) {
+        if (!puedeRecibir(destino)) {
             throw NayraException.noEncontrado(NO_ENCONTRADO);
         }
         return new DestinatarioEncontrado(nombreVisible(destino.getNombres(), destino.getApellidos()));
+    }
+
+    @Override
+    public DestinatariosDisponibles buscarDestinatarios(String usuarioId, List<String> celulares) {
+        if (celulares == null) {
+            throw NayraException.solicitudInvalida("CELULARES_REQUERIDOS");
+        }
+        // El tamaño se comprueba antes de normalizar o consultar. El mensaje no incluye los números (datos de terceros).
+        if (celulares.size() > MAX_CELULARES_POR_CONSULTA) {
+            throw NayraException.solicitudInvalida("DEMASIADOS_CELULARES");
+        }
+        if (celulares.isEmpty()) {
+            return new DestinatariosDisponibles(List.of());
+        }
+        // La agenda es heterogénea: cada elemento se normaliza por separado y los no utilizables se descartan sin
+        // fallar la solicitud ni dejar rastro. Los equivalentes ("999-888-777", "+51999888777") se unen al deduplicar.
+        Set<String> numeros = new LinkedHashSet<>();
+        for (String c : celulares) {
+            celularDeAgenda(c).ifPresent(numeros::add);
+        }
+        if (numeros.isEmpty()) {
+            return new DestinatariosDisponibles(List.of());
+        }
+        Map<String, Usuario> porCelular = usuarios.porCelulares(numeros).stream()
+                .collect(Collectors.toMap(Usuario::getCelular, Function.identity(), (a, b) -> a));
+        List<DestinatarioDisponible> disponibles = new ArrayList<>();
+        for (String numero : numeros) {
+            Usuario destino = porCelular.get(numero);
+            if (destino != null && !destino.getId().equals(usuarioId) && puedeRecibir(destino)) {
+                disponibles.add(new DestinatarioDisponible(numero, nombreVisible(destino.getNombres(), destino.getApellidos())));
+            }
+        }
+        return new DestinatariosDisponibles(List.copyOf(disponibles));
+    }
+
+    /**
+     * Celular canónico de un contacto de la agenda, o vacío si no es utilizable (fijo, extranjero, texto). Además de
+     * lo que ya acepta {@link Celular#leer} (espacios y "+51"), tolera el guion como separador, habitual en las
+     * agendas; después aplica exactamente la validación de {@code Celular}. Nunca lanza ni registra el valor.
+     */
+    private static Optional<String> celularDeAgenda(String contacto) {
+        if (contacto == null) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(Celular.leer(contacto.replace("-", "")).numero());
+        } catch (NayraException e) {
+            return Optional.empty();
+        }
+    }
+
+    /** Condición de destinatario válido, igual para la búsqueda individual y la múltiple: usuario y cuenta activos. */
+    private boolean puedeRecibir(Usuario destino) {
+        return destino.getEstado() == Usuario.Estado.ACTIVO
+                && cuentas.porPropietario(destino.getId()).map(Cuentas::getEstado).orElse(null) == Cuentas.Estado.ACTIVA;
     }
 
     /**

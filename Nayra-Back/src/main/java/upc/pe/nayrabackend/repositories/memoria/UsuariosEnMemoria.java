@@ -5,6 +5,7 @@ import upc.pe.nayrabackend.entities.TipoDocumentoIdentidad;
 import upc.pe.nayrabackend.entities.Usuario;
 import upc.pe.nayrabackend.repositories.IUsuariosRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +34,11 @@ public class UsuariosEnMemoria implements IUsuariosRepository {
     @Override
     public Optional<Usuario> porCelular(String celular) {
         return usuarios.values().stream().filter(u -> u.getCelular().equals(celular)).findFirst();
+    }
+
+    @Override
+    public List<Usuario> porCelulares(Collection<String> celulares) {
+        return usuarios.values().stream().filter(u -> celulares.contains(u.getCelular())).toList();
     }
 
     @Override

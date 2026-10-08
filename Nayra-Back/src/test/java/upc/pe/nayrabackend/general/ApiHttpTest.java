@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import upc.pe.nayrabackend.serviceinterfaces.IOperacionesService;
 import upc.pe.nayrabackend.serviceinterfaces.IServicioVozCliente;
 import upc.pe.nayrabackend.soporte.BaseDeDatosDePrueba;
 import upc.pe.nayrabackend.soporte.Soporte;
@@ -22,6 +23,7 @@ import upc.pe.nayrabackend.soporte.Soporte;
 import java.security.KeyPair;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -158,6 +160,36 @@ class ApiHttpTest {
         // El administrador inicial no tiene cuenta financiera: responde igual que un número sin cuenta.
         assertEquals(Map.of("error", "DESTINATARIO_NO_ENCONTRADO"),
                 json.convertValue(llamar(post(busqueda), tokenUsuario, Map.of("celular", celularAdmin)).cuerpo(), Map.class));
+
+        // Búsqueda múltiple desde la agenda (D-042, 2026-10-08): sesión obligatoria, solo coincidencias, máximo 500.
+        String multiple = "/api/v1/destinatarios/busqueda-multiple";
+        List<String> agenda = new java.util.ArrayList<>(IntStream.range(0, 99).mapToObj(i -> String.format("95%07d", i)).toList());
+        agenda.add("+51 " + celularUsuario);
+        agenda.add(celularAdmin);
+        assertEquals(401, llamar(post(multiple), null, Map.of("celulares", agenda)).estado());
+        Resp varios = llamar(post(multiple), tokenAdmin, Map.of("celulares", agenda));
+        assertEquals(200, varios.estado());
+        assertEquals(Map.of("destinatarios", List.of(Map.of("celular", celularUsuario, "nombreVisible", "Persona Fict..."))),
+                json.convertValue(varios.cuerpo(), Map.class), "Solo el usuario con cuenta activa; ni los demás ni el propio");
+        assertEquals(Map.of("destinatarios", List.of()),
+                json.convertValue(llamar(post(multiple), tokenUsuario, Map.of("celulares", List.of(celularUsuario))).cuerpo(), Map.class));
+        assertEquals(Map.of("destinatarios", List.of()),
+                json.convertValue(llamar(post(multiple), tokenUsuario, Map.of("celulares", List.of())).cuerpo(), Map.class));
+        List<String> exacto = IntStream.range(0, IOperacionesService.MAX_CELULARES_POR_CONSULTA).mapToObj(i -> String.format("95%07d", i)).toList();
+        assertEquals(200, llamar(post(multiple), tokenUsuario, Map.of("celulares", exacto)).estado());
+        List<String> excedido = IntStream.range(0, IOperacionesService.MAX_CELULARES_POR_CONSULTA + 1).mapToObj(i -> String.format("95%07d", i)).toList();
+        Resp demasiados = llamar(post(multiple), tokenUsuario, Map.of("celulares", excedido));
+        assertEquals(400, demasiados.estado());
+        assertEquals(Map.of("error", "DEMASIADOS_CELULARES"), json.convertValue(demasiados.cuerpo(), Map.class));
+        // Un contacto no utilizable (o con guiones) no hace fallar la consulta: se descarta o se normaliza.
+        String conGuiones = celularUsuario.substring(0, 3) + "-" + celularUsuario.substring(3, 6) + "-" + celularUsuario.substring(6);
+        Resp tolerante = llamar(post(multiple), tokenAdmin, Map.of("celulares", List.of("12345", "abc", conGuiones, "+51" + celularUsuario)));
+        assertEquals(200, tolerante.estado());
+        assertEquals(Map.of("destinatarios", List.of(Map.of("celular", celularUsuario, "nombreVisible", "Persona Fict..."))),
+                json.convertValue(tolerante.cuerpo(), Map.class));
+        assertEquals(Map.of("destinatarios", List.of()),
+                json.convertValue(llamar(post(multiple), tokenUsuario, Map.of("celulares", List.of("12345", "abc"))).cuerpo(), Map.class));
+        assertEquals("CELULARES_REQUERIDOS", llamar(post(multiple), tokenUsuario, Map.of()).cuerpo().get("error").asString());
 
         // Datos propios, sin hash del PIN.
         Resp me = llamar(get("/api/v1/usuarios/me"), tokenUsuario, null);

@@ -7,6 +7,7 @@ import upc.pe.nayrabackend.entities.TipoDocumentoIdentidad;
 import upc.pe.nayrabackend.entities.Usuario;
 import upc.pe.nayrabackend.repositories.IUsuariosRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,6 +35,11 @@ public class UsuariosPostgres implements IUsuariosRepository {
     @Override
     public Optional<Usuario> porCelular(String celular) {
         return celular == null ? Optional.empty() : jpa.findByCelular(celular);
+    }
+
+    @Override
+    public List<Usuario> porCelulares(Collection<String> celulares) {
+        return celulares.isEmpty() ? List.of() : jpa.findByCelularIn(celulares);
     }
 
     @Override
