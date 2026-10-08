@@ -2,6 +2,8 @@
     <!-- Captura de voz para el desafío y el PIN dictado (AG-13). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Agenda como fuente de números para transferir (D-042). Se pide solo al tocar «Elegir de mis contactos». -->
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <application
         android:label="Nayra"
         android:name="${applicationName}"

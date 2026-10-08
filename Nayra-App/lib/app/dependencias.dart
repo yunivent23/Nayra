@@ -7,6 +7,7 @@ import '../api/destinatario_api.dart';
 import '../api/registro_api.dart';
 import '../api/representante_api.dart';
 import '../api/usuario_api.dart';
+import '../servicios/agenda.dart';
 import '../servicios/dispositivo.dart';
 import '../servicios/escucha_comando.dart';
 import '../servicios/grabador.dart';
@@ -22,6 +23,7 @@ class Dependencias {
     required this.grabador,
     required this.voz,
     this.comando,
+    this.agenda,
     BilleteraApi? billetera,
   })  : autenticacion = AutenticacionApi(http),
         registro = RegistroApi(http),
@@ -41,6 +43,9 @@ class Dependencias {
 
   /// Escucha de «Iniciar sesión Nayra» con Vosk en el celular (D-081). null: solo el botón de voz.
   final EscuchaComando? comando;
+
+  /// Agenda del teléfono para elegir destinatarios (D-042). null: solo la búsqueda manual por número.
+  final AgendaContactos? agenda;
   final AutenticacionApi autenticacion;
   final RegistroApi registro;
   final UsuarioApi usuarios;

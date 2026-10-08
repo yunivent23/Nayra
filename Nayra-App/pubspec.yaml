@@ -9,8 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # Cliente HTTP (paquete oficial del equipo de Dart) para las rutas PROVISIONALES del backend (D-014).
+  # Lectura de la agenda del teléfono como fuente de números para transferir (D-042, 2026-10-08). Solo se lee en
+  # memoria cuando la persona toca «Elegir de mis contactos»; la agenda no se guarda.
+  flutter_contacts: ^2.6.0
   flutter_tts: ^4.2.5
+  # Cliente HTTP (paquete oficial del equipo de Dart) para las rutas PROVISIONALES del backend (D-014).
   http: ^1.6.0
   # Captura de audio del micrófono como PCM 16 bits, 16 kHz, mono; el audio se mantiene solo en memoria (D-013).
   record: ^7.1.1

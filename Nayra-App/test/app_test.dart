@@ -237,7 +237,7 @@ void main() {
     await iniciarSesion(tester);
     await tocar(tester, find.text('Transferir'));
 
-    expect(find.text('¿A quién transfiere?'), findsOneWidget);
+    expect(find.text('¿A quién transfieres?'), findsOneWidget);
     expect(find.textContaining('Identificador'), findsNothing, reason: 'el ID interno de la cuenta nunca se pide');
     expect(find.bySemanticsLabel('Número de celular: vacío'), findsOneWidget);
     Future<void> escribir(String digitos) async {
@@ -249,7 +249,7 @@ void main() {
     await escribir('987654321');
     expect(find.text('987 654 321'), findsOneWidget);
     await tocar(tester, find.text('Buscar'));
-    expect(find.text('No hay una cuenta Nayra asociada a ese número. Revíselo y toque Buscar.'), findsOneWidget);
+    expect(find.text('No hay una cuenta Nayra asociada a ese número. Revísalo y toca Buscar.'), findsOneWidget);
     expect(find.text('987 654 321'), findsOneWidget, reason: 'el número escrito se conserva');
 
     for (var i = 0; i < 9; i++) {
@@ -258,20 +258,20 @@ void main() {
     await escribir('912345678');
     await tocar(tester, find.text('Buscar'));
     expect(find.text('Destinatario encontrado'), findsOneWidget);
-    expect(find.text('¿Desea transferir a María De la...?'), findsOneWidget);
+    expect(find.text('¿Deseas transferir a María De la...?'), findsOneWidget);
     expect(find.textContaining('912'), findsNothing, reason: 'se confirma por el nombre, no por el número');
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
     await expectLater(tester, meetsGuideline(textContrastGuideline));
 
     await tocar(tester, find.text('No, buscar otro número'));
-    expect(find.text('¿A quién transfiere?'), findsOneWidget);
+    expect(find.text('¿A quién transfieres?'), findsOneWidget);
     expect(find.bySemanticsLabel('Número de celular: vacío'), findsOneWidget, reason: 'se reinicia el ingreso');
 
     await escribir('912345678');
     await tocar(tester, find.text('Buscar'));
     await tocar(tester, find.text('Sí'));
-    expect(find.text('¿Cuánto envía?'), findsOneWidget);
+    expect(find.text('¿Cuánto envías?'), findsOneWidget);
     expect(backend.recibidas.where((r) => r.startsWith('POST /api/v1/destinatarios/busqueda')),
         everyElement(endsWith('[Bearer JWT]')));
     await vencerSesion(tester);

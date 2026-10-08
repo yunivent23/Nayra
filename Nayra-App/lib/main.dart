@@ -4,6 +4,7 @@ import 'api/cliente_http.dart';
 import 'app/dependencias.dart';
 import 'app/nayra_app.dart';
 import 'config.dart';
+import 'servicios/agenda.dart';
 import 'servicios/dispositivo.dart';
 import 'servicios/escucha_comando.dart';
 import 'servicios/grabador.dart';
@@ -17,6 +18,7 @@ void main() {
       grabador: GrabadorMicrofono(),
       voz: VozTts(),
       comando: EscuchaVosk(),
+      agenda: AgendaDispositivo(),
     ),
   ));
 }

@@ -130,8 +130,8 @@ void main() {
       expect(f.mensaje, '9 1 2, 3 4 5, 6 7 8', reason: 'el número se anuncia completo, dígito por dígito');
       await f.buscar();
       expect(f.paso, PasoTransferencia.confirmarDestinatario);
-      expect(f.preguntaDestinatario, '¿Desea transferir a Carlos Rodr...?');
-      expect(f.mensaje, startsWith('¿Desea transferir a Carlos Rodr?'));
+      expect(f.preguntaDestinatario, '¿Deseas transferir a Carlos Rodr...?');
+      expect(f.mensaje, startsWith('¿Deseas transferir a Carlos Rodr?'));
       expect(f.mensaje, isNot(contains('912')), reason: 'la confirmación es por el nombre, no por el número');
       f.confirmarDestinatario(true);
       expect(f.paso, PasoTransferencia.monto);
@@ -143,7 +143,7 @@ void main() {
       expect(f.mensaje, '80 soles');
       f.continuarConMonto();
       expect(f.paso, PasoTransferencia.revisar);
-      expect(f.mensaje, contains('Va a enviar 80 soles a Carlos Rodr.'));
+      expect(f.mensaje, contains('Vas a enviar 80 soles a Carlos Rodr.'));
       expect(api.transferencias, isEmpty, reason: 'nada se envía antes de confirmar (HU-70)');
       await f.confirmar();
       expect(api.transferencias.single, ('912345678', const Soles(8000)));
@@ -160,7 +160,7 @@ void main() {
       expect(f.paso, PasoTransferencia.destinatario);
       expect(f.celularTexto, isEmpty);
       expect(f.destinatario, isNull);
-      expect(f.mensaje, 'Indique nuevamente el número de celular del destinatario.');
+      expect(f.mensaje, 'Indica nuevamente el número de celular del destinatario.');
     });
 
     test('número inválido: no se consulta al backend', () async {
@@ -180,19 +180,19 @@ void main() {
       escribir(f, '987654321');
       await f.buscar();
       expect(f.paso, PasoTransferencia.destinatario);
-      expect(f.mensaje, 'No hay una cuenta Nayra asociada a ese número. Revíselo y toque Buscar.');
+      expect(f.mensaje, 'No hay una cuenta Nayra asociada a ese número. Revísalo y toca Buscar.');
       expect(f.celularTexto, '987654321');
 
       f.cambiarCelular('900000000');
       await f.buscar();
-      expect(f.mensaje, contains('su propio número'));
+      expect(f.mensaje, contains('tu propio número'));
 
       b.fallo = http.ClientException('sin red');
       f.cambiarCelular('912345678');
       await f.buscar();
       expect(f.paso, PasoTransferencia.destinatario);
       expect(f.mensajeEsError, isTrue);
-      expect(f.mensaje, contains('Toque Buscar para intentarlo otra vez'));
+      expect(f.mensaje, contains('Toca Buscar para intentarlo otra vez'));
       expect(f.celularTexto, '912345678', reason: 'no se pierde el número escrito');
       b.fallo = null;
       await f.buscar();

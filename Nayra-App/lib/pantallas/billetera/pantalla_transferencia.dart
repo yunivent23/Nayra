@@ -13,7 +13,7 @@ import '../../tema/colores.dart';
 
 /// C4–C8 — Transferencia a otro usuario de Nayra (HU-69 a HU-72, HU-60, HU-61; D-042; G-1 modificada el 2026-09-28).
 /// C4: la persona escribe el celular del destinatario con un teclado grande. C5: Nayra-Back localiza la cuenta Nayra
-/// asociada y la pantalla pregunta "¿Desea transferir a María Sala...?" con dos botones, Sí y No, buscar otro número.
+/// asociada y la pantalla pregunta "¿Deseas transferir a María Sala...?" con dos botones, Sí y No, buscar otro número.
 /// El ID interno de la cuenta nunca se pide ni se muestra, y la búsqueda no prueba quién es titular del número.
 /// La transferencia todavía no existe en Nayra-Back: la pantalla lo informa y nunca simula una transferencia.
 class PantallaTransferencia extends StatefulWidget {
@@ -32,7 +32,7 @@ class _PantallaTransferenciaState extends State<PantallaTransferencia> {
     super.didChangeDependencies();
     if (_flujo == null) {
       final dep = ProveedorNayra.de(context);
-      _flujo = widget.flujo ?? FlujoTransferencia(dep.billetera, dep.destinatarios);
+      _flujo = widget.flujo ?? FlujoTransferencia(dep.billetera, dep.destinatarios, dep.agenda);
       _flujo!.addListener(_alCambiar);
     }
   }
@@ -67,13 +67,37 @@ class _PantallaTransferenciaState extends State<PantallaTransferencia> {
           final d = f.destinatario;
           return switch (f.paso) {
             PasoTransferencia.destinatario => PantallaNayra(
-                titulo: '¿A quién transfiere?',
+                titulo: '¿A quién transfieres?',
                 textoVoz: f.mensaje,
                 hijos: [
                   _mensaje(f),
                   _CampoCelular(f.celularTexto),
                   TecladoCelular(texto: f.celularTexto, alCambiar: f.cambiarCelular),
                   BotonNayra(texto: 'Buscar', icono: Icons.search, alto: 90, alPulsar: f.buscar),
+                  if (f.conAgenda)
+                    BotonNayra(
+                      texto: 'Elegir de mis contactos',
+                      icono: Icons.contacts,
+                      tipo: TipoBoton.secundario,
+                      alPulsar: f.buscarEnContactos,
+                    ),
+                ],
+              ),
+            PasoTransferencia.contactos => PantallaNayra(
+                titulo: 'Tus contactos en Nayra',
+                textoVoz: f.mensaje,
+                alVolver: f.escribirNumero,
+                hijos: [
+                  for (final c in f.contactos)
+                    BotonNayra(
+                      texto: c.nombreAgenda,
+                      subtitulo: c.destinatario.nombreVisible,
+                      icono: Icons.person,
+                      tipo: TipoBoton.secundario,
+                      etiqueta: '${c.nombreAgenda}. En Nayra: ${c.destinatario.nombreHablado}.',
+                      alPulsar: () => f.elegirContacto(c),
+                    ),
+                  BotonNayra(texto: 'Escribir el número', icono: Icons.dialpad, alPulsar: f.escribirNumero),
                 ],
               ),
             PasoTransferencia.buscando || PasoTransferencia.enviando => PantallaNayra(
@@ -90,7 +114,7 @@ class _PantallaTransferenciaState extends State<PantallaTransferencia> {
                   TarjetaInfo(
                     principal: f.preguntaDestinatario,
                     secundario: 'Tiene una cuenta Nayra asociada a este número.',
-                    etiqueta: '¿Desea transferir a ${d!.nombreHablado}? Tiene una cuenta Nayra asociada a este número.',
+                    etiqueta: '¿Deseas transferir a ${d!.nombreHablado}? Tiene una cuenta Nayra asociada a este número.',
                   ),
                   BotonNayra(texto: 'Sí', icono: Icons.check, alPulsar: () => f.confirmarDestinatario(true)),
                   BotonNayra(
@@ -102,7 +126,7 @@ class _PantallaTransferenciaState extends State<PantallaTransferencia> {
                 ],
               ),
             PasoTransferencia.monto => PantallaNayra(
-                titulo: '¿Cuánto envía?',
+                titulo: '¿Cuánto envías?',
                 textoVoz: f.mensaje,
                 alVolver: () => f.confirmarDestinatario(false),
                 hijos: [
@@ -116,7 +140,7 @@ class _PantallaTransferenciaState extends State<PantallaTransferencia> {
                 ],
               ),
             PasoTransferencia.revisar => PantallaNayra(
-                titulo: '¿Confirma?',
+                titulo: '¿Confirmas?',
                 textoVoz: f.mensaje,
                 mostrarAtras: false,
                 hijos: [
@@ -124,7 +148,7 @@ class _PantallaTransferenciaState extends State<PantallaTransferencia> {
                   TarjetaInfo(
                     destacado: f.monto!.texto,
                     principal: 'para ${d!.nombreVisible}',
-                    etiqueta: 'Va a enviar ${f.monto!.hablado} para ${d.nombreHablado}.',
+                    etiqueta: 'Vas a enviar ${f.monto!.hablado} para ${d.nombreHablado}.',
                   ),
                   BotonNayra(texto: 'Confirmar', icono: Icons.check, alPulsar: f.confirmar),
                   BotonNayra(texto: 'Cancelar', icono: Icons.close, tipo: TipoBoton.secundario, alPulsar: f.cancelar),
