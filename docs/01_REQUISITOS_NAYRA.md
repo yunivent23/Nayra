@@ -47,7 +47,7 @@ Este documento constituye la referencia de requisitos para el desarrollo de Nayr
 | **Representante autorizado** | Administrador u otra persona autorizada de la organización que, en el registro asistido, asiste a la persona y valida su identidad (D-052). Es parte de una **regla de negocio**, no un rol de la aplicación. _(2026-10-02, D-077: su participación es **opcional**; el registro también puede ser autónomo.)_ |
 | **Dispositivo vinculado** | Único dispositivo activo asociado a una cuenta de acceso; determina qué cuenta intenta iniciar sesión (D-039). Se identifica mediante un par de claves cuya clave privada no sale del teléfono (D-048). |
 | **PIN** | Credencial de conocimiento de 6 dígitos que concreta la "contraseña" de D-037 y de HU-118 (D-061). |
-| **Contacto** (para transferencias) | Otro usuario registrado en Nayra, localizado por su número de celular registrado (G-1, 2026-09-28). No incluye la agenda del teléfono (D-042). |
+| **Contacto** (para transferencias) | Otro usuario registrado en Nayra, localizado por su número de celular registrado (G-1, 2026-09-28). De la agenda del teléfono solo se consideran los contactos cuyo número esté registrado en Nayra; el resto no es destinatario (D-042, 2026-10-08). |
 | **QR de la cuenta** | Código asociado a una cuenta financiera simulada que solo identifica al destinatario dentro del entorno simulado; no es un mecanismo de autenticación (D-042). |
 | **Frase de desafío** | Frase variable que Nayra propone en cada autenticación; la respuesta del usuario es la muestra biométrica (D-037). Su estructura es palabra + 3 dígitos + palabra (D-054). |
 
@@ -643,7 +643,7 @@ Estas aclaraciones precisan cómo se interpretan las HUs bajo las decisiones de 
 | HU-43 | La frase de desafío es **variable** en cada autenticación y su contenido se comprueba; su respuesta es la muestra biométrica. | D-037 |
 | HU-44, HU-47 | Aplica la política de 3 intentos; los detalles (qué cuenta como intento) quedan pendientes. _(Modelo v4, 2026-09-27: solo el PIN incorrecto cuenta como intento; repetir la captura de voz no suma al contador; el límite propio de reintentos biométricos sigue pendiente, P-8.)_ | D-044 |
 | HU-48 | El anti-spoofing se aplica en el enrolamiento y en la autenticación. | D-036, D-037 |
-| HU-69 | El destinatario es otro usuario registrado en Nayra (buscado por su celular o, en un siguiente entregable, identificado por QR, HU-124). _(G-1 modificada el 2026-09-28: la persona escribe el **número de celular** del destinatario; Nayra muestra solo el primer nombre y el primer apellido parcial (con sus partículas De, Del, La, Las, Los; cuatro letras sin contar espacios, sin cortar una partícula; entero si tiene cinco letras o menos) y pregunta "¿Desea transferir a María Sala...?" o "¿Desea transferir a María De la...?" con **Sí** / **No, buscar otro número**. El ID interno de la cuenta destino solo lo usa el backend. La búsqueda no prueba la titularidad del número.)_ | D-042, D-043 |
+| HU-69 | El destinatario es otro usuario registrado en Nayra (seleccionado desde los contactos del teléfono registrados en Nayra, buscado por su celular o, en un siguiente entregable, identificado por QR, HU-124). _(G-1 modificada el 2026-09-28: la persona escribe el **número de celular** del destinatario; Nayra muestra solo el primer nombre y el primer apellido parcial (con sus partículas De, Del, La, Las, Los; cuatro letras sin contar espacios, sin cortar una partícula; entero si tiene cinco letras o menos) y pregunta "¿Desea transferir a María Sala...?" o "¿Desea transferir a María De la...?" con **Sí** / **No, buscar otro número**. El ID interno de la cuenta destino solo lo usa el backend. La búsqueda no prueba la titularidad del número.)_ _(Modificada el 2026-10-08: la persona también puede elegir un destinatario entre los contactos de su teléfono, pero solo aparecen los contactos cuyo número de celular corresponde a un usuario de Nayra con cuenta activa para recibir; el backend lo valida por celular y vuelve a validarlo al transferir. Los demás contactos no se muestran. La búsqueda manual por celular se mantiene. Pendiente: límite de contactos por consulta.)_ | D-042, D-043 |
 
 ### 12.2 HUs nuevas
 
@@ -697,7 +697,9 @@ Clasificación según D-034 y el diagnóstico AG-01 aprobado. Las HUs **secundar
 
 **H-03 (cerrada, 2026-09-27):** se mantiene el alcance actual de esta sección. HU-80, HU-89, HU-93, HU-94, HU-102 y HU-121 siguen en el primer entregable, y las consultas administrativas de auditoría que ya existen en el código permanecen. El modelo de datos v4 no crea tablas nuevas de auditoría ni `solicitudes_atencion`.
 
-Funcionalidades **fuera del primer entregable sin HU**: retiro asistido por administrador, eliminación de cuenta, chatbot (el diálogo guiado de D-076 no lo es), OTP/SMS/WhatsApp, contacto de confianza (posible evolución futura), agenda del teléfono, múltiples dispositivos activos.
+Funcionalidades **fuera del primer entregable sin HU**: retiro asistido por administrador, eliminación de cuenta, chatbot (el diálogo guiado de D-076 no lo es), OTP/SMS/WhatsApp, contacto de confianza (posible evolución futura), múltiples dispositivos activos.
+
+**Agenda del teléfono (modificada el 2026-10-08, D-042):** se incorpora al primer entregable solo como fuente de números para identificar contactos ya registrados en Nayra (HU-69). Nayra no muestra toda la agenda; la vinculación es por número de celular y el backend es la autoridad. Los números de terceros no se almacenan ni se registran en logs. Sin implementar; el límite de contactos por consulta sigue pendiente.
 
 ### 12.5 Pendientes funcionales derivados de AG-01
 
@@ -739,7 +741,7 @@ Decisiones de referencia: `07_DECISIONES_TECNICAS_NAYRA.md`, «Decisiones del mo
 | HU-13 | La sesión es un JWT con `jti` asociado a la tabla `sesiones`; se cierra tras 5 minutos de inactividad, sin renovación | D-018 |
 | HU-19 | El bloqueo automático ocurre al tercer PIN incorrecto y revoca las sesiones activas; el efecto del desbloqueo sobre el contador queda pendiente (P-11) | D-044 |
 | HU-44, HU-47 | Solo el PIN incorrecto suma al contador de 3 intentos; los fallos de voz permiten repetir la captura sin sumar; límite biométrico pendiente (P-8). El contador vuelve a 0 en cuanto se introduce el PIN correcto (H-01, cerrada) | D-044 |
-| HU-69 | El destinatario se localiza por su celular registrado en Nayra (G-1, modificada el 2026-09-28); el ID interno de la cuenta destino solo lo usa el backend. La búsqueda está implementada; la transferencia todavía no | D-042, D-043 |
+| HU-69 | El destinatario se localiza por su celular registrado en Nayra (G-1, modificada el 2026-09-28); el ID interno de la cuenta destino solo lo usa el backend. La búsqueda manual está implementada; la selección desde los contactos del teléfono (2026-10-08) y la transferencia todavía no | D-042, D-043 |
 | HU-117 | El celular es único y se guarda en formato canónico de Perú (9 dígitos, empieza por 9, sin `+51`); el registro rechaza un número ya registrado | D-043 |
 | HU-77 | La notificación de operación tiene tipo `OPERACION` y un texto generado del estilo "Nombres Ape... te realizó una transferencia de S/ 150.00." | Modelo v4 |
 | HU-87 | Las operaciones usan `EXITOSO`, `FALLIDO` y `CANCELADO`. No existe un estado "pendiente": la referencia a "se encuentra pendiente" de la HU no se aplica en el modelo v4 | Modelo v4 |

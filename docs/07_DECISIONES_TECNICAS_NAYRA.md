@@ -509,6 +509,7 @@ Registro:
 | D-080 | Tema claro, alto contraste y tutorial guiado por voz | — (nueva) | APROBADA | Decisión de Yuni (Y-12, Y-13) | 2026-10-02 |
 | D-081 | Comando «Iniciar sesión Nayra» con Vosk en el celular y escucha automática en la primera pantalla del inicio de sesión (MVP del Paso 3) | — (nueva) | APROBADA (MVP implementado; no ejecutado en Android) | Decisión de Yuni (Paso 3) | 2026-10-04 |
 | D-018 | Estrategia de sesiones | PARCIAL | PARCIAL — se agrega el anuncio hablado del cierre; sigue sin aviso previo | Decisión de Yuni (Y-9) | 2026-10-02 |
+| D-042 | Transferencias: agenda del teléfono | APROBADA — agenda fuera del primer entregable | APROBADA — la agenda se incorpora como fuente de números; solo se muestran contactos registrados en Nayra, validados por el backend por celular; búsqueda manual se mantiene; límite de consulta PENDIENTE; sin implementar | Decisión de Yuni | 2026-10-08 |
 
 Esto permitirá mantener trazabilidad de las decisiones de diseño.
 
@@ -698,7 +699,7 @@ Componentes del prototipo: aplicación móvil (usuario), backend principal (Java
 
 Prioridad: 1) funcionamiento; 2) accesibilidad; 3) autenticación; 4) biometría; 5) seguridad básica; 6) operaciones financieras simuladas; 7) panel administrativo; 8) trazabilidad.
 
-**Fuera del primer entregable:** retiro asistido por administrador; eliminación de cuenta; chatbot; OTP real, SMS, WhatsApp o llamadas automáticas; contacto de confianza; integración con la agenda del teléfono; múltiples dispositivos activos; bancos, pagos o APIs reales; proveedores externos con costo; modelos de IA entrenados desde cero; funcionalidades no respaldadas por HU. La clasificación de HUs por alcance está en `01_REQUISITOS_NAYRA.md` §12.4.
+**Fuera del primer entregable:** retiro asistido por administrador; eliminación de cuenta; chatbot; OTP real, SMS, WhatsApp o llamadas automáticas; contacto de confianza; múltiples dispositivos activos; bancos, pagos o APIs reales; proveedores externos con costo; modelos de IA entrenados desde cero; funcionalidades no respaldadas por HU. La clasificación de HUs por alcance está en `01_REQUISITOS_NAYRA.md` §12.4.
 
 **Actualización AG-01 v5:** las funcionalidades de **QR** (HU-123, HU-124) se mantienen documentadas y trazadas, pero quedan **fuera de la implementación del primer entregable**, como funcionalidades secundarias para un **siguiente entregable** (ver D-042).
 
@@ -789,7 +790,7 @@ La referencia biométrica permanece **asociada a la cuenta de acceso en el backe
 ### D-042 — Transferencias a usuarios de Nayra y QR
 **Estado:** APROBADA
 
-- Un **"contacto"** para transferencias es **otro usuario registrado en Nayra**. No se integra la agenda del teléfono.
+- Un **"contacto"** para transferencias es **otro usuario registrado en Nayra**. ~~No se integra la agenda del teléfono.~~ _(Modificado el 2026-10-08: la agenda del teléfono se incorpora solo como fuente de números; ver «Actualización del 2026-10-08».)_
 - Flujo: usuario A → selecciona/busca al usuario B → confirma destinatario → indica monto → confirma operación → transferencia simulada.
 - Cada cuenta financiera simulada tiene un **QR asociado**. Nayra puede generar/mostrar el QR de la propia cuenta, escanear un QR, obtener el destinatario, confirmar por voz los datos y realizar la transferencia simulada.
 - El QR **no** es un mecanismo de autenticación y **no** contiene contraseña, datos biométricos ni información sensible innecesaria; solo permite identificar la cuenta/destinatario dentro del entorno simulado.
@@ -806,8 +807,20 @@ La referencia biométrica permanece **asociada a la cuenta de acceso en el backe
 - Flujo: celular → búsqueda → nombre parcial → confirmación → Sí (continúa al monto) / No, buscar otro número (se reinicia el ingreso del número).
 - Tras encontrar el número se muestra solo el **primer nombre y el primer apellido parcial (con sus partículas De, Del, La, Las, Los; cuatro letras sin contar espacios, sin cortar una partícula; entero si tiene cinco letras o menos)** ("María Sala...", "María De la..."), con la pregunta "¿Desea transferir a María Sala...?". Regla modificada el 2026-09-28; ver «Nombre parcial del destinatario». El número no es el elemento principal de la confirmación.
 - La búsqueda solo afirma que **existe una cuenta Nayra asociada a ese número**. No valida la titularidad de la línea (sin OSIPTEL ni operadores).
-- **Agenda del teléfono:** sigue fuera del primer entregable (se mantiene lo anterior de esta decisión).
+- ~~**Agenda del teléfono:** sigue fuera del primer entregable (se mantiene lo anterior de esta decisión).~~ _(Modificada el 2026-10-08: ver abajo.)_
 - Una cuenta de acceso no activa, o sin cuenta financiera activa, se informa igual que un número sin cuenta (`DESTINATARIO_NO_ENCONTRADO`), para no revelar el estado de la cuenta.
+
+**Actualización del 2026-10-08 — Contactos del teléfono registrados en Nayra (decisión de Yuni; solo documentada, sin implementar):**
+- La **agenda de contactos del dispositivo se incorpora al primer entregable del flujo de transferencias**, pero **únicamente como fuente de números de celular** para identificar contactos que ya están registrados en Nayra.
+- Nayra **no convierte la agenda en destinatarios**: no muestra todos los contactos. Solo aparecen como destinatarios disponibles los contactos cuyo número corresponde a un usuario de Nayra. Con 100 contactos y 1 registrado se muestra «1 contacto disponible en Nayra»; si ninguno lo está, «No tienes contactos disponibles en Nayra para realizar una transferencia.».
+- **Criterio de vinculación:** el número de celular. El nombre del contacto no se usa para decidir coincidencias.
+- **El backend es la autoridad:** la app obtiene y normaliza los números, pero no decide por sí sola quién está registrado. El backend devuelve solo los usuarios que existen, tienen ese celular, tienen una cuenta de acceso y una cuenta financiera activas para recibir y cumplen las condiciones del dominio. Ocultar contactos en la pantalla no sustituye esta validación.
+- **La transferencia vuelve a validar** al destinatario en el backend; no se confía en la lista obtenida antes.
+- **Privacidad:** los números de terceros de la agenda no se almacenan de forma permanente, no se registran en logs, no se persisten sin necesidad y solo se usan para la consulta de coincidencias.
+- **Normalización (regla; sin implementar):** antes de comparar, los números se llevan al formato canónico de Perú de G-1 (9 dígitos que empiezan por 9, sin `+51`). Por ejemplo, `+51 999 888 777`, `+51999888777`, `999-888-777` y `999 888 777` representan el mismo número. Los números que no puedan llevarse a ese formato no se consultan.
+- **Límite de consulta — PENDIENTE:** no existe una decisión sobre la cantidad máxima de contactos por consulta. Antes de crear el endpoint que reciba varios números debe definirse un límite explícito; la consulta no puede ser ilimitada. No se fija aquí ninguna cifra. Se suma al pendiente de medidas contra la enumeración de números (límite de búsquedas por sesión y auditoría).
+- **La búsqueda manual por celular se mantiene** como alternativa (G-1).
+- **Estado:** nada de esto está implementado (no hay paquete ni permiso de contactos, endpoint de consulta múltiple ni transferencia). La integración con la agenda necesita el permiso de contactos en Android y un paquete aprobado, que se decidirán al implementarla.
 
 ### D-043 — Número de celular
 **Estado:** APROBADA — ampliada el 2026-09-28 (G-1)
@@ -1250,7 +1263,7 @@ Decidido por el equipo el 2026-09-28 (aprobado y cerrado ese mismo día) tras la
 | Ingreso | Teclado grande y accesible |
 | Confirmación | Primer nombre + primer apellido parcial con partículas (ver «Nombre parcial del destinatario»); "¿Desea transferir a María Sala...?"; botones **Sí** y **No, buscar otro número** |
 | Titularidad | No se valida con operadores ni OSIPTEL; solo se afirma que existe una cuenta Nayra asociada al número |
-| Agenda del teléfono | Fuera del primer entregable (D-042) |
+| Agenda del teléfono | ~~Fuera del primer entregable~~ Modificada el 2026-10-08 (D-042): se incorpora solo como fuente de números; se muestran solo contactos registrados en Nayra |
 | Privacidad | Número sin cuenta, usuario bloqueado o inactivo y sin cuenta financiera activa responden igual: "No hay una cuenta Nayra asociada a ese número." (intencional; confirmado por Yuni el 2026-09-28) |
 | Estado | Aprobada y cerrada por Yuni el 2026-09-28 |
 
