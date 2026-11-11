@@ -1,0 +1,141 @@
+{
+  "fecha": "2026-11-11",
+  "modelo": "speechbrain/spkrec-ecapa-voxceleb (preentrenado, sin reentrenar)",
+  "fuente": "OpenSLR 73 (es_pe)",
+  "grabaciones": 1518,
+  "muestrasEnrolamiento": 3,
+  "duracionPorGrabacionS": 3.0,
+  "desarrollo": {
+    "hablantes": 21,
+    "genuinos": 777,
+    "impostores": 15540,
+    "impostoresMismoGenero": 7548,
+    "eerMismoGenero": 0.02059,
+    "umbralEer": 0.4413,
+    "eerTodos": 0.01287
+  },
+  "prueba": {
+    "hablantes": 17,
+    "genuinos": 627,
+    "impostores": 10032,
+    "impostoresMismoGenero": 4720,
+    "eerMismoGenero": 0.01822,
+    "eerTodos": 0.01595,
+    "farMinimaMedible": 9.968102073365231e-05,
+    "puntos": [
+      {
+        "criterio": "Vigente D-055 (0.8)",
+        "umbral": 0.8,
+        "far": 0.0,
+        "farIc95": [
+          0.0,
+          0.00038
+        ],
+        "farMismoGenero": 0.0,
+        "frr": 0.88038,
+        "frrIc95": [
+          0.85264,
+          0.9035
+        ]
+      },
+      {
+        "criterio": "EER (desarrollo)",
+        "umbral": 0.4413,
+        "far": 0.01665,
+        "farIc95": [
+          0.01432,
+          0.01934
+        ],
+        "farMismoGenero": 0.03538,
+        "frr": 0.01595,
+        "frrIc95": [
+          0.00869,
+          0.02911
+        ]
+      },
+      {
+        "criterio": "FAR <= 0.01 (desarrollo)",
+        "umbral": 0.4825,
+        "far": 0.00538,
+        "farIc95": [
+          0.00413,
+          0.00702
+        ],
+        "farMismoGenero": 0.01144,
+        "frr": 0.02711,
+        "frrIc95": [
+          0.017,
+          0.04299
+        ]
+      },
+      {
+        "criterio": "FAR <= 0.001 (desarrollo)",
+        "umbral": 0.5635,
+        "far": 0.0001,
+        "farIc95": [
+          2e-05,
+          0.00056
+        ],
+        "farMismoGenero": 0.00021,
+        "frr": 0.07974,
+        "frrIc95": [
+          0.06101,
+          0.1036
+        ]
+      },
+      {
+        "criterio": "minDCF p=0.01 (desarrollo)",
+        "umbral": 0.5752,
+        "far": 0.0,
+        "farIc95": [
+          0.0,
+          0.00038
+        ],
+        "farMismoGenero": 0.0,
+        "frr": 0.08612,
+        "frrIc95": [
+          0.06661,
+          0.11068
+        ]
+      }
+    ]
+  },
+  "puntajes": {
+    "genuinosPrueba": {
+      "1": 0.3876,
+      "5": 0.5263,
+      "10": 0.5903,
+      "50": 0.7181
+    },
+    "impostoresPrueba": {
+      "50": 0.15,
+      "99": 0.461,
+      "99.9": 0.5239,
+      "100": 0.5675
+    }
+  },
+  "calibrador": {
+    "a": 17.4574,
+    "b": -8.0399,
+    "entropiaCruzadaPruebaBits": 0.1361,
+    "probabilidadEnUmbralVigente": 0.9973,
+    "umbralCosenoParaP099": 0.7238
+  },
+  "antispoofing": {
+    "grabacionesGenuinas": 300,
+    "umbralBonaFide": 0.9,
+    "falsoRechazoBonaFide": 0.0533,
+    "ic95": [
+      0.0331,
+      0.0849
+    ],
+    "percentiles": {
+      "5": 0.8925,
+      "10": 0.9858,
+      "25": 0.9983,
+      "50": 0.9998
+    },
+    "silencioAgregadoS": 0.5,
+    "nota": "Solo voz real (bona fide). No mide la detección de ataques: el corpus no contiene audio falso."
+  }
+}
